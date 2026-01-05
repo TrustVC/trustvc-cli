@@ -3,7 +3,7 @@ import { issuer } from '@trustvc/trustvc';
 import chalk from 'chalk';
 import { isDirectoryValid, writeFile } from '../utils';
 
-export const command = 'key-pair';
+export const command = 'key-pair-generation';
 export const describe = 'Generate a new key pair file';
 
 export const handler = async () => {
@@ -96,5 +96,12 @@ export const generateAndSaveKeyPair = async (
   }
 
   writeFile(keyFilePath, keyPair);
+
+  console.log(
+    chalk.yellow(
+      '\n⚠️  WARNING: This file contains secret keys and should NOT be shared publicly!',
+    ),
+  );
+
   return keypairData;
 };

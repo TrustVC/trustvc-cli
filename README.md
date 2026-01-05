@@ -21,8 +21,8 @@ This CLI leverages the TrustVC package:
 - [Quick Start](#quick-start)
 - [How It Works](#how-it-works)
 - [Commands](#commands)
-  - [`trustvc key-pair`](#trustvc-key-pair)
-  - [`trustvc did`](#trustvc-did)
+  - [`trustvc key-pair-generation`](#trustvc-key-pair-generation)
+  - [`trustvc did-web`](#trustvc-did-web)
 - [Development](#development)
 
 ## Installation
@@ -43,10 +43,10 @@ npx @trustvc/trustvc-cli <command>
 
 ```sh
 # Generate a key pair
-trustvc key-pair
+trustvc key-pair-generation
 
 # Create a DID from the key pair
-trustvc did
+trustvc did-web
 ```
 
 ## How It Works
@@ -57,7 +57,7 @@ trustvc did
 
 ## Commands
 
-### `trustvc key-pair`
+### `trustvc key-pair-generation`
 
 Generates cryptographic key pairs for modern cryptosuites (ECDSA-SD-2023, BBS-2023). These key pairs are used to create DIDs.
 
@@ -74,10 +74,10 @@ Generates cryptographic key pairs for modern cryptosuites (ECDSA-SD-2023, BBS-20
 
 **Example:**
 ```sh
-trustvc key-pair
+trustvc key-pair-generation
 ```
 
-### `trustvc did`
+### `trustvc did-web`
 
 Generates a did:web identifier from an existing key pair. Supports modern Multikey format for compatibility with latest W3C standards.
 
@@ -93,7 +93,7 @@ Generates a did:web identifier from an existing key pair. Supports modern Multik
 
 **Example:**
 ```sh
-trustvc did
+trustvc did-web
 ```
 
 ## Development

@@ -3,7 +3,7 @@ import { issuer } from '@trustvc/trustvc';
 import chalk from 'chalk';
 import { isDirectoryValid, readJsonFile, writeFile } from '../utils';
 
-export const command = 'did';
+export const command = 'did-web';
 export const describe = 'Generate a DID token file from an existing key pair and a domain name';
 
 export const handler = async () => {
@@ -47,6 +47,17 @@ export const saveIssuedDid = async (wellKnownDid: typeof issuer.IssuedDID, outpu
   writeFile(wellknownPath, wellKnownDid.wellKnownDid);
   const keypairsPath = `${outputPath}/didKeyPairs.json`;
   writeFile(keypairsPath, wellKnownDid.didKeyPairs);
+
+  console.log(
+    chalk.yellow(
+      '\n⚠️  WARNING: didKeyPairs.json contains secret keys and should NOT be shared publicly!',
+    ),
+  );
+  console.log(chalk.green('✓  wellknown.json is safe to publish at /.well-known/did.json'));
+  console.log(chalk.blue('\nℹ️  Learn how to host your DID document:'));
+  console.log(
+    chalk.blue('   https://docs.tradetrust.io/docs/how-tos/issuer/did-web#host-the-document\n'),
+  );
 };
 
 export const promptQuestions = async () => {

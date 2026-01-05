@@ -52,7 +52,7 @@ describe('trustvc-cli', () => {
     vi.resetAllMocks();
   });
 
-  describe('trustvc did command', () => {
+  describe('trustvc did-web command', () => {
     let issueDIDSpy: MockedFunction<any>;
     let writeFileSpy: MockedFunction<typeof utils.writeFile>;
     let consoleErrorSpy: MockedFunction<typeof console.error>;
@@ -192,7 +192,7 @@ describe('trustvc-cli', () => {
     });
   });
 
-  describe('trustvc key-pair command', () => {
+  describe('trustvc key-pair-generation command', () => {
     let generateKeyPairSpy: MockedFunction<any>;
     let writeFileSpy: MockedFunction<typeof utils.writeFile>;
     let consoleErrorSpy: MockedFunction<typeof console.error>;

@@ -37,33 +37,61 @@ const jsonRpcProvider =
   () =>
     new providers.JsonRpcProvider(url);
 
+/**
+ * Creates a provider that checks for an environment variable override
+ * before falling back to the default provider.
+ * Environment variable format: {NETWORK_NAME}_RPC
+ * Example: SEPOLIA_RPC=https://sepolia.infura.io/v3/your-key
+ */
+const getProviderWithEnvOverride =
+  (
+    networkName: NetworkCmdName,
+    defaultProvider: () => providers.Provider,
+  ): (() => providers.Provider) =>
+  () => {
+    const envVarName = `${networkName.toUpperCase()}_RPC`;
+    const customRpcUrl = process.env[envVarName];
+
+    if (customRpcUrl) {
+      return new providers.JsonRpcProvider(customRpcUrl);
+    }
+
+    return defaultProvider();
+  };
+
 export const supportedNetwork: {
   [key in NetworkCmdName]: SupportedNetwork;
 } = {
   [NetworkCmdName.Local]: {
     explorer: 'https://localhost/explorer',
-    provider: jsonRpcProvider('http://127.0.0.1:8545'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.Local,
+      jsonRpcProvider('http://127.0.0.1:8545'),
+    ),
     networkId: 1337,
     networkName: NetworkCmdName.Local,
     currency: 'ETH',
   },
   [NetworkCmdName.Mainnet]: {
     explorer: 'https://etherscan.io',
-    provider: defaultInfuraProvider('homestead'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.Mainnet,
+      defaultInfuraProvider('homestead'),
+    ),
     networkId: 1,
     networkName: NetworkCmdName.Mainnet,
     currency: 'ETH',
   },
   [NetworkCmdName.Sepolia]: {
     explorer: 'https://sepolia.etherscan.io',
-    provider: defaultInfuraProvider('sepolia'),
+    provider: getProviderWithEnvOverride(NetworkCmdName.Sepolia, defaultInfuraProvider('sepolia')),
     networkId: 11155111,
     networkName: NetworkCmdName.Sepolia,
     currency: 'ETH',
   },
   [NetworkCmdName.Matic]: {
     explorer: 'https://polygonscan.com',
-    provider: defaultInfuraProvider('matic'),
+    provider: getProviderWithEnvOverride(NetworkCmdName.Matic, defaultInfuraProvider('matic')),
     networkId: 137,
     networkName: NetworkCmdName.Matic,
     currency: 'MATIC',
@@ -71,7 +99,10 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.Amoy]: {
     explorer: 'https://www.oklink.com/amoy',
-    provider: jsonRpcProvider('https://rpc-amoy.polygon.technology'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.Amoy,
+      jsonRpcProvider('https://rpc-amoy.polygon.technology'),
+    ),
     networkId: 80002,
     networkName: NetworkCmdName.Amoy,
     currency: 'MATIC',
@@ -79,21 +110,30 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.XDC]: {
     explorer: 'https://xdcscan.io',
-    provider: jsonRpcProvider('https://rpc.ankr.com/xdc'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.XDC,
+      jsonRpcProvider('https://rpc.ankr.com/xdc'),
+    ),
     networkId: 50,
     networkName: NetworkCmdName.XDC,
     currency: 'XDC',
   },
   [NetworkCmdName.XDCApothem]: {
     explorer: 'https://apothem.xdcscan.io',
-    provider: jsonRpcProvider('https://rpc.apothem.network'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.XDCApothem,
+      jsonRpcProvider('https://rpc.apothem.network'),
+    ),
     networkId: 51,
     networkName: NetworkCmdName.XDCApothem,
     currency: 'XDC',
   },
   [NetworkCmdName.Stability]: {
     explorer: 'https://stability.blockscout.com',
-    provider: jsonRpcProvider(`https://rpc.stabilityprotocol.com/zgt/tradeTrust`),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.Stability,
+      jsonRpcProvider(`https://rpc.stabilityprotocol.com/zkt/try-it-out`),
+    ),
     networkId: 101010,
     networkName: NetworkCmdName.Stability,
     currency: 'FREE',
@@ -101,7 +141,10 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.StabilityTestnet]: {
     explorer: 'https://stability-testnet.blockscout.com/',
-    provider: jsonRpcProvider('https://rpc.testnet.stabilityprotocol.com/zgt/tradeTrust'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.StabilityTestnet,
+      jsonRpcProvider('https://free.testnet.stabilityprotocol.com'),
+    ),
     networkId: 20180427,
     networkName: NetworkCmdName.StabilityTestnet,
     currency: 'FREE',
@@ -109,7 +152,10 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.Astron]: {
     explorer: 'https://astronscanl2.bitfactory.cn/',
-    provider: jsonRpcProvider('https://astronlayer2.bitfactory.cn/query/'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.Astron,
+      jsonRpcProvider('https://astronlayer2.bitfactory.cn/query/'),
+    ),
     networkId: 1338,
     networkName: NetworkCmdName.Astron,
     currency: 'ASTRON',
@@ -117,7 +163,10 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.AstronTestnet]: {
     explorer: 'https://dev-astronscanl2.bitfactory.cn/',
-    provider: jsonRpcProvider('https://dev-astronlayer2.bitfactory.cn/query/'),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.AstronTestnet,
+      jsonRpcProvider('https://dev-astronlayer2.bitfactory.cn/query/'),
+    ),
     networkId: 21002,
     networkName: NetworkCmdName.AstronTestnet,
     currency: 'ASTRON',

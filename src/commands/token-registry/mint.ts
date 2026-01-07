@@ -164,7 +164,7 @@ export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
 
   // Optional: Remark
   const remark = await input({
-    message: 'Enter a remark for the holder change (optional):',
+    message: 'Enter a remark for the minting (optional):',
     required: false,
   });
 

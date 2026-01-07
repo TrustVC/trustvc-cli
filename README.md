@@ -96,6 +96,42 @@ Generates a did:web identifier from an existing key pair. Supports modern Multik
 trustvc did-web
 ```
 
+## Configuration
+
+### Custom RPC Endpoints
+
+You can override the default RPC endpoints for any network by setting environment variables. The format is `{NETWORK_NAME}_RPC`.
+
+**Supported networks:**
+- `SEPOLIA_RPC` - Sepolia testnet
+- `MAINNET_RPC` - Ethereum mainnet
+- `MATIC_RPC` - Polygon mainnet
+- `AMOY_RPC` - Polygon Amoy testnet
+- `XDC_RPC` - XDC Network
+- `XDCAPOTHEM_RPC` - XDC Apothem testnet
+- `STABILITY_RPC` - Stability mainnet
+- `STABILITYTESTNET_RPC` - Stability testnet
+- `ASTRON_RPC` - Astron mainnet
+- `ASTRONTESTNET_RPC` - Astron testnet
+- `LOCAL_RPC` - Local development network
+
+**Example:**
+
+```bash
+# Set custom Sepolia RPC
+export SEPOLIA_RPC=https://sepolia.infura.io/v3/your-api-key
+
+# Use the CLI - when you select Sepolia network in the interactive prompt,
+# it will automatically use your custom RPC
+trustvc mint
+
+# Set multiple custom RPCs
+export MAINNET_RPC=https://mainnet.infura.io/v3/your-api-key
+export MATIC_RPC=https://polygon-rpc.com
+```
+
+If no environment variable is set, the CLI will use the default RPC endpoint for each network.
+
 ## Development
 
 ### Setup

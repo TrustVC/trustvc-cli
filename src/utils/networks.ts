@@ -56,7 +56,7 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.Sepolia]: {
     explorer: 'https://sepolia.etherscan.io',
-    provider: jsonRpcProvider('https://sepolia.infura.io/v3/bb46da3f80e040e8ab73c0a9ff365d18'),
+    provider: defaultInfuraProvider('sepolia'),
     networkId: 11155111,
     networkName: NetworkCmdName.Sepolia,
     currency: 'ETH',

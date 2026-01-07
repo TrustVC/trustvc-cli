@@ -1,0 +1,142 @@
+import { BigNumber, Overrides, constants, utils, ethers } from 'ethers';
+import { Provider } from '@ethersproject/abstract-provider';
+import { info } from 'signale';
+import fetch, { RequestInit } from 'node-fetch';
+import { GasPriceScale } from './cli-options';
+import type { GasStationFeeData } from './gas-station';
+import { NetworkCmdName, getSupportedNetwork, getSupportedNetworkNameFromId, supportedNetwork } from './networks';
+
+// TransactionReceipt
+export interface TransactionReceiptFees {
+  effectiveGasPrice: BigNumber;
+  gasUsed: BigNumber;
+}
+
+export const scaleBigNumber = (
+  wei: BigNumber | null | undefined,
+  multiplier: number,
+  precision = 2,
+): BigNumber => {
+  if (wei === null || typeof wei === 'undefined') {
+    throw new Error('Wei not specified');
+  }
+  const padding = Math.pow(10, precision);
+  const newMultiplier = Math.round(padding * multiplier);
+
+  const newWei = wei.mul(newMultiplier).div(padding);
+  return newWei;
+};
+
+interface GetGasFeesArgs extends GasPriceScale {
+  provider: Provider;
+}
+
+export const getGasFees = async ({
+  provider,
+  maxPriorityFeePerGasScale,
+}: GetGasFeesArgs): Promise<Overrides> => {
+  const feeData = await getFeeData(provider);
+  const { maxFeePerGas, maxPriorityFeePerGas } = feeData;
+  return {
+    maxPriorityFeePerGas: scaleBigNumber(maxPriorityFeePerGas, maxPriorityFeePerGasScale),
+    maxFeePerGas: calculateMaxFee(maxFeePerGas, maxPriorityFeePerGas, maxPriorityFeePerGasScale),
+  };
+};
+
+export const getFeeData = async (
+  provider: ethers.providers.Provider,
+): Promise<GasStationFeeData> => {
+  const networkName = getSupportedNetworkNameFromId((await provider.getNetwork()).chainId);
+  const gasStation = getSupportedNetwork(networkName)?.gasStation;
+
+  const feeData = gasStation && (await gasStation());
+
+  return feeData || (await provider.getFeeData());
+};
+
+export const calculateMaxFee = (
+  maxFee: BigNumber | null | undefined,
+  priorityFee: BigNumber | null | undefined,
+  scale: number,
+): BigNumber => {
+  if (maxFee === null || typeof maxFee === 'undefined') {
+    throw new Error('Max Fee not specified');
+  }
+  if (priorityFee === null || typeof priorityFee === 'undefined') {
+    throw new Error('Priority Fee not specified');
+  }
+  if (scale === 1) {
+    return maxFee;
+  }
+
+  const priorityFeeChange = scaleBigNumber(priorityFee, scale).sub(priorityFee);
+  return maxFee.add(priorityFeeChange);
+};
+
+export const canEstimateGasPrice = (network: string): boolean => {
+  if (
+    network === NetworkCmdName.XDC ||
+    network === NetworkCmdName.XDCApothem ||
+    network === NetworkCmdName.Astron ||
+    network === NetworkCmdName.AstronTestnet
+  ) {
+    return false;
+  }
+  return true;
+};
+
+export const displayTransactionPrice = async (
+  transaction: TransactionReceiptFees,
+  network: NetworkCmdName,
+): Promise<void> => {
+  // workaround for issue in XDC that unable to get gas fee after transaction
+  if (
+    network === NetworkCmdName.XDC ||
+    network === NetworkCmdName.XDCApothem ||
+    network === NetworkCmdName.StabilityTestnet ||
+    network === NetworkCmdName.Stability ||
+    network === NetworkCmdName.Astron ||
+    network === NetworkCmdName.AstronTestnet
+  ) {
+    return;
+  }
+  const currency = supportedNetwork[network].currency;
+  const totalWEI = transaction.effectiveGasPrice.mul(transaction.gasUsed);
+  const spotRate = await getSpotRate(currency, 'USD');
+  const totalUSD = convertWeiFiatDollars(totalWEI, spotRate);
+
+  info(
+    `Transaction fee of ${utils.formatEther(totalWEI)} ${currency} / ~ ${currency}-USD ${totalUSD}`,
+  );
+};
+
+export const request = (url: string, options?: RequestInit): Promise<any> => {
+  return fetch(url, options)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`unexpected response ${response.statusText}`);
+      }
+      return response;
+    })
+    .then((response) => response.json());
+};
+
+export const getSpotRate = async (
+  crypto_currency = 'ETH',
+  fiat_currency = 'USD',
+): Promise<number> => {
+  const URL = `https://api.coinbase.com/v2/prices/${crypto_currency}-${fiat_currency}/spot`;
+  const spotRate = (await request(URL)).data.amount;
+  return spotRate;
+};
+
+// Minimally precision of 2 to get precision of 1 cent
+export const convertWeiFiatDollars = (cost: BigNumber, spotRate: number, precision = 5): number => {
+  const padding = Math.pow(10, precision);
+  const spotRateCents = Math.ceil(spotRate * padding); // Higher better than lower
+  const costInWeiFiatCents = cost.mul(BigNumber.from(spotRateCents));
+  const costInFiatDollars = costInWeiFiatCents.div(constants.WeiPerEther).div(padding).toNumber(); // Fiat Dollar
+  const costInFiatCents =
+    (costInWeiFiatCents.div(constants.WeiPerEther).toNumber() % padding) / padding; /// Fiat Cents
+  return costInFiatDollars + costInFiatCents;
+};

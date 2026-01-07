@@ -132,7 +132,7 @@ export const supportedNetwork: {
     explorer: 'https://stability.blockscout.com',
     provider: getProviderWithEnvOverride(
       NetworkCmdName.Stability,
-      jsonRpcProvider(`https://rpc.stabilityprotocol.com/zkt/try-it-out`),
+      jsonRpcProvider(`https://rpc.stabilityprotocol.com/zgt/tradeTrust`),
     ),
     networkId: 101010,
     networkName: NetworkCmdName.Stability,
@@ -143,7 +143,7 @@ export const supportedNetwork: {
     explorer: 'https://stability-testnet.blockscout.com/',
     provider: getProviderWithEnvOverride(
       NetworkCmdName.StabilityTestnet,
-      jsonRpcProvider('https://free.testnet.stabilityprotocol.com'),
+      jsonRpcProvider('https://rpc.testnet.stabilityprotocol.com/zgt/tradeTrust'),
     ),
     networkId: 20180427,
     networkName: NetworkCmdName.StabilityTestnet,

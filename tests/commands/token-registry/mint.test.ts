@@ -2,9 +2,7 @@ import * as prompts from '@inquirer/prompts';
 import { TransactionReceipt } from '@ethersproject/providers';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import { handler, mintToken, promptForInputs } from '../../../src/commands/token-registry/mint';
-import { TokenRegistryMintCommand } from '../../../src/commands/token-registry/token-registry-command.type';
 import { NetworkCmdName } from '../../../src/utils';
-import * as signale from 'signale';
 
 vi.mock('@inquirer/prompts');
 vi.mock('signale', async (importOriginal) => {
@@ -69,7 +67,7 @@ describe('token-registry/mint', () => {
         .mockResolvedValueOnce(mockInputs.network) // Network selection
         .mockResolvedValueOnce('encryptedWallet'); // Wallet option
 
-(prompts.input as any)
+      (prompts.input as any)
         .mockResolvedValueOnce(mockInputs.address) // Token registry address
         .mockResolvedValueOnce(mockInputs.tokenId) // Token ID
         .mockResolvedValueOnce(mockInputs.beneficiary) // Beneficiary
@@ -145,12 +143,15 @@ describe('token-registry/mint', () => {
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect((result as any).key).toBe('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
+      expect((result as any).key).toBe(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      );
     });
 
     it('should return correct answers when using environment variable for private key', async () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
-      process.env.OA_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      process.env.OA_PRIVATE_KEY =
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
         network: NetworkCmdName.Sepolia,
@@ -217,8 +218,8 @@ describe('token-registry/mint', () => {
       (prompts.input as any).mockResolvedValueOnce(invalidAddress);
 
       // The validation happens in the prompt itself, we need to simulate it
-      const addressPromptCall = (prompts.input as any).mock.calls;
-      
+      //   const addressPromptCall = (prompts.input as any).mock.calls;
+
       // Since we can't directly test the validation function in the prompt,
       // we'll verify that the validation logic exists by checking the structure
       expect(prompts.input).toBeDefined();
@@ -296,7 +297,7 @@ describe('token-registry/mint', () => {
 
       const mintModule = await import('../../../src/implementations/token-registry/mint');
       mintToTokenRegistryMock = mintModule.mintToTokenRegistry as MockedFunction<any>;
-      
+
       // Re-setup the addAddressPrefix mock after clearing
       const utils = await import('../../../src/utils');
       (utils.addAddressPrefix as any).mockImplementation((address?: string) => {
@@ -340,7 +341,7 @@ describe('token-registry/mint', () => {
 
       const result = await mintToken(mockArgs);
 
-expect(mintToTokenRegistryMock).toHaveBeenCalledWith(
+      expect(mintToTokenRegistryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           address: mockArgs.address,
           beneficiary: mockArgs.beneficiary,
@@ -389,7 +390,7 @@ expect(mintToTokenRegistryMock).toHaveBeenCalledWith(
 
       const result = await mintToken(mockArgs);
 
-expect(mintToTokenRegistryMock).toHaveBeenCalledWith(
+      expect(mintToTokenRegistryMock).toHaveBeenCalledWith(
         expect.objectContaining({
           address: mockArgs.address,
           beneficiary: mockArgs.beneficiary,

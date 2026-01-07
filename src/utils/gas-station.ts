@@ -20,6 +20,7 @@ export const gasStation: GasStationFunction =
         maxFeePerGas: safeParseUnits(data.standard.maxFee.toString(), 9),
       };
     } catch (e) {
+      console.error(e);
       throw new Error('Failed to fetch gas station');
     }
   };

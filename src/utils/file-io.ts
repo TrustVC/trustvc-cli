@@ -11,6 +11,7 @@ export const isDir = (path: fs.PathLike): boolean => {
     const stat = fs.lstatSync(path);
     return stat.isDirectory();
   } catch (e) {
+    console.error(e);
     return false;
   }
 };

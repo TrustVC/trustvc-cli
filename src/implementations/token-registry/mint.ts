@@ -4,8 +4,7 @@ import { TokenRegistryMintCommand } from '../../commands/token-registry/token-re
 import { TransactionReceipt } from '@ethersproject/providers';
 import { canEstimateGasPrice, getGasFees } from '../../utils';
 import { BigNumber } from 'ethers';
-import { getTokenRegistryAddress, mint } from '@trustvc/trustvc';
-import { hash } from 'crypto';
+import { mint } from '@trustvc/trustvc';
 
 export const mintToTokenRegistry = async ({
   address,

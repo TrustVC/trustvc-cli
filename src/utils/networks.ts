@@ -71,7 +71,7 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.Amoy]: {
     explorer: 'https://www.oklink.com/amoy',
-    provider: jsonRpcProvider('https://polygon-amoy.infura.io/v3/48bea089ceb34f579d2381195ca46c1d'),
+    provider: jsonRpcProvider('https://rpc-amoy.polygon.technology'),
     networkId: 80002,
     networkName: NetworkCmdName.Amoy,
     currency: 'MATIC',

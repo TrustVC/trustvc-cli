@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getSupportedNetwork, NetworkCmdName } from '../../src/utils/networks';
-import { providers } from 'ethers';
+import { JsonRpcProvider, InfuraProvider } from 'ethers';
 
 describe('networks', () => {
   describe('environment variable RPC override', () => {
@@ -24,8 +24,8 @@ describe('networks', () => {
       const provider = network.provider();
 
       // Check that the provider is using the custom RPC
-      expect(provider).toBeInstanceOf(providers.JsonRpcProvider);
-      expect((provider as providers.JsonRpcProvider).connection.url).toBe(customRpc);
+      expect(provider).toBeInstanceOf(JsonRpcProvider);
+      expect((provider as any)._getConnection().url).toBe(customRpc);
     });
 
     it('should use default RPC when no environment variable is set', () => {
@@ -35,7 +35,7 @@ describe('networks', () => {
       const provider = network.provider();
 
       // The default Infura provider should be used
-      expect(provider).toBeInstanceOf(providers.InfuraProvider);
+      expect(provider).toBeInstanceOf(InfuraProvider);
     });
 
     it('should use custom RPC for MAINNET_RPC', () => {
@@ -45,8 +45,8 @@ describe('networks', () => {
       const network = getSupportedNetwork(NetworkCmdName.Mainnet);
       const provider = network.provider();
 
-      expect(provider).toBeInstanceOf(providers.JsonRpcProvider);
-      expect((provider as providers.JsonRpcProvider).connection.url).toBe(customRpc);
+      expect(provider).toBeInstanceOf(JsonRpcProvider);
+      expect((provider as any)._getConnection().url).toBe(customRpc);
     });
 
     it('should use custom RPC for AMOY_RPC', () => {
@@ -56,8 +56,8 @@ describe('networks', () => {
       const network = getSupportedNetwork(NetworkCmdName.Amoy);
       const provider = network.provider();
 
-      expect(provider).toBeInstanceOf(providers.JsonRpcProvider);
-      expect((provider as providers.JsonRpcProvider).connection.url).toBe(customRpc);
+      expect(provider).toBeInstanceOf(JsonRpcProvider);
+      expect((provider as any)._getConnection().url).toBe(customRpc);
     });
 
     it('should use custom RPC for LOCAL_RPC', () => {
@@ -67,8 +67,8 @@ describe('networks', () => {
       const network = getSupportedNetwork(NetworkCmdName.Local);
       const provider = network.provider();
 
-      expect(provider).toBeInstanceOf(providers.JsonRpcProvider);
-      expect((provider as providers.JsonRpcProvider).connection.url).toBe(customRpc);
+      expect(provider).toBeInstanceOf(JsonRpcProvider);
+      expect((provider as any)._getConnection().url).toBe(customRpc);
     });
 
     it('should handle multiple custom RPCs independently', () => {
@@ -84,10 +84,10 @@ describe('networks', () => {
       const mainnetNetwork = getSupportedNetwork(NetworkCmdName.Mainnet);
       const mainnetProvider = mainnetNetwork.provider();
 
-      expect(sepoliaProvider).toBeInstanceOf(providers.JsonRpcProvider);
-      expect((sepoliaProvider as providers.JsonRpcProvider).connection.url).toBe(customSepoliaRpc);
-      expect(mainnetProvider).toBeInstanceOf(providers.JsonRpcProvider);
-      expect((mainnetProvider as providers.JsonRpcProvider).connection.url).toBe(customMainnetRpc);
+      expect(sepoliaProvider).toBeInstanceOf(JsonRpcProvider);
+      expect((sepoliaProvider as any)._getConnection().url).toBe(customSepoliaRpc);
+      expect(mainnetProvider).toBeInstanceOf(JsonRpcProvider);
+      expect((mainnetProvider as any)._getConnection().url).toBe(customMainnetRpc);
     });
 
     it('should use default for one network and custom for another', () => {
@@ -101,10 +101,10 @@ describe('networks', () => {
       const mainnetNetwork = getSupportedNetwork(NetworkCmdName.Mainnet);
       const mainnetProvider = mainnetNetwork.provider();
 
-      expect(sepoliaProvider).toBeInstanceOf(providers.JsonRpcProvider);
-      expect((sepoliaProvider as providers.JsonRpcProvider).connection.url).toBe(customSepoliaRpc);
+      expect(sepoliaProvider).toBeInstanceOf(JsonRpcProvider);
+      expect((sepoliaProvider as any)._getConnection().url).toBe(customSepoliaRpc);
       // Default Infura provider for mainnet
-      expect(mainnetProvider).toBeInstanceOf(providers.InfuraProvider);
+      expect(mainnetProvider).toBeInstanceOf(InfuraProvider);
     });
   });
 });

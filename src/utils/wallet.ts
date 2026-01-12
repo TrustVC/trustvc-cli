@@ -1,7 +1,6 @@
 import { readFileSync } from 'fs';
 import signale from 'signale';
-import { ethers, Signer, Wallet } from 'ethers';
-import { Provider } from '@ethersproject/abstract-provider';
+import { JsonRpcProvider, Signer, Wallet, Provider, HDNodeWallet } from 'ethers';
 import { addAddressPrefix } from './formatting';
 
 import {
@@ -48,11 +47,11 @@ export const getWalletOrSigner = async ({
 }: WalletOrSignerOption &
   Partial<NetworkOption> &
   Partial<RpcUrlOption> & { progress?: (progress: number) => void }): Promise<
-  Wallet | ConnectedSigner
+  Wallet | HDNodeWallet | ConnectedSigner
 > => {
   // Use custom RPC URL if provided, otherwise use the default network provider
   const provider = isRpcUrlOption(options)
-    ? new ethers.providers.JsonRpcProvider(options.rpcUrl)
+    ? new JsonRpcProvider(options.rpcUrl)
     : getSupportedNetwork(network ?? 'mainnet').provider();
   if (isWalletOption(options)) {
     const { password } = await inquirer.prompt({
@@ -62,22 +61,25 @@ export const getWalletOrSigner = async ({
     });
 
     const file = await readFile(options.encryptedWalletPath);
-    const wallet = await ethers.Wallet.fromEncryptedJson(file, password, progress);
+    const wallet = await Wallet.fromEncryptedJson(file, password, progress);
     signale.info('Wallet successfully decrypted');
-    return wallet.connect(provider);
-  } else if (isAwsKmsSignerOption(options)) {
-    const kmsCredentials = {
-      accessKeyId: options.accessKeyId, // credentials for your IAM user with KMS access
-      secretAccessKey: options.secretAccessKey, // credentials for your IAM user with KMS access
-      region: options.region,
-      keyId: options.kmsKeyId,
-      sessionToken: options.sessionToken,
-    };
+    const connectedWallet = wallet.connect(provider);
+    return connectedWallet as Wallet | HDNodeWallet;
+  }
+  //  else if (isAwsKmsSignerOption(options)) {
+  //   const kmsCredentials = {
+  //     accessKeyId: options.accessKeyId, // credentials for your IAM user with KMS access
+  //     secretAccessKey: options.secretAccessKey, // credentials for your IAM user with KMS access
+  //     region: options.region,
+  //     keyId: options.kmsKeyId,
+  //     sessionToken: options.sessionToken,
+  //   };
 
-    const signer = new AwsKmsSigner(kmsCredentials).connect(provider);
-    if (signer.provider) return signer as ConnectedSigner;
-    throw new Error('Unable to attach the provider to the kms signer');
-  } else {
+  //   const signer = new AwsKmsSigner(kmsCredentials).connect(provider);
+  //   if (signer.provider) return signer as ConnectedSigner;
+  //   throw new Error('Unable to attach the provider to the kms signer');
+  // }
+  else {
     const privateKey = getPrivateKey(options as any);
 
     if (privateKey) {

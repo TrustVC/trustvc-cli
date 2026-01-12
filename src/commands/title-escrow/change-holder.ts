@@ -1,8 +1,8 @@
-import { input } from '@inquirer/prompts';
-import { error, info, success } from 'signale';
-import { TokenRegistryMintCommand } from '../../types';
+import { input, select } from '@inquirer/prompts';
+import { error, info, success, warn } from 'signale';
+import { transferHolder } from '../../implementations/title-escrow/transferHolder';
+import { TitleEscrowTransferHolderCommand } from '../../types';
 import {
-  addAddressPrefix,
   displayTransactionPrice,
   getErrorMessage,
   getEtherscanAddress,
@@ -10,35 +10,31 @@ import {
   promptRemarkAndEncryptionKey,
   promptNetworkSelection,
   promptWalletSelection,
+  TransactionReceiptFees,
 } from '../../utils';
-import { mintToTokenRegistry } from '../../implementations/token-registry/mint';
-export const command = 'token-registry <method>';
 
-export const describe = 'Invoke a function over a token registry smart contract on the blockchain';
+export const command = 'change-holder';
 
-export const handler = (): void => {
-  error('Invalid or missing method. Available methods: mint');
-  process.exit(1);
-};
+export const describe = 'Changes the holder of the transferable record to another address';
 
-export const mintHandler = async (): Promise<void> => {
+export const handler = async (): Promise<string | undefined> => {
   try {
     const answers = await promptForInputs();
     if (!answers) return;
 
-    await mintToken(answers);
+    await changeHolder(answers);
   } catch (err: unknown) {
     error(err instanceof Error ? err.message : String(err));
   }
 };
 
 // Prompt user for all required inputs
-export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
+export const promptForInputs = async (): Promise<TitleEscrowTransferHolderCommand> => {
   // Network selection
   const network = await promptNetworkSelection();
 
   // Token Registry Address
-  const address = await input({
+  const tokenRegistry = await input({
     message: 'Enter the token registry contract address:',
     required: true,
     validate: (value: string) => {
@@ -54,7 +50,7 @@ export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
 
   // Token ID (Document Hash)
   const tokenId = await input({
-    message: 'Enter the document hash (tokenId) to mint:',
+    message: 'Enter the document hash (tokenId) of the transferable record:',
     required: true,
     validate: (value: string) => {
       if (!value || value.trim() === '') {
@@ -64,28 +60,13 @@ export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
     },
   });
 
-  // Beneficiary Address
-  const beneficiary = await input({
-    message: 'Enter the beneficiary address (initial recipient):',
+  // New Holder Address
+  const newHolder = await input({
+    message: 'Enter the address of the new holder:',
     required: true,
     validate: (value: string) => {
       if (!value || value.trim() === '') {
-        return 'Beneficiary address is required';
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-        return 'Invalid Ethereum address format';
-      }
-      return true;
-    },
-  });
-
-  // Holder Address
-  const holder = await input({
-    message: 'Enter the holder address (initial holder):',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Holder address is required';
+        return 'New holder address is required';
       }
       if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
         return 'Invalid Ethereum address format';
@@ -100,66 +81,63 @@ export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
   // Optional: Remark and Encryption Key
   const { remark, encryptionKey } = await promptRemarkAndEncryptionKey();
 
-  // Build the result object with proper typing
+  // Build the result object
   const baseResult = {
     network,
-    address,
+    tokenRegistryAddress: tokenRegistry,
     tokenId,
-    beneficiary,
-    holder,
+    newHolder,
     remark,
     encryptionKey,
     dryRun: false,
     maxPriorityFeePerGasScale: 1,
   };
 
-  // Add wallet-specific properties based on selected wallet type
+  // Add wallet-specific properties
   if (encryptedWalletPath) {
     return {
       ...baseResult,
       encryptedWalletPath,
-    } as TokenRegistryMintCommand;
+    } as TitleEscrowTransferHolderCommand;
   } else if (keyFile) {
     return {
       ...baseResult,
       keyFile,
-    } as TokenRegistryMintCommand;
+    } as TitleEscrowTransferHolderCommand;
   } else if (key) {
     return {
       ...baseResult,
       key,
-    } as TokenRegistryMintCommand;
+    } as TitleEscrowTransferHolderCommand;
   }
 
   // For environment variable case (when all wallet options are undefined)
-  return baseResult as TokenRegistryMintCommand;
+  return baseResult as TitleEscrowTransferHolderCommand;
 };
 
-// Mint the token with the provided inputs
-export const mintToken = async (args: TokenRegistryMintCommand) => {
+// Change the holder with the provided inputs
+export const changeHolder = async (args: TitleEscrowTransferHolderCommand) => {
   try {
     info(
-      `Issuing ${args.tokenId} to the initial recipient ${args.beneficiary} and initial holder ${args.holder} in the registry ${args.address}`,
+      `Connecting to the registry ${args.tokenRegistryAddress} and attempting to change the holder of the transferable record ${args.tokenId} to ${args.newHolder}`,
+    );
+    warn(
+      `Please note that only current holders can change the holder of the transferable record, otherwise this command will fail.`,
     );
 
-    const transaction = await mintToTokenRegistry({
-      ...args,
-      tokenId: addAddressPrefix(args.tokenId),
-    });
-
+    const transaction = await transferHolder(args);
     const network = args.network as NetworkCmdName;
-
-    displayTransactionPrice(transaction as any, network);
+    displayTransactionPrice(transaction as unknown as TransactionReceiptFees, network);
     const { hash: transactionHash } = transaction;
 
     success(
-      `Token with hash ${args.tokenId} has been minted on ${args.address} with the initial recipient being ${args.beneficiary} and initial holder ${args.holder}`,
+      `Transferable record with hash ${args.tokenId}'s holder has been successfully changed to holder with address: ${args.newHolder}`,
     );
     info(
       `Find more details at ${getEtherscanAddress({ network: args.network })}/tx/${transactionHash}`,
     );
 
-    return args.address;
+    return args.tokenRegistryAddress;
   } catch (e) {
     error(getErrorMessage(e));
   }

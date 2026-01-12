@@ -221,7 +221,7 @@ describe('token-registry/mint', () => {
       }
     });
 
-    it('should validate token registry address format', async () => {
+    it('should validate title escrow address format', async () => {
       const invalidAddress = 'invalid-address';
 
       (prompts.select as any).mockResolvedValueOnce(NetworkCmdName.Sepolia);

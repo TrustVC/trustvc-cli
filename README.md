@@ -1,13 +1,16 @@
 # TrustVC CLI
 
-A command-line interface tool for working with Decentralized Identifiers (DIDs) and cryptographic key pairs using modern cryptosuites.
+A command-line interface tool for working with Decentralized Identifiers (DIDs), cryptographic key pairs, token registries, and credential status management using modern cryptosuites.
 
 ## Features
 
 - ✅ **Modern Cryptosuites**: Full support for ECDSA-SD-2023 and BBS-2023
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
-- ✅ **W3C Standards**: Compliant with latest W3C DID specifications
+- ✅ **Token Registry**: Mint tokens to blockchain-based token registries
+- ✅ **Credential Status**: Create and update W3C credential status lists
+- ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
+- ✅ **Multi-Network Support**: Ethereum, Polygon, XDC, Stability, and Astron networks
 
 ## Powered By
 
@@ -23,6 +26,11 @@ This CLI leverages the TrustVC package:
 - [Commands](#commands)
   - [`trustvc key-pair-generation`](#trustvc-key-pair-generation)
   - [`trustvc did-web`](#trustvc-did-web)
+  - [`trustvc credential-status-create`](#trustvc-credential-status-create)
+  - [`trustvc credential-status-update`](#trustvc-credential-status-update)
+  - [`trustvc mint`](#trustvc-mint)
+  - [`trustvc token-registry mint`](#trustvc-token-registry-mint)
+- [Configuration](#configuration)
 - [Development](#development)
 
 ## Installation
@@ -47,6 +55,15 @@ trustvc key-pair-generation
 
 # Create a DID from the key pair
 trustvc did-web
+
+# Create a credential status list
+trustvc credential-status-create
+
+# Update a credential status list
+trustvc credential-status-update
+
+# Mint a token to a registry
+trustvc mint
 ```
 
 ## How It Works
@@ -54,6 +71,10 @@ trustvc did-web
 - **Generating Key Pairs**: The CLI uses the `generateKeyPair` function from `@trustvc/trustvc` to generate cryptographic key pairs. These key pairs support modern cryptosuites (ECDSA-SD-2023, BBS-2023) and use the Multikey format for compatibility with W3C standards.
 
 - **Generating Well-Known DID**: The CLI uses the `issueDID` function from `@trustvc/trustvc` to generate a did:web identifier. This allows users to self-host their DID as a unique identifier in decentralized systems.
+
+- **Credential Status Management**: The CLI provides commands to create and update W3C credential status lists for managing the revocation status of verifiable credentials.
+
+- **Token Registry Minting**: The CLI uses the `mint` function from `@trustvc/trustvc` to mint document hashes to blockchain-based token registries, supporting multiple networks including Ethereum, Polygon, XDC, Stability, and Astron.
 
 ## Commands
 
@@ -94,6 +115,79 @@ Generates a did:web identifier from an existing key pair. Supports modern Multik
 **Example:**
 ```sh
 trustvc did-web
+```
+
+### `trustvc credential-status-create`
+
+Creates a new W3C credential status list for managing the revocation status of verifiable credentials.
+
+**Interactive prompts:**
+- Path to key pair JSON file
+- Select cryptosuite (ECDSA-SD-2023 or BBS-2023)
+- Hosting URL for the credential status list
+- Output directory
+- Status list length (optional)
+
+**Output:** Creates a signed credential status list file.
+
+**Example:**
+```sh
+trustvc credential-status-create
+```
+
+### `trustvc credential-status-update`
+
+Updates an existing W3C credential status list to revoke or suspend credentials.
+
+**Interactive prompts:**
+- Path to existing credential status file
+- Path to key pair JSON file
+- Output directory
+- Credential index to update
+
+**Output:** Updates the credential status list file.
+
+**Example:**
+```sh
+trustvc credential-status-update
+```
+
+### `trustvc mint`
+
+Mints a document hash (tokenId) to a token registry smart contract on the blockchain. This is a shorthand command for `trustvc token-registry mint`.
+
+**Interactive prompts:**
+- Select network (Sepolia, Mainnet, Polygon, XDC, Stability, Astron, etc.)
+- Token registry contract address
+- Document hash (tokenId) to mint
+- Beneficiary address (initial recipient)
+- Holder address (initial holder)
+- Wallet/private key option:
+  - Encrypted wallet file (recommended)
+  - Environment variable (OA_PRIVATE_KEY)
+  - Private key file
+  - Private key directly
+- Remark (optional)
+- Encryption key for document (optional, if remark provided)
+
+**Output:** Transaction receipt with:
+- Transaction hash
+- Block number
+- Gas used and transaction cost
+- Etherscan link for transaction details
+
+**Example:**
+```sh
+trustvc mint
+```
+
+### `trustvc token-registry mint`
+
+Alternative command for minting tokens. Functionally identical to `trustvc mint`.
+
+**Example:**
+```sh
+trustvc token-registry mint
 ```
 
 ## Configuration
@@ -155,15 +249,32 @@ npm test
 ```
 ├── src/
 │   ├── commands/
-│   │   ├── did.ts          # DID generation command
-│   │   └── key-pair.ts     # Key pair generation command
-│   ├── main.ts             # CLI entry point
-│   ├── types.ts            # TypeScript type definitions
-│   └── utils.ts            # Utility functions
+│   │   ├── token-registry/
+│   │   │   ├── mint.ts              # Mint command shorthand
+│   │   │   └── token-registry.ts    # Token registry operations
+│   │   └── w3c/
+│   │       ├── did.ts               # DID generation command
+│   │       ├── key-pair.ts          # Key pair generation command
+│   │       └── credentialStatus/
+│   │           ├── create.ts        # Create credential status
+│   │           └── update.ts        # Update credential status
+│   ├── utils/
+│   │   ├── wallet.ts                # Wallet and signer utilities
+│   │   ├── networks.ts              # Network configurations
+│   │   ├── gas-station.ts           # Gas price estimation
+│   │   └── ...                      # Other utilities
+│   ├── main.ts                      # CLI entry point
+│   └── types.ts                     # TypeScript type definitions
 ├── tests/
 │   ├── commands/
-│   │   ├── did.test.ts
-│   │   └── key-pair.test.ts
+│   │   ├── token-registry/
+│   │   │   └── mint.test.ts
+│   │   └── w3c/
+│   │       ├── did.test.ts
+│   │       ├── key-pair.test.ts
+│   │       └── credentialStatus/
+│   │           ├── create.test.ts
+│   │           └── update.test.ts
 │   └── main.test.ts
 ├── package.json
 └── README.md

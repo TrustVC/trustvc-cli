@@ -1,7 +1,11 @@
 import * as prompts from '@inquirer/prompts';
 import { TransactionReceipt } from '@ethersproject/providers';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
-import { handler, mintToken, promptForInputs } from '../../../src/commands/token-registry/mint';
+import {
+  mintHandler as handler,
+  mintToken,
+  promptForInputs,
+} from '../../../src/commands/token-registry/token-registry';
 import { NetworkCmdName } from '../../../src/utils';
 
 vi.mock('@inquirer/prompts');
@@ -22,8 +26,12 @@ vi.mock('signale', async (importOriginal) => {
   };
 });
 
-vi.mock('../../../src/implementations/token-registry/mint', () => ({
-  mintToTokenRegistry: vi.fn(),
+vi.mock('@trustvc/trustvc', () => ({
+  mint: vi.fn(),
+}));
+
+vi.mock('../../../src/utils/wallet', () => ({
+  getWalletOrSigner: vi.fn(),
 }));
 
 vi.mock('../../../src/utils', async (importOriginal) => {
@@ -37,6 +45,8 @@ vi.mock('../../../src/utils', async (importOriginal) => {
       return address.startsWith('0x') ? address : `0x${address}`;
     }),
     displayTransactionPrice: vi.fn(),
+    canEstimateGasPrice: vi.fn(() => false),
+    getGasFees: vi.fn(),
   };
 });
 
@@ -290,13 +300,22 @@ describe('token-registry/mint', () => {
   });
 
   describe('mintToken', () => {
-    let mintToTokenRegistryMock: MockedFunction<any>;
+    let mintMock: MockedFunction<any>;
+    let getWalletOrSignerMock: MockedFunction<any>;
 
     beforeEach(async () => {
       vi.clearAllMocks();
 
-      const mintModule = await import('../../../src/implementations/token-registry/mint');
-      mintToTokenRegistryMock = mintModule.mintToTokenRegistry as MockedFunction<any>;
+      const trustvcModule = await import('@trustvc/trustvc');
+      mintMock = trustvcModule.mint as MockedFunction<any>;
+
+      const walletModule = await import('../../../src/utils/wallet');
+      getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
+
+      // Setup wallet mock
+      getWalletOrSignerMock.mockResolvedValue({
+        provider: {},
+      });
 
       // Re-setup the addAddressPrefix mock after clearing
       const utils = await import('../../../src/utils');
@@ -337,18 +356,22 @@ describe('token-registry/mint', () => {
         logsBloom: '0x',
       };
 
-      mintToTokenRegistryMock.mockResolvedValue(mockTransaction);
+      mintMock.mockResolvedValue({
+        hash: mockTransaction.transactionHash,
+        wait: vi.fn().mockResolvedValue(mockTransaction),
+      });
 
       const result = await mintToken(mockArgs);
 
-      expect(mintToTokenRegistryMock).toHaveBeenCalledWith(
+      expect(mintMock).toHaveBeenCalledWith(
+        { tokenRegistryAddress: mockArgs.address },
+        expect.anything(),
         expect.objectContaining({
-          address: mockArgs.address,
-          beneficiary: mockArgs.beneficiary,
-          holder: mockArgs.holder,
-          network: mockArgs.network,
-          tokenId: mockArgs.tokenId,
+          beneficiaryAddress: mockArgs.beneficiary,
+          holderAddress: mockArgs.holder,
+          tokenId: expect.stringContaining('0x'),
         }),
+        expect.anything(),
       );
       expect(result).toBe(mockArgs.address);
     });
@@ -386,19 +409,24 @@ describe('token-registry/mint', () => {
         logsBloom: '0x',
       };
 
-      mintToTokenRegistryMock.mockResolvedValue(mockTransaction);
+      mintMock.mockResolvedValue({
+        hash: mockTransaction.transactionHash,
+        wait: vi.fn().mockResolvedValue(mockTransaction),
+      });
 
       const result = await mintToken(mockArgs);
 
-      expect(mintToTokenRegistryMock).toHaveBeenCalledWith(
+      expect(mintMock).toHaveBeenCalledWith(
+        { tokenRegistryAddress: mockArgs.address },
+        expect.anything(),
         expect.objectContaining({
-          address: mockArgs.address,
-          beneficiary: mockArgs.beneficiary,
-          holder: mockArgs.holder,
-          network: mockArgs.network,
-          tokenId: mockArgs.tokenId,
-          remark: mockArgs.remark,
-          encryptionKey: mockArgs.encryptionKey,
+          beneficiaryAddress: mockArgs.beneficiary,
+          holderAddress: mockArgs.holder,
+          tokenId: expect.stringContaining('0x'),
+          remarks: mockArgs.remark,
+        }),
+        expect.objectContaining({
+          id: mockArgs.encryptionKey,
         }),
       );
       expect(result).toBe(mockArgs.address);
@@ -417,12 +445,12 @@ describe('token-registry/mint', () => {
       };
 
       const errorMessage = 'Transaction failed: insufficient funds';
-      mintToTokenRegistryMock.mockRejectedValue(new Error(errorMessage));
+      mintMock.mockRejectedValue(new Error(errorMessage));
 
       const result = await mintToken(mockArgs);
 
       expect(result).toBeUndefined();
-      expect(mintToTokenRegistryMock).toHaveBeenCalled();
+      expect(mintMock).toHaveBeenCalled();
     });
 
     it('should handle non-Error exceptions during minting', async () => {
@@ -437,7 +465,7 @@ describe('token-registry/mint', () => {
         maxPriorityFeePerGasScale: 1,
       };
 
-      mintToTokenRegistryMock.mockRejectedValue('String error message');
+      mintMock.mockRejectedValue('String error message');
 
       const result = await mintToken(mockArgs);
 
@@ -475,7 +503,10 @@ describe('token-registry/mint', () => {
         logsBloom: '0x',
       };
 
-      mintToTokenRegistryMock.mockResolvedValue(mockTransaction);
+      mintMock.mockResolvedValue({
+        hash: mockTransaction.transactionHash,
+        wait: vi.fn().mockResolvedValue(mockTransaction),
+      });
 
       const utils = await import('../../../src/utils');
       const addAddressPrefixSpy = utils.addAddressPrefix as MockedFunction<any>;
@@ -535,9 +566,18 @@ describe('token-registry/mint', () => {
         .mockResolvedValueOnce(mockInputs.encryptedWalletPath)
         .mockResolvedValueOnce('');
 
-      const mintModule = await import('../../../src/implementations/token-registry/mint');
-      const mintToTokenRegistryMock = mintModule.mintToTokenRegistry as MockedFunction<any>;
-      mintToTokenRegistryMock.mockResolvedValue(mockTransaction);
+      const trustvcModule = await import('@trustvc/trustvc');
+      const mintMock = trustvcModule.mint as MockedFunction<any>;
+      mintMock.mockResolvedValue({
+        hash: mockTransaction.transactionHash,
+        wait: vi.fn().mockResolvedValue(mockTransaction),
+      });
+
+      const walletModule = await import('../../../src/utils/wallet');
+      const getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
+      getWalletOrSignerMock.mockResolvedValue({
+        provider: {},
+      });
 
       const result = await handler();
 

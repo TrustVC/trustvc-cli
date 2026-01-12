@@ -1,7 +1,7 @@
 import { input } from '@inquirer/prompts';
 import { issuer } from '@trustvc/trustvc';
-import chalk from 'chalk';
-import { isDirectoryValid, readJsonFile, writeFile } from '../utils';
+import signale from 'signale';
+import { isDirectoryValid, readJsonFile, writeFile } from '../../utils';
 
 export const command = 'did-web';
 export const describe = 'Generate a DID token file from an existing key pair and a domain name';
@@ -17,7 +17,7 @@ export const handler = async () => {
 
     await saveIssuedDid(did, outputPath);
   } catch (err: unknown) {
-    console.error(chalk.red(`Error: ${err instanceof Error ? err.message : err}`));
+    signale.error(err instanceof Error ? err.message : String(err));
   }
 };
 
@@ -31,9 +31,9 @@ export const getIssuedDid = async (
   } catch (err) {
     if (err instanceof Error) {
       if (err.message == 'Missing domain' || err.message == 'Invalid domain') {
-        throw new Error('Error generating DID token: ' + err.message);
+        throw new Error(`Error generating DID token: ${err.message}`);
       } else if (err.message === 'KeyPair already exists') {
-        throw new Error('Error generating DID token: KeyPair already exists in Did Document');
+        throw new Error('Error generating DID token: KeyPair already exists in DID Document');
       } else {
         throw new Error('Error generating DID token');
       }
@@ -44,19 +44,19 @@ export const getIssuedDid = async (
 
 export const saveIssuedDid = async (wellKnownDid: typeof issuer.IssuedDID, outputPath: string) => {
   const wellknownPath = `${outputPath}/wellknown.json`;
-  writeFile(wellknownPath, wellKnownDid.wellKnownDid);
   const keypairsPath = `${outputPath}/didKeyPairs.json`;
-  writeFile(keypairsPath, wellKnownDid.didKeyPairs);
 
-  console.log(
-    chalk.yellow(
-      '\n⚠️  WARNING: didKeyPairs.json contains secret keys and should NOT be shared publicly!',
-    ),
-  );
-  console.log(chalk.green('✓  wellknown.json is safe to publish at /.well-known/did.json'));
-  console.log(chalk.blue('\nℹ️  Learn how to host your DID document:'));
-  console.log(
-    chalk.blue('   https://docs.tradetrust.io/docs/how-tos/issuer/did-web#host-the-document\n'),
+  writeFile(wellknownPath, wellKnownDid.wellKnownDid, true);
+  writeFile(keypairsPath, wellKnownDid.didKeyPairs, true);
+
+  console.log(''); // blank line for spacing
+  signale.success('Generated DID files successfully');
+  signale.info(`${wellknownPath} → Publish at /.well-known/did.json`);
+  signale.info(`${keypairsPath} → Keep private (contains secret keys)`);
+  console.log(''); // blank line for spacing
+  signale.warn('IMPORTANT: Never share didKeyPairs.json publicly!');
+  signale.note(
+    'Learn more: https://docs.tradetrust.io/docs/how-tos/issuer/did-web#host-the-document',
   );
 };
 

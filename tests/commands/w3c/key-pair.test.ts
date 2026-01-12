@@ -1,10 +1,23 @@
 import * as prompts from '@inquirer/prompts';
 import { issuer } from '@trustvc/trustvc';
-import chalk from 'chalk';
 import fs from 'fs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { generateAndSaveKeyPair, promptQuestions } from '../../src/commands/key-pair';
-import { KeyPairGenerateInput } from '../../src/types';
+import signale from 'signale';
+import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
+import { generateAndSaveKeyPair, promptQuestions } from '../../../src/commands/w3c/key-pair';
+import { KeyPairGenerateInput } from '../../../src/types';
+
+vi.mock('signale', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+  Signale: vi.fn().mockImplementation(() => ({
+    await: vi.fn(),
+    success: vi.fn(),
+  })),
+}));
 
 vi.mock('@inquirer/prompts');
 vi.mock('fs', async () => {
@@ -15,12 +28,6 @@ vi.mock('fs', async () => {
     promises: {
       writeFile: vi.fn().mockResolvedValue({}),
     },
-  };
-});
-vi.mock('chalk', async () => {
-  const originalChalk = await vi.importActual<typeof import('chalk')>('chalk');
-  return {
-    ...originalChalk,
   };
 });
 
@@ -115,15 +122,19 @@ describe('key-pair', () => {
         keyPath: '.',
       };
 
-      const consoleLogSpy = vi.spyOn(console, 'log');
+      vi.clearAllMocks();
+      const signaleSuccessSpy = signale.success as MockedFunction<typeof signale.success>;
+      const signaleInfoSpy = signale.info as MockedFunction<typeof signale.info>;
+      const signaleWarnSpy = signale.warn as MockedFunction<typeof signale.warn>;
       const writeFileMock = vi.spyOn(fs, 'writeFileSync');
 
       await generateAndSaveKeyPair(input.encAlgo, input.seedBase58, input.keyPath);
 
       const expectedKeyPath = `${input.keyPath}/keypair.json`;
-      expect(consoleLogSpy).toHaveBeenNthCalledWith(
-        1,
-        chalk.green(`File written successfully to ${expectedKeyPath}`),
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Generated key pair successfully');
+      expect(signaleInfoSpy).toHaveBeenCalledWith(`Saved to: ${expectedKeyPath}`);
+      expect(signaleWarnSpy).toHaveBeenCalledWith(
+        'IMPORTANT: Never share this file publicly - it contains secret keys!',
       );
       expect(writeFileMock).toHaveBeenCalledTimes(1);
       const writtendData = JSON.parse(writeFileMock.mock.calls[0][1].toString());
@@ -141,15 +152,13 @@ describe('key-pair', () => {
         keyPath: '.',
       };
 
-      const consoleLogSpy = vi.spyOn(console, 'log');
+      vi.clearAllMocks();
+      const signaleInfoSpy = signale.info as MockedFunction<typeof signale.info>;
       const writeFileMock = vi.spyOn(fs, 'writeFileSync');
 
       await generateAndSaveKeyPair(input.encAlgo, input.seedBase58, input.keyPath);
 
-      expect(consoleLogSpy).toHaveBeenNthCalledWith(
-        1,
-        chalk.blue('Generating keys from provided seed...'),
-      );
+      expect(signaleInfoSpy).toHaveBeenCalledWith('Generating keys from provided seed...');
       expect(writeFileMock).toHaveBeenCalledTimes(1);
       const writtendData = JSON.parse(writeFileMock.mock.calls[0][1].toString());
       expect(writeFileMock).toHaveBeenCalledWith(
@@ -219,15 +228,19 @@ describe('key-pair', () => {
         keyPath: '.',
       };
 
-      const consoleLogSpy = vi.spyOn(console, 'log');
+      vi.clearAllMocks();
+      const signaleSuccessSpy = signale.success as MockedFunction<typeof signale.success>;
+      const signaleInfoSpy = signale.info as MockedFunction<typeof signale.info>;
+      const signaleWarnSpy = signale.warn as MockedFunction<typeof signale.warn>;
       const writeFileMock = vi.spyOn(fs, 'writeFileSync');
 
       await generateAndSaveKeyPair(input.encAlgo, input.seedBase58, input.keyPath);
 
       const expectedKeyPath = `${input.keyPath}/keypair.json`;
-      expect(consoleLogSpy).toHaveBeenNthCalledWith(
-        1,
-        chalk.green(`File written successfully to ${expectedKeyPath}`),
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Generated key pair successfully');
+      expect(signaleInfoSpy).toHaveBeenCalledWith(`Saved to: ${expectedKeyPath}`);
+      expect(signaleWarnSpy).toHaveBeenCalledWith(
+        'IMPORTANT: Never share this file publicly - it contains secret keys!',
       );
       expect(writeFileMock).toHaveBeenCalledTimes(1);
       const writtendData = JSON.parse(writeFileMock.mock.calls[0][1].toString());

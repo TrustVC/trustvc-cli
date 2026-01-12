@@ -4,7 +4,12 @@ import { info } from 'signale';
 import fetch, { RequestInit } from 'node-fetch';
 import { GasPriceScale } from './cli-options';
 import type { GasStationFeeData } from './gas-station';
-import { NetworkCmdName, getSupportedNetwork, getSupportedNetworkNameFromId, supportedNetwork } from './networks';
+import {
+  NetworkCmdName,
+  getSupportedNetwork,
+  getSupportedNetworkNameFromId,
+  supportedNetwork,
+} from './networks';
 
 // TransactionReceipt
 export interface TransactionReceiptFees {

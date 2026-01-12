@@ -2,6 +2,7 @@
 keypair.json
 didKeyPairs.json
 wellknown.json
+credentialStatus.json
 
 # Dependencies
 node_modules/

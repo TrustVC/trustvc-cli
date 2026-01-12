@@ -8,8 +8,7 @@ import { encrypt } from '@trustvc/trustvc';
 import { ConnectedSigner } from '../../utils';
 
 // Contract factories from TrustVC v5
-const { TitleEscrow, TitleEscrow__factory, TradeTrustToken, TradeTrustToken__factory } =
-  v5Contracts;
+const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
 // Interface for connectToTitleEscrow function arguments
 interface ConnectToTitleEscrowArgs {
   tokenId: string;
@@ -31,7 +30,7 @@ export const connectToTitleEscrow = async ({
   tokenId,
   address,
   wallet,
-}: ConnectToTitleEscrowArgs): Promise<InstanceType<typeof TitleEscrow>> => {
+}: ConnectToTitleEscrowArgs): Promise<InstanceType<typeof TitleEscrow__factory>> => {
   try {
     // Connect to the token registry contract
     signale.info(`Connecting to token registry at: ${address}`);
@@ -75,7 +74,7 @@ export const connectToTitleEscrow = async ({
 interface validateEndorseChangeOwnerArgs {
   newHolder: string;
   newOwner: string;
-  titleEscrow: InstanceType<typeof TitleEscrow>;
+  titleEscrow: InstanceType<typeof TitleEscrow__factory>;
 }
 /**
  * Validates that the new owner and holder are different from the current ones.
@@ -107,7 +106,7 @@ export const validateEndorseChangeOwner = async ({
 // Interface for validateNominateBeneficiary function arguments
 interface validateNominateBeneficiaryArgs {
   beneficiaryNominee: string;
-  titleEscrow: InstanceType<typeof TitleEscrow>;
+  titleEscrow: InstanceType<typeof TitleEscrow__factory>;
 }
 /**
  * Validates that the nominated beneficiary is different from the current beneficiary.
@@ -140,7 +139,7 @@ export const validateNominateBeneficiary = async ({
  * @throws Error if previous beneficiary is not set (zero address)
  */
 export const validatePreviousBeneficiary = async (
-  titleEscrow: InstanceType<typeof TitleEscrow>,
+  titleEscrow: InstanceType<typeof TitleEscrow__factory>,
 ): Promise<void> => {
   // Get the previous beneficiary from the contract
   const prevBeneficiary = await titleEscrow.prevBeneficiary();
@@ -161,7 +160,7 @@ export const validatePreviousBeneficiary = async (
  * @throws Error if previous holder is not set (zero address)
  */
 export const validatePreviousHolder = async (
-  titleEscrow: InstanceType<typeof TitleEscrow>,
+  titleEscrow: InstanceType<typeof TitleEscrow__factory>,
 ): Promise<void> => {
   // Get the previous holder from the contract
   const prevHolder = await titleEscrow.prevHolder();

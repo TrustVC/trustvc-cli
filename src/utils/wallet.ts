@@ -4,7 +4,6 @@ import { JsonRpcProvider, Signer, Wallet, Provider, HDNodeWallet } from 'ethers'
 import { addAddressPrefix } from './formatting';
 
 import {
-  isAwsKmsSignerOption,
   isRpcUrlOption,
   isWalletOption,
   NetworkOption,
@@ -15,7 +14,6 @@ import {
 import { readFile } from './file-io';
 import inquirer from 'inquirer';
 import { progress as defaultProgress } from './progress';
-import { AwsKmsSigner } from '@trustvc/trustvc';
 import { getSupportedNetwork } from './networks';
 
 const getKeyFromFile = (file?: string): undefined | string => {

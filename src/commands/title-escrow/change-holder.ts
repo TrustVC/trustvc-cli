@@ -1,4 +1,4 @@
-import { input, select } from '@inquirer/prompts';
+import { input } from '@inquirer/prompts';
 import { error, info, success, warn } from 'signale';
 import { transferHolder } from '../../implementations/title-escrow/transferHolder';
 import { TitleEscrowTransferHolderCommand } from '../../types';

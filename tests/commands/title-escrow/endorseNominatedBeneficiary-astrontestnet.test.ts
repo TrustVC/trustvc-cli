@@ -1,6 +1,5 @@
 import { v5Contracts, transferBeneficiary as transferBeneficiaryImpl } from "@trustvc/trustvc";
-import { Wallet } from "ethers";
-import { beforeAll, beforeEach, describe, expect, it, vi, Mock } from "vitest";
+import { beforeEach, describe, expect, it, vi, Mock } from "vitest";
 import { TitleEscrowNominateBeneficiaryCommand } from "../../../src/types";
 import { endorseNominatedBeneficiary } from "../../../src/implementations/title-escrow/endorseNominatedBeneficiary";
 
@@ -55,20 +54,20 @@ describe("title-escrow", () => {
     const mockedTradeTrustTokenFactory: Mock<typeof TradeTrustToken__factory> = TradeTrustToken__factory as any;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore mock static method
-    const mockedConnectERC721: Mock = mockedTradeTrustTokenFactory.connect;
+    const _mockedConnectERC721: Mock = mockedTradeTrustTokenFactory.connect;
     const mockedTokenFactory: Mock<typeof TitleEscrow__factory> = TitleEscrow__factory as any;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore mock static method
-    const mockedConnectTokenFactory: Mock = mockedTokenFactory.connect;
+    const _mockedConnectTokenFactory: Mock = mockedTokenFactory.connect;
 
-    const mockedTitleEscrowAddress = "0x2133";
-    const mockedOwnerOf = vi.fn();
+    const _mockedTitleEscrowAddress = "0x2133";
+    const _mockedOwnerOf = vi.fn();
 
-    const mockTransferOwners = vi.fn();
-    const mockCallStaticTransferOwners = vi.fn().mockResolvedValue(undefined);
+    const _mockTransferOwners = vi.fn();
+    const _mockCallStaticTransferOwners = vi.fn().mockResolvedValue(undefined);
 
-    const mockedBeneficiary = "0xdssfs";
-    const mockGetBeneficiary = vi.fn();
+    const _mockedBeneficiary = "0xdssfs";
+    const _mockGetBeneficiary = vi.fn();
 
     beforeEach(() => {
       delete process.env.OA_PRIVATE_KEY;

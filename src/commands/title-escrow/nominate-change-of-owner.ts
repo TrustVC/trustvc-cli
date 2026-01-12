@@ -1,4 +1,4 @@
-import { input, select } from '@inquirer/prompts';
+import { input } from '@inquirer/prompts';
 import { error, info, success, warn } from 'signale';
 import { nominateBeneficiary } from '../../implementations/title-escrow/nominateBeneficiary';
 import { TitleEscrowNominateBeneficiaryCommand } from '../../types';

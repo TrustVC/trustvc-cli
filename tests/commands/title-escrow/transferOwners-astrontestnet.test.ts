@@ -1,6 +1,5 @@
 import { transferOwners as transferOwnersImpl } from "@trustvc/trustvc";
-import { Wallet } from "ethers";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TitleEscrowEndorseTransferOfOwnersCommand } from "../../../src/types";
 import { transferOwners } from "../../../src/implementations/title-escrow/transferOwners";
 

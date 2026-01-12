@@ -1,6 +1,5 @@
 import { v5Contracts, nominate as nominateImpl } from "@trustvc/trustvc";
-import { Wallet } from "ethers";
-import { beforeAll, beforeEach, describe, expect, it, vi, Mock } from "vitest";
+import { beforeEach, describe, expect, it, vi, Mock } from "vitest";
 import { TitleEscrowNominateBeneficiaryCommand } from "../../../src/types";
 import { nominateBeneficiary } from "../../../src/implementations/title-escrow/nominateBeneficiary";
 
@@ -39,19 +38,19 @@ describe("title-escrow", () => {
     const mockedTradeTrustTokenFactory: Mock<typeof TradeTrustToken__factory> = TradeTrustToken__factory as any;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore mock static method
-    const mockedConnectERC721: Mock = mockedTradeTrustTokenFactory.connect;
+    const _mockedConnectERC721: Mock = mockedTradeTrustTokenFactory.connect;
     const mockedTokenFactory: Mock<typeof TitleEscrow__factory> = TitleEscrow__factory as any;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore mock static method
-    const mockedConnectTokenFactory: Mock = mockedTokenFactory.connect;
-    const mockedOwnerOf = vi.fn();
-    const mockNominateBeneficiary = vi.fn();
-    const mockedTitleEscrowAddress = "0x2133";
-    const mockedBeneficiary = "0xdssfs";
-    const mockedHolder = "0xdsfls";
-    const mockGetBeneficiary = vi.fn();
-    const mockGetHolder = vi.fn();
-    const mockCallStaticNominateBeneficiary = vi.fn().mockResolvedValue(undefined);
+    const _mockedConnectTokenFactory: Mock = mockedTokenFactory.connect;
+    const _mockedOwnerOf = vi.fn();
+    const _mockNominateBeneficiary = vi.fn();
+    const _mockedTitleEscrowAddress = "0x2133";
+    const _mockedBeneficiary = "0xdssfs";
+    const _mockedHolder = "0xdsfls";
+    const _mockGetBeneficiary = vi.fn();
+    const _mockGetHolder = vi.fn();
+    const _mockCallStaticNominateBeneficiary = vi.fn().mockResolvedValue(undefined);
 
     beforeEach(() => {
       delete process.env.OA_PRIVATE_KEY;

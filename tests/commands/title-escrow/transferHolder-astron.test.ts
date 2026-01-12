@@ -1,6 +1,5 @@
 import { v5Contracts, transferHolder as transferHolderImpl } from "@trustvc/trustvc";
-import { Wallet } from "ethers";
-import { beforeAll, beforeEach, describe, expect, it, vi, Mock } from "vitest";
+import { beforeEach, describe, expect, it, vi, Mock } from "vitest";
 import { TitleEscrowTransferHolderCommand } from "../../../src/types";
 import { transferHolder } from "../../../src/implementations/title-escrow/transferHolder";
 
@@ -27,16 +26,16 @@ describe("title-escrow", () => {
     const mockedTradeTrustTokenFactory: Mock<typeof TradeTrustToken__factory> = TradeTrustToken__factory as any;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore mock static method
-    const mockedConnectERC721: Mock = mockedTradeTrustTokenFactory.connect;
+    const _mockedConnectERC721: Mock = mockedTradeTrustTokenFactory.connect;
 
     const mockedTokenFactory: Mock<typeof TitleEscrow__factory> = TitleEscrow__factory as any;
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore mock static method
-    const mockedConnectTokenFactory: Mock = mockedTokenFactory.connect;
-    const mockedOwnerOf = vi.fn();
-    const mockTransferHolder = vi.fn();
-    const mockCallStaticTransferHolder = vi.fn().mockResolvedValue(undefined);
-    const mockedTitleEscrowAddress = "0x2133";
+    const _mockedConnectTokenFactory: Mock = mockedTokenFactory.connect;
+    const _mockedOwnerOf = vi.fn();
+    const _mockTransferHolder = vi.fn();
+    const _mockCallStaticTransferHolder = vi.fn().mockResolvedValue(undefined);
+    const _mockedTitleEscrowAddress = "0x2133";
 
     beforeEach(() => {
       delete process.env.OA_PRIVATE_KEY;

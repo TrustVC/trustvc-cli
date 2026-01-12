@@ -1,5 +1,4 @@
 import { transferHolder as transferHolderImpl } from '@trustvc/trustvc';
-import { Wallet } from 'ethers';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TitleEscrowTransferHolderCommand } from '../../../src/types';
 import { transferHolder } from '../../../src/implementations/title-escrow/transferHolder';

@@ -1,6 +1,6 @@
 // External dependencies
 import signale from 'signale';
-import { TransactionReceipt, ContractTransactionResponse } from 'ethers';
+import { TransactionReceipt } from 'ethers';
 import { CHAIN_ID, transferHolder as transferHolderImpl } from '@trustvc/trustvc';
 
 // Internal utilities

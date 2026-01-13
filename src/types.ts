@@ -1,4 +1,11 @@
-import { issuer } from '@trustvc/trustvc';
+import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
+
+export type SignInput = {
+  keyPairData: typeof issuer.IssuedDIDOption ;
+  credential: RawVerifiableCredential;
+  encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
+  pathToSignedVC: string;
+}
 
 export type DidInput = {
   keyPairPath: string;

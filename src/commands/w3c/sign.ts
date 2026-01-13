@@ -1,8 +1,8 @@
 import { input, select } from '@inquirer/prompts';
-import chalk from 'chalk';
-import { isDirectoryValid, readJsonFile, writeFile } from '../utils';
+import { isDirectoryValid, readJsonFile, writeFile } from '../../utils';
 import { issuer, RawVerifiableCredential, signW3C } from '@trustvc/trustvc';
-import { SignInput } from '../types';
+import { SignInput } from '../../types';
+import signale from 'signale';
 
 export const command = 'w3c-sign';
 export const describe = 'Sign a verifiable credential using a did key-pair file';
@@ -14,7 +14,7 @@ export const handler = async () => {
 
         await sign(answers);
     } catch (err: unknown) {
-        console.error(chalk.red(`Error: ${err instanceof Error ? err.message : String(err)}`));
+        signale.error(`${err instanceof Error ? err.message : String(err)}`);
     }
 };
 
@@ -80,11 +80,9 @@ export const sign = async ({
     if (signedVC?.signed) {
         const signedVCPath = `${pathToSignedVC}/signed_vc.json`;
         writeFile(signedVCPath, signedVC.signed);
-        console.log(''); // blank line for spacing
-        // signale.success(chalk.green('Signed verifiable credential saved to: ' + pathToSignedVC));
+        signale.success('\nSigned verifiable credential saved to: ' + pathToSignedVC);
     }
     else {
-        console.log(''); // blank line for spacing
-        // signale.error(chalk.red(signedVC.error));
+        signale.error('\n' + signedVC.error);
     }
 };

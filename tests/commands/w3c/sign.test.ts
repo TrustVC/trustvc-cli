@@ -1,14 +1,29 @@
 import * as prompts from '@inquirer/prompts';
 import { issuer } from '@trustvc/trustvc';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
-import { promptForInputs, sign } from '../../src/commands/sign';
-import { SignInput } from '../../src/types';
+import { promptForInputs, sign } from '../../../src/commands/w3c/sign';
+import { SignInput } from '../../../src/types';
 
 
 vi.mock('@inquirer/prompts');
 
-vi.mock('../../src/utils', async () => {
-  const actual = await vi.importActual<typeof import('../../src/utils')>('../../src/utils');
+vi.mock('signale', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+  Signale: vi.fn().mockImplementation(() => ({
+    await: vi.fn(),
+    success: vi.fn(),
+  })),
+}));
+
+vi.mock('../../../src/utils', async () => {
+  const actual = await vi.importActual<typeof import('../../../src/utils')>(
+    '../../../src/utils',
+  );
   return {
     ...actual,
     readJsonFile: vi.fn(),
@@ -25,39 +40,6 @@ vi.mock('@trustvc/trustvc', async () => {
   };
 });
 
-
-const mockPromptFlow = (
-  algorithm: 'ecdsa-sd-2023' | 'bbs-2023' = 'ecdsa-sd-2023',
-) => {
-  (prompts.input as any)
-    .mockResolvedValueOnce('./did-keypair.json')
-    .mockResolvedValueOnce('./credential.json')
-    .mockResolvedValueOnce('.');
-
-  (prompts.select as any).mockResolvedValueOnce(algorithm);
-};
-
-const mockUtilsHappyPath = async (
-  keyPairData = { domain: 'https://example.com' },
-  credential = { id: 'urn:uuid:123' },
-) => {
-  const utils = await import('../../src/utils');
-
-  (utils.readJsonFile as MockedFunction<any>)
-    .mockReturnValueOnce(keyPairData)
-    .mockReturnValueOnce(credential);
-
-  (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
-
-  return utils;
-};
-
-const mockSignSuccess = async (signed: any) => {
-  const trustvc = await import('@trustvc/trustvc');
-  (trustvc.signW3C as MockedFunction<any>).mockResolvedValue({ signed });
-};
-
-
 describe('w3c-sign', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -66,8 +48,17 @@ describe('w3c-sign', () => {
 
   describe('promptForInputs', () => {
     it('returns parsed inputs when algorithm is ecdsa-sd-2023', async () => {
-      mockPromptFlow('ecdsa-sd-2023');
-      await mockUtilsHappyPath();
+      (prompts.input as any)
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('./credential.json')
+        .mockResolvedValueOnce('.');
+      (prompts.select as any).mockResolvedValueOnce('ecdsa-sd-2023');
+
+      const utils = await import('../../../src/utils');
+      (utils.readJsonFile as MockedFunction<any>)
+        .mockReturnValueOnce({ domain: 'https://example.com' })
+        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       const result = await promptForInputs();
 
@@ -80,8 +71,17 @@ describe('w3c-sign', () => {
     });
 
     it('returns parsed inputs when algorithm is bbs-2023', async () => {
-      mockPromptFlow('bbs-2023');
-      await mockUtilsHappyPath();
+      (prompts.input as any)
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('./credential.json')
+        .mockResolvedValueOnce('.');
+      (prompts.select as any).mockResolvedValueOnce('bbs-2023');
+
+      const utils = await import('../../../src/utils');
+      (utils.readJsonFile as MockedFunction<any>)
+        .mockReturnValueOnce({ domain: 'https://example.com' })
+        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       const result = await promptForInputs();
 
@@ -94,8 +94,17 @@ describe('w3c-sign', () => {
     });
 
     it('provides required validation rules for inputs', async () => {
-      mockPromptFlow('bbs-2023');
-      await mockUtilsHappyPath();
+      (prompts.input as any)
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('./credential.json')
+        .mockResolvedValueOnce('.');
+      (prompts.select as any).mockResolvedValueOnce('bbs-2023');
+
+      const utils = await import('../../../src/utils');
+      (utils.readJsonFile as MockedFunction<any>)
+        .mockReturnValueOnce({ domain: 'https://example.com' })
+        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       await promptForInputs();
 
@@ -117,8 +126,17 @@ describe('w3c-sign', () => {
     });
 
     it('prompts for encryption algorithm with supported choices', async () => {
-      mockPromptFlow();
-      await mockUtilsHappyPath();
+      (prompts.input as any)
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('./credential.json')
+        .mockResolvedValueOnce('.');
+      (prompts.select as any).mockResolvedValueOnce('ecdsa-sd-2023');
+
+      const utils = await import('../../../src/utils');
+      (utils.readJsonFile as MockedFunction<any>)
+        .mockReturnValueOnce({ domain: 'https://example.com' })
+        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       await promptForInputs();
 
@@ -134,8 +152,8 @@ describe('w3c-sign', () => {
     });
 
     it('throws when given an invalid did key-pair file path (readJsonFile fails)', async () => {
-      mockPromptFlow('ecdsa-sd-2023');
-      const utils = await import('../../src/utils');
+      (prompts.input as any).mockResolvedValueOnce('./did-keypair.json');
+      const utils = await import('../../../src/utils');
 
       (utils.readJsonFile as MockedFunction<any>).mockImplementation(() => {
         throw new Error('Invalid key pair file path: ./did-keypair.json');
@@ -147,8 +165,10 @@ describe('w3c-sign', () => {
     });
 
     it('throws when given an invalid credential file path (readJsonFile fails)', async () => {
-      mockPromptFlow('ecdsa-sd-2023');
-      const utils = await import('../../src/utils');
+      (prompts.input as any)
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('./credential.json');
+      const utils = await import('../../../src/utils');
 
       (utils.readJsonFile as MockedFunction<any>)
         .mockReturnValueOnce({ domain: 'https://example.com' })
@@ -163,8 +183,16 @@ describe('w3c-sign', () => {
     });
 
     it('throws when output path is not a valid directory', async () => {
-      mockPromptFlow('ecdsa-sd-2023');
-      const utils = await mockUtilsHappyPath();
+      (prompts.input as any)
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('./credential.json')
+        .mockResolvedValueOnce('./invalid-dir');
+      (prompts.select as any).mockResolvedValueOnce('ecdsa-sd-2023');
+
+      const utils = await import('../../../src/utils');
+      (utils.readJsonFile as MockedFunction<any>)
+        .mockReturnValueOnce({ domain: 'https://example.com' })
+        .mockReturnValueOnce({ id: 'urn:uuid:123' });
       (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(false);
 
       await expect(promptForInputs()).rejects.toThrow('Output path is not valid');
@@ -175,6 +203,8 @@ describe('w3c-sign', () => {
   describe('sign', () => {
     let writeFileMock: MockedFunction<any>;
     let signW3CMock: MockedFunction<any>;
+    let signaleSuccessMock: MockedFunction<any>;
+    let signaleErrorMock: MockedFunction<any>;
 
     const input: SignInput = {
       keyPairData: { domain: 'https://example.com' } as typeof issuer.IssuedDIDOption,
@@ -184,11 +214,15 @@ describe('w3c-sign', () => {
     };
 
     beforeEach(async () => {
-      const utils = await import('../../src/utils');
+      const utils = await import('../../../src/utils');
       writeFileMock = utils.writeFile as MockedFunction<any>;
 
       const trustvc = await import('@trustvc/trustvc');
       signW3CMock = trustvc.signW3C as MockedFunction<any>;
+
+      const signale = await import('signale');
+      signaleSuccessMock = (signale.default as any).success;
+      signaleErrorMock = (signale.default as any).error;
     });
 
     it('signs with ecdsa-sd-2023 and writes to default output path', async () => {
@@ -202,6 +236,10 @@ describe('w3c-sign', () => {
         'ecdsa-sd-2023',
       );
       expect(writeFileMock).toHaveBeenCalledWith('./signed_vc.json', { proof: 'ok' });
+      expect(signaleSuccessMock).toHaveBeenCalledWith(
+        expect.stringContaining('Signed verifiable credential saved to: .'),
+      );
+      expect(signaleErrorMock).not.toHaveBeenCalled();
     });
 
     it('signs with bbs-2023 and writes to a custom output directory', async () => {
@@ -219,6 +257,10 @@ describe('w3c-sign', () => {
         'bbs-2023',
       );
       expect(writeFileMock).toHaveBeenCalledWith('./out/signed_vc.json', { proof: 'ok' });
+      expect(signaleSuccessMock).toHaveBeenCalledWith(
+        expect.stringContaining('Signed verifiable credential saved to: ./out'),
+      );
+      expect(signaleErrorMock).not.toHaveBeenCalled();
     });
 
     it('does not write file when signing fails', async () => {
@@ -227,6 +269,8 @@ describe('w3c-sign', () => {
       await sign(input);
 
       expect(writeFileMock).not.toHaveBeenCalled();
+      expect(signaleSuccessMock).not.toHaveBeenCalled();
+      expect(signaleErrorMock).toHaveBeenCalledWith(expect.stringContaining('Failed to sign'));
     });
 
     it('throws when writing signed VC fails', async () => {

@@ -47,7 +47,7 @@ describe('w3c-sign', () => {
   });
 
   describe('promptForInputs', () => {
-    it('returns parsed inputs when algorithm is ecdsa-sd-2023', async () => {
+    it('should return parsed inputs when algorithm is ecdsa-sd-2023', async () => {
       (prompts.input as any)
         .mockResolvedValueOnce('./did-keypair.json')
         .mockResolvedValueOnce('./credential.json')
@@ -70,7 +70,7 @@ describe('w3c-sign', () => {
       });
     });
 
-    it('returns parsed inputs when algorithm is bbs-2023', async () => {
+    it('should return parsed inputs when algorithm is bbs-2023', async () => {
       (prompts.input as any)
         .mockResolvedValueOnce('./did-keypair.json')
         .mockResolvedValueOnce('./credential.json')
@@ -93,7 +93,7 @@ describe('w3c-sign', () => {
       });
     });
 
-    it('provides required validation rules for inputs', async () => {
+    it('should abide by validation rules for path inputs', async () => {
       (prompts.input as any)
         .mockResolvedValueOnce('./did-keypair.json')
         .mockResolvedValueOnce('./credential.json')
@@ -125,7 +125,7 @@ describe('w3c-sign', () => {
       expect(signedVcArgs.default).toBe('.');
     });
 
-    it('prompts for encryption algorithm with supported choices', async () => {
+    it('should prompt for encryption algorithm with supported choices', async () => {
       (prompts.input as any)
         .mockResolvedValueOnce('./did-keypair.json')
         .mockResolvedValueOnce('./credential.json')
@@ -151,7 +151,7 @@ describe('w3c-sign', () => {
       );
     });
 
-    it('throws when given an invalid did key-pair file path (readJsonFile fails)', async () => {
+    it('should throw error when given an invalid did key-pair file path (readJsonFile fails)', async () => {
       (prompts.input as any).mockResolvedValueOnce('./did-keypair.json');
       const utils = await import('../../../src/utils');
 
@@ -164,7 +164,7 @@ describe('w3c-sign', () => {
       );
     });
 
-    it('throws when given an invalid credential file path (readJsonFile fails)', async () => {
+    it('should throw error when given an invalid credential file path (readJsonFile fails)', async () => {
       (prompts.input as any)
         .mockResolvedValueOnce('./did-keypair.json')
         .mockResolvedValueOnce('./credential.json');
@@ -182,7 +182,7 @@ describe('w3c-sign', () => {
       );
     });
 
-    it('throws when output path is not a valid directory', async () => {
+    it('should throw error when output path is not a valid directory', async () => {
       (prompts.input as any)
         .mockResolvedValueOnce('./did-keypair.json')
         .mockResolvedValueOnce('./credential.json')
@@ -223,9 +223,14 @@ describe('w3c-sign', () => {
       const signale = await import('signale');
       signaleSuccessMock = (signale.default as any).success;
       signaleErrorMock = (signale.default as any).error;
+
+      writeFileMock.mockImplementation((...args: unknown[]) => {
+        const filePath = args[0] as string;
+        signaleSuccessMock(`Saved: ${filePath}`);
+      });
     });
 
-    it('signs with ecdsa-sd-2023 and writes to default output path', async () => {
+    it('should sign with ecdsa-sd-2023 and writes to default output path', async () => {
       signW3CMock.mockResolvedValue({ signed: { proof: 'ok' } });
 
       await sign({ ...input, encryptionAlgorithm: 'ecdsa-sd-2023', pathToSignedVC: '.' });
@@ -236,13 +241,11 @@ describe('w3c-sign', () => {
         'ecdsa-sd-2023',
       );
       expect(writeFileMock).toHaveBeenCalledWith('./signed_vc.json', { proof: 'ok' });
-      expect(signaleSuccessMock).toHaveBeenCalledWith(
-        expect.stringContaining('Signed verifiable credential saved to: .'),
-      );
+      expect(signaleSuccessMock).toHaveBeenCalledWith('Saved: ./signed_vc.json');
       expect(signaleErrorMock).not.toHaveBeenCalled();
     });
 
-    it('signs with bbs-2023 and writes to a custom output directory', async () => {
+    it('should sign with bbs-2023 and writes to a custom output directory', async () => {
       signW3CMock.mockResolvedValue({ signed: { proof: 'ok' } });
 
       await sign({
@@ -257,13 +260,11 @@ describe('w3c-sign', () => {
         'bbs-2023',
       );
       expect(writeFileMock).toHaveBeenCalledWith('./out/signed_vc.json', { proof: 'ok' });
-      expect(signaleSuccessMock).toHaveBeenCalledWith(
-        expect.stringContaining('Signed verifiable credential saved to: ./out'),
-      );
+      expect(signaleSuccessMock).toHaveBeenCalledWith('Saved: ./out/signed_vc.json');
       expect(signaleErrorMock).not.toHaveBeenCalled();
     });
 
-    it('does not write file when signing fails', async () => {
+    it('should not write file when signing fails', async () => {
       signW3CMock.mockResolvedValue({ error: 'Failed to sign' });
 
       await sign(input);
@@ -273,7 +274,7 @@ describe('w3c-sign', () => {
       expect(signaleErrorMock).toHaveBeenCalledWith(expect.stringContaining('Failed to sign'));
     });
 
-    it('throws when writing signed VC fails', async () => {
+    it('should throw error when writing signed VC to disk fails', async () => {
       writeFileMock.mockImplementation(() => {
         throw new Error('Unexpected error while writing');
       });

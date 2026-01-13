@@ -80,9 +80,7 @@ export const sign = async ({
     if (signedVC?.signed) {
         const signedVCPath = `${pathToSignedVC}/signed_vc.json`;
         writeFile(signedVCPath, signedVC.signed);
-        signale.success('\nSigned verifiable credential saved to: ' + pathToSignedVC);
-    }
-    else {
-        signale.error('\n' + signedVC.error);
+    } else {
+        signale.error(signedVC.error);
     }
 };

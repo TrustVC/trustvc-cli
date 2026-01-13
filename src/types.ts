@@ -1,12 +1,12 @@
 import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
+import { GasOption, NetworkOption, RpcUrlOption, WalletOrSignerOption } from './utils';
 
 export type SignInput = {
-  keyPairData: typeof issuer.IssuedDIDOption ;
+  keyPairData: typeof issuer.IssuedDIDOption;
   credential: RawVerifiableCredential;
   encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
   pathToSignedVC: string;
 }
-
 export type DidInput = {
   keyPairPath: string;
   domainName: string;
@@ -18,3 +18,30 @@ export type KeyPairGenerateInput = {
   seedBase58: string;
   keyPath: string;
 };
+
+export type CredentialStatusQuestionType = {
+  type?: string;
+  keyPairPath?: string;
+  keypairData?: any;
+  cryptoSuite?: typeof credentialStatus.cryptoSuiteName;
+  hostingUrl?: string;
+  outputPath?: string;
+  length?: number;
+  credentialStatus?: typeof credentialStatus.StatusList;
+  purpose?: typeof credentialStatus.CredentialStatusPurpose;
+  continue?: boolean;
+  index?: number;
+  status?: boolean;
+};
+
+export type TokenRegistryMintCommand = NetworkOption &
+  Partial<RpcUrlOption> &
+  WalletOrSignerOption &
+  GasOption & {
+    address: string;
+    beneficiary: string;
+    holder: string;
+    tokenId: string;
+    remark?: string;
+    encryptionKey?: string;
+  };

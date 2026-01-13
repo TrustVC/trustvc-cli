@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import signale from 'signale';
 import fs from 'fs';
 import path from 'path';
 import util from 'util';
@@ -85,10 +85,12 @@ export const writeOutput = ({
   }
 };
 
-export const writeFile = <T>(filePath: string, data: T) => {
+export const writeFile = <T>(filePath: string, data: T, silent = false) => {
   try {
-    fs.writeFileSync(filePath, JSON.stringify(data));
-    console.log(chalk.green(`File written successfully to ${filePath}`));
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+    if (!silent) {
+      signale.success(`Saved: ${filePath}`);
+    }
   } catch (_err) {
     throw new Error(`Unable to write file to ${filePath}`);
   }
@@ -110,7 +112,7 @@ export const isDirectoryValid = (path: string): boolean => {
     fs.readdirSync(path, { encoding: 'utf-8' });
     return true;
   } catch (_err) {
-    console.warn(chalk.yellow(`Invalid directory path: ${path}`));
+    signale.warn(`Invalid directory path: ${path}`);
     return false;
   }
 };

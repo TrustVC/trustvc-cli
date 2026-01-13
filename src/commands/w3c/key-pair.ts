@@ -1,7 +1,7 @@
 import { input, select } from '@inquirer/prompts';
 import { issuer } from '@trustvc/trustvc';
-import chalk from 'chalk';
-import { isDirectoryValid, writeFile } from '../utils';
+import signale from 'signale';
+import { isDirectoryValid, writeFile } from '../../utils';
 
 export const command = 'key-pair-generation';
 export const describe = 'Generate a new key pair file';
@@ -14,7 +14,7 @@ export const handler = async () => {
     const { encAlgo, seedBase58, keyPath } = answers;
     await generateAndSaveKeyPair(encAlgo, seedBase58, keyPath);
   } catch (err: unknown) {
-    console.error(chalk.red(`Error: ${err instanceof Error ? err.message : err}`));
+    signale.error(err instanceof Error ? err.message : String(err));
   }
 };
 
@@ -63,7 +63,7 @@ export const generateAndSaveKeyPair = async (
   keyPath: string,
 ) => {
   if (seedBase58) {
-    console.log(chalk.blue('Generating keys from provided seed...'));
+    signale.info('Generating keys from provided seed...');
   }
 
   const keyFilePath = `${keyPath}/keypair.json`;
@@ -90,18 +90,20 @@ export const generateAndSaveKeyPair = async (
   };
 
   if (keypairData.type === issuer.VerificationType.Multikey) {
-    keyPair.seedBase58 = keypairData.seedBase58;
+    if (keypairData.seedBase58) {
+      keyPair.seedBase58 = keypairData.seedBase58;
+    }
     keyPair.secretKeyMultibase = keypairData.secretKeyMultibase;
     keyPair.publicKeyMultibase = keypairData.publicKeyMultibase;
   }
 
-  writeFile(keyFilePath, keyPair);
+  writeFile(keyFilePath, keyPair, true);
 
-  console.log(
-    chalk.yellow(
-      '\n⚠️  WARNING: This file contains secret keys and should NOT be shared publicly!',
-    ),
-  );
+  console.log(''); // blank line for spacing
+  signale.success('Generated key pair successfully');
+  signale.info(`Saved to: ${keyFilePath}`);
+  console.log(''); // blank line for spacing
+  signale.warn('IMPORTANT: Never share this file publicly - it contains secret keys!');
 
   return keypairData;
 };

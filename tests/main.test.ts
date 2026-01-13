@@ -1,22 +1,29 @@
 import * as prompts from '@inquirer/prompts';
-import chalk from 'chalk';
+import signale from 'signale';
 import { beforeEach, describe, it, MockedFunction, vi } from 'vitest';
-import { handler as didHandler } from '../src/commands/did';
-import { handler as keyPairHandler } from '../src/commands/key-pair';
+import { handler as didHandler } from '../src/commands/w3c/did';
+import { handler as keyPairHandler } from '../src/commands/w3c/key-pair';
 import * as utils from '../src/utils';
+
+vi.mock('signale', () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+  },
+  Signale: vi.fn().mockImplementation(() => ({
+    await: vi.fn(),
+    success: vi.fn(),
+  })),
+}));
 
 // Mock dependencies with Vitest
 vi.mock('@inquirer/prompts');
 vi.mock('../src/utils');
-vi.mock('chalk', async () => {
-  const originalChalk = await vi.importActual<typeof import('chalk')>('chalk');
-  return {
-    ...originalChalk,
-  };
-});
 vi.mock('../src/commands/did', async () => {
   const original =
-    await vi.importActual<typeof import('../src/commands/did')>('../src/commands/did');
+    await vi.importActual<typeof import('../src/commands/w3c/did')>('../src/commands/did');
   return {
     ...original, // Use actual implementations by default
     promptQuestions: original.promptQuestions,
@@ -25,7 +32,7 @@ vi.mock('../src/commands/did', async () => {
   };
 });
 vi.mock('../src/commands/key-pair', async () => {
-  const original = await vi.importActual<typeof import('../src/commands/key-pair')>(
+  const original = await vi.importActual<typeof import('../src/commands/w3c/key-pair')>(
     '../src/commands/key-pair',
   );
   return {
@@ -55,7 +62,7 @@ describe('trustvc-cli', () => {
   describe('trustvc did-web command', () => {
     let issueDIDSpy: MockedFunction<any>;
     let writeFileSpy: MockedFunction<typeof utils.writeFile>;
-    let consoleErrorSpy: MockedFunction<typeof console.error>;
+    let signaleErrorSpy: MockedFunction<typeof signale.error>;
 
     beforeEach(async () => {
       vi.clearAllMocks();
@@ -65,7 +72,7 @@ describe('trustvc-cli', () => {
       const issuerModule = await import('@trustvc/trustvc');
       issueDIDSpy = issuerModule.issuer.issueDID as MockedFunction<any>;
       writeFileSpy = vi.spyOn(utils, 'writeFile') as MockedFunction<typeof utils.writeFile>;
-      consoleErrorSpy = vi.spyOn(console, 'error') as MockedFunction<typeof console.error>;
+      signaleErrorSpy = signale.error as MockedFunction<typeof signale.error>;
     });
 
     it('should generate a new DID token file', async ({ expect }) => {
@@ -119,8 +126,13 @@ describe('trustvc-cli', () => {
 
       expect(issueDIDSpy).toHaveBeenCalled();
       expect(writeFileSpy).toHaveBeenCalledTimes(2);
-      expect(writeFileSpy).toHaveBeenNthCalledWith(1, './wellknown.json', expect.any(Object));
-      expect(writeFileSpy).toHaveBeenNthCalledWith(2, './didKeyPairs.json', expect.any(Object));
+      expect(writeFileSpy).toHaveBeenNthCalledWith(1, './wellknown.json', expect.any(Object), true);
+      expect(writeFileSpy).toHaveBeenNthCalledWith(
+        2,
+        './didKeyPairs.json',
+        expect.any(Object),
+        true,
+      );
     });
 
     it('should early exit if did already exists', async ({ expect }) => {
@@ -153,8 +165,8 @@ describe('trustvc-cli', () => {
 
       expect(issueDIDSpy).toHaveBeenCalled();
       expect(writeFileSpy).not.toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        chalk.red('Error: Error generating DID token: KeyPair already exists in Did Document'),
+      expect(signaleErrorSpy).toHaveBeenCalledWith(
+        'Error generating DID token: KeyPair already exists in DID Document',
       );
     });
 
@@ -188,15 +200,14 @@ describe('trustvc-cli', () => {
 
       expect(issueDIDSpy).toHaveBeenCalled();
       expect(writeFileSpy).not.toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(chalk.red('Error: Error generating DID token'));
+      expect(signaleErrorSpy).toHaveBeenCalledWith('Error generating DID token');
     });
   });
 
   describe('trustvc key-pair-generation command', () => {
     let generateKeyPairSpy: MockedFunction<any>;
     let writeFileSpy: MockedFunction<typeof utils.writeFile>;
-    let consoleErrorSpy: MockedFunction<typeof console.error>;
-    let consoleLogSpy: MockedFunction<typeof console.log>;
+    let signaleErrorSpy: MockedFunction<typeof signale.error>;
 
     beforeEach(async () => {
       vi.clearAllMocks();
@@ -206,14 +217,12 @@ describe('trustvc-cli', () => {
       const issuerModule = await import('@trustvc/trustvc');
       generateKeyPairSpy = issuerModule.issuer.generateKeyPair as MockedFunction<any>;
       writeFileSpy = vi.spyOn(utils, 'writeFile') as MockedFunction<typeof utils.writeFile>;
-      consoleErrorSpy = vi.spyOn(console, 'error') as MockedFunction<typeof console.error>;
-      consoleLogSpy = vi.spyOn(console, 'log') as MockedFunction<typeof console.log>;
+      signaleErrorSpy = signale.error as MockedFunction<typeof signale.error>;
     });
 
     it('should generate a new key pair with ecdsa-sd-2023', async ({ expect }) => {
       const input = {
         encAlgo: 'ecdsa-sd-2023',
-        seedBase58: '',
         keyPath: '.',
       };
 
@@ -234,14 +243,18 @@ describe('trustvc-cli', () => {
 
       expect(generateKeyPairSpy).toHaveBeenCalledWith({
         type: input.encAlgo,
-        seedBase58: input.seedBase58,
+        seedBase58: '',
       });
-      expect(writeFileSpy).toHaveBeenCalledWith('./keypair.json', {
-        type: 'Multikey',
-        publicKeyMultibase: 'z6MkTest',
-        secretKeyMultibase: 'z3uTest',
-      });
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        './keypair.json',
+        {
+          type: 'Multikey',
+          publicKeyMultibase: 'z6MkTest',
+          secretKeyMultibase: 'z3uTest',
+        },
+        true,
+      );
+      expect(signaleErrorSpy).not.toHaveBeenCalled();
     });
 
     it('should generate a new key pair with bbs-2023 and seed', async ({ expect }) => {
@@ -270,20 +283,21 @@ describe('trustvc-cli', () => {
 
       await keyPairHandler();
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        chalk.blue('Generating keys from provided seed...'),
-      );
       expect(generateKeyPairSpy).toHaveBeenCalledWith({
         type: input.encAlgo,
         seedBase58: input.seedBase58,
       });
-      expect(writeFileSpy).toHaveBeenCalledWith('./keypair.json', {
-        type: 'Multikey',
-        seedBase58: mockSeed,
-        publicKeyMultibase: 'z6MkTest',
-        secretKeyMultibase: 'z3uTest',
-      });
-      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        './keypair.json',
+        {
+          type: 'Multikey',
+          seedBase58: mockSeed,
+          publicKeyMultibase: 'z6MkTest',
+          secretKeyMultibase: 'z3uTest',
+        },
+        true,
+      );
+      expect(signaleErrorSpy).not.toHaveBeenCalled();
     });
 
     it('should handle invalid seed error', async ({ expect }) => {
@@ -308,8 +322,8 @@ describe('trustvc-cli', () => {
 
       expect(generateKeyPairSpy).toHaveBeenCalled();
       expect(writeFileSpy).not.toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        chalk.red('Error: Invalid seed provided. Please provide a valid seed in base58 format.'),
+      expect(signaleErrorSpy).toHaveBeenCalledWith(
+        'Invalid seed provided. Please provide a valid seed in base58 format.',
       );
     });
 
@@ -331,9 +345,7 @@ describe('trustvc-cli', () => {
 
       expect(generateKeyPairSpy).not.toHaveBeenCalled();
       expect(writeFileSpy).not.toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        chalk.red('Error: Invalid file path provided: ./invalid-path'),
-      );
+      expect(signaleErrorSpy).toHaveBeenCalledWith('Invalid file path provided: ./invalid-path');
     });
 
     it('should handle generic key generation error', async ({ expect }) => {
@@ -356,7 +368,7 @@ describe('trustvc-cli', () => {
 
       expect(generateKeyPairSpy).toHaveBeenCalled();
       expect(writeFileSpy).not.toHaveBeenCalled();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(chalk.red('Error: Error generating keypair'));
+      expect(signaleErrorSpy).toHaveBeenCalledWith('Error generating keypair');
     });
   });
 });

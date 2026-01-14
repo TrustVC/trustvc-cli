@@ -7,6 +7,7 @@ A command-line interface tool for working with Decentralized Identifiers (DIDs),
 - ✅ **Modern Cryptosuites**: Full support for ECDSA-SD-2023 and BBS-2023
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
+- ✅ **Sign Verifiable Credentials**: Sign verifiable credentials
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Credential Status**: Create and update W3C credential status lists
 - ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
@@ -26,6 +27,7 @@ This CLI leverages the TrustVC package:
 - [Commands](#commands)
   - [`trustvc key-pair-generation`](#trustvc-key-pair-generation)
   - [`trustvc did-web`](#trustvc-did-web)
+  - [`trustvc w3c-sign`](#trustvc-w3c-sign)
   - [`trustvc credential-status-create`](#trustvc-credential-status-create)
   - [`trustvc credential-status-update`](#trustvc-credential-status-update)
   - [`trustvc mint`](#trustvc-mint)
@@ -56,6 +58,9 @@ trustvc key-pair-generation
 # Create a DID from the key pair
 trustvc did-web
 
+# Sign a verifiable credential
+trustvc w3c-sign
+
 # Create a credential status list
 trustvc credential-status-create
 
@@ -71,6 +76,8 @@ trustvc mint
 - **Generating Key Pairs**: The CLI uses the `generateKeyPair` function from `@trustvc/trustvc` to generate cryptographic key pairs. These key pairs support modern cryptosuites (ECDSA-SD-2023, BBS-2023) and use the Multikey format for compatibility with W3C standards.
 
 - **Generating Well-Known DID**: The CLI uses the `issueDID` function from `@trustvc/trustvc` to generate a did:web identifier. This allows users to self-host their DID as a unique identifier in decentralized systems.
+
+- **Sign Verifiable Credentials**: The CLI uses the `w3cSign` function from `@trustvc/trustvc` to sign verifiable credentials with the provided did:web identifier.
 
 - **Credential Status Management**: The CLI provides commands to create and update W3C credential status lists for managing the revocation status of verifiable credentials.
 
@@ -115,6 +122,23 @@ Generates a did:web identifier from an existing key pair. Supports modern Multik
 **Example:**
 ```sh
 trustvc did-web
+```
+
+### `trustvc w3c-sign`
+
+Signs a verifiable credential using a did:web identifier.
+
+**Interactive prompts:**
+- Path to did:web key-pair JSON file
+- Path to unsigned verifiable credential JSON file
+- Select cryptosuite (ECDSA-SD-2023 or BBS-2023, must match the key pair)
+- Output directory
+
+**Output:** Creates a signed verifiable credential file: `signed_vc.json`.
+
+**Example:**
+```sh
+trustvc w3c-sign
 ```
 
 ### `trustvc credential-status-create`
@@ -255,6 +279,7 @@ npm test
 │   │   └── w3c/
 │   │       ├── did.ts               # DID generation command
 │   │       ├── key-pair.ts          # Key pair generation command
+│   │       ├── sign.ts              # Sign verifiable credential command
 │   │       └── credentialStatus/
 │   │           ├── create.ts        # Create credential status
 │   │           └── update.ts        # Update credential status
@@ -272,6 +297,7 @@ npm test
 │   │   └── w3c/
 │   │       ├── did.test.ts
 │   │       ├── key-pair.test.ts
+│   │       ├── sign.test.ts
 │   │       └── credentialStatus/
 │   │           ├── create.test.ts
 │   │           └── update.test.ts

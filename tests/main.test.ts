@@ -3,6 +3,7 @@ import signale from 'signale';
 import { beforeEach, describe, it, MockedFunction, vi } from 'vitest';
 import { handler as didHandler } from '../src/commands/w3c/did';
 import { handler as keyPairHandler } from '../src/commands/w3c/key-pair';
+import { handler as signHandler } from '../src/commands/w3c/sign';
 import * as utils from '../src/utils';
 
 vi.mock('signale', () => ({
@@ -45,6 +46,7 @@ vi.mock('@trustvc/trustvc', async () => {
   const original = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
   return {
     ...original,
+    signW3C: vi.fn(),
     issuer: {
       ...original.issuer,
       issueDID: vi.fn(),
@@ -369,6 +371,163 @@ describe('trustvc-cli', () => {
       expect(generateKeyPairSpy).toHaveBeenCalled();
       expect(writeFileSpy).not.toHaveBeenCalled();
       expect(signaleErrorSpy).toHaveBeenCalledWith('Error generating keypair');
+    });
+  });
+
+  describe('trustvc w3c-sign command', () => {
+    let signW3CSpy: MockedFunction<any>;
+    let writeFileSpy: MockedFunction<typeof utils.writeFile>;
+    let signaleErrorSpy: MockedFunction<typeof signale.error>;
+    let signaleSuccessSpy: MockedFunction<typeof signale.success>;
+
+    beforeEach(async () => {
+      vi.clearAllMocks();
+      vi.resetAllMocks();
+      vi.restoreAllMocks();
+
+      const trustvc = await import('@trustvc/trustvc');
+      signW3CSpy = trustvc.signW3C as MockedFunction<any>;
+      writeFileSpy = vi.spyOn(utils, 'writeFile') as MockedFunction<typeof utils.writeFile>;
+      signaleErrorSpy = signale.error as MockedFunction<typeof signale.error>;
+      signaleSuccessSpy = signale.success as MockedFunction<typeof signale.success>;
+    });
+
+    it('should sign a credential using ecdsa-sd-2023 and write signed VC', async ({ expect }) => {
+      const input = {
+        keyPairPath: './did-keypair.json',
+        credentialPath: './credential.json',
+        encryptionAlgorithm: 'ecdsa-sd-2023',
+        outputPath: '.',
+      };
+
+      (prompts.input as any)
+        .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
+        .mockResolvedValueOnce(input.outputPath);
+      (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
+
+      (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
+      (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
+        true,
+      );
+
+      signW3CSpy.mockResolvedValue({ signed: { proof: 'ok' } });
+
+      await signHandler();
+
+      expect(signW3CSpy).toHaveBeenCalledWith(
+        { id: 'urn:uuid:123' },
+        { domain: 'https://example.com' },
+        'ecdsa-sd-2023',
+      );
+      expect(writeFileSpy).toHaveBeenCalledWith('./signed_vc.json', { proof: 'ok' }, true);
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Verifiable Credential signed successfully');
+      expect(signaleSuccessSpy).toHaveBeenCalledWith(
+        'Signed verifiable credential saved to: ./signed_vc.json',
+      );
+      expect(signaleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it('should sign a credential using bbs-2023 and write signed VC to custom directory', async ({ expect }) => {
+      const input = {
+        keyPairPath: './did-keypair.json',
+        credentialPath: './credential.json',
+        encryptionAlgorithm: 'bbs-2023',
+        outputPath: './out',
+      };
+
+      (prompts.input as any)
+        .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
+        .mockResolvedValueOnce(input.outputPath);
+      (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
+
+      (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
+      (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
+        true,
+      );
+
+      signW3CSpy.mockResolvedValue({ signed: { proof: 'ok' } });
+
+      await signHandler();
+
+      expect(signW3CSpy).toHaveBeenCalledWith(
+        { id: 'urn:uuid:123' },
+        { domain: 'https://example.com' },
+        'bbs-2023',
+      );
+      expect(writeFileSpy).toHaveBeenCalledWith('./out/signed_vc.json', { proof: 'ok' }, true);
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Verifiable Credential signed successfully');
+      expect(signaleSuccessSpy).toHaveBeenCalledWith(
+        'Signed verifiable credential saved to: ./out/signed_vc.json',
+      );
+      expect(signaleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle invalid output directory path', async ({ expect }) => {
+      const input = {
+        keyPairPath: './did-keypair.json',
+        credentialPath: './credential.json',
+        encryptionAlgorithm: 'ecdsa-sd-2023',
+        outputPath: './invalid-dir',
+      };
+
+      (prompts.input as any)
+        .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
+        .mockResolvedValueOnce(input.outputPath);
+      (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
+
+      (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
+      (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
+        false,
+      );
+
+      await signHandler();
+
+      expect(signW3CSpy).not.toHaveBeenCalled();
+      expect(writeFileSpy).not.toHaveBeenCalled();
+      expect(signaleSuccessSpy).not.toHaveBeenCalled();
+      expect(signaleErrorSpy).toHaveBeenCalledWith('Output path is not valid');
+    });
+
+    it('should handle write file error', async ({ expect }) => {
+      const input = {
+        keyPairPath: './did-keypair.json',
+        credentialPath: './credential.json',
+        encryptionAlgorithm: 'ecdsa-sd-2023',
+        outputPath: '.',
+      };
+
+      (prompts.input as any)
+        .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
+        .mockResolvedValueOnce(input.outputPath);
+      (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
+
+      (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
+      (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
+        true,
+      );
+
+      signW3CSpy.mockResolvedValue({ signed: { proof: 'ok' } });
+      writeFileSpy.mockImplementationOnce(() => {
+        throw new Error('Unable to write file to ./signed_vc.json');
+      });
+
+      await signHandler();
+
+      expect(signW3CSpy).toHaveBeenCalled();
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Verifiable Credential signed successfully');
+      expect(signaleErrorSpy).toHaveBeenCalledWith('Unable to write file to ./signed_vc.json');
     });
   });
 });

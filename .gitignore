@@ -1,6 +1,3 @@
-# Sample files for testing
-fixtures
-
 # Generated files from CLI commands
 keypair.json
 didKeyPairs.json

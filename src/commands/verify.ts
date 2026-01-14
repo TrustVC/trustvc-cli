@@ -37,7 +37,7 @@ export const promptQuestions = async (): Promise<SignedVerifiableCredential> => 
 
 export const verify = async (signedVC: SignedVerifiableCredential) => {
     const { result, warnings } = await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC));
-    logExpiredCredentialWarning(warnings);
+    handleExpiredCredentialWarning(warnings);
 
     logResultStatus(getResultFromFragment('DOCUMENT_INTEGRITY', result));
     logResultStatus(getResultFromFragment('DOCUMENT_STATUS', result));
@@ -47,7 +47,7 @@ export const verify = async (signedVC: SignedVerifiableCredential) => {
 // ==== Helper Functions ==== 
 
 
-const getResultFromFragment = (fragmentType: string, resultFragments: VerificationFragment[]): VerificationFragmentWithData => {
+export const getResultFromFragment = (fragmentType: string, resultFragments: VerificationFragment[]): VerificationFragmentWithData => {
     const fragment = resultFragments.find((fragment: VerificationFragment) => fragment.type === fragmentType && fragment.status !== 'SKIPPED');
     if (!fragment) {
         throw new Error(`${fragmentType} could not be verified.`);
@@ -55,7 +55,7 @@ const getResultFromFragment = (fragmentType: string, resultFragments: Verificati
     return fragment as VerificationFragmentWithData;
 }
 
-const logResultStatus = (fragment: VerificationFragmentWithData): void => {
+export const logResultStatus = (fragment: VerificationFragmentWithData): void => {
     if (fragment.status === 'VALID') {
         signale.success(`${fragment.type}: ${fragment.status}`);
     } else {
@@ -63,9 +63,9 @@ const logResultStatus = (fragment: VerificationFragmentWithData): void => {
     }
 }
 
-// currently not logging to align outputs for w3c and openattestation
-const logExpiredCredentialWarning = (warnings: unknown[][]) => {
+export const handleExpiredCredentialWarning = (warnings: unknown[][]) => {
     const expiredWarning = warnings.find((warning) => warning[0] === 'Credential has expired.');
+    // currently not logging to align output for w3c (reports expiration) and openattestation (does not report expiration)
     if (expiredWarning) {
         // signale.warn(`The Verifiable Credential has expired.`);
     }

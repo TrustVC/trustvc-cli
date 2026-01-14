@@ -39,3 +39,19 @@ export const getErrorMessage = function (error: unknown): string {
     return extractErrorMessage(error);
   }
 };
+
+export const withAsyncCaptureConsoleWarn = async <T>(fn: () => Promise<T>): Promise<{ result: T; warnings: unknown[][] }> =>  {
+  const originalWarn = console.warn;
+  const warnings: unknown[][] = [];
+
+  console.warn = (...args) => {
+    warnings.push(args);
+  };
+
+  try {
+    const result = await fn();
+    return { result, warnings };
+  } finally {
+    console.warn = originalWarn;
+  }
+}

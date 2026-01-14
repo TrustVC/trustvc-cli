@@ -1,5 +1,5 @@
-import * as prompts from '@inquirer/prompts';
 import { TransactionReceipt } from '@ethersproject/providers';
+import * as prompts from '@inquirer/prompts';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import {
   mintHandler as handler,
@@ -221,7 +221,7 @@ describe('token-registry/mint', () => {
       }
     });
 
-    it('should validate title escrow address format', async () => {
+    it('should validate token registry address format', async () => {
       const invalidAddress = 'invalid-address';
 
       (prompts.select as any).mockResolvedValueOnce(NetworkCmdName.Sepolia);

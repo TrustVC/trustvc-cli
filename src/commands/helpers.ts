@@ -5,7 +5,7 @@ import { v5Contracts } from '@trustvc/trustvc';
 import { encrypt } from '@trustvc/trustvc';
 
 // Internal utilities
-import { ConnectedSigner } from '../../utils';
+import { ConnectedSigner } from '../utils';
 
 // Contract factories from TrustVC v5
 const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
@@ -19,7 +19,7 @@ interface ConnectToTitleEscrowArgs {
 /**
  * Connects to a title escrow contract instance for a specific token.
  * Retrieves the title escrow address from the token registry and establishes a connection.
- * 
+ *
  * @param tokenId - The unique identifier of the token
  * @param address - The address of the token registry contract
  * @param wallet - The wallet or signer to use for the connection
@@ -79,7 +79,7 @@ interface validateEndorseChangeOwnerArgs {
 /**
  * Validates that the new owner and holder are different from the current ones.
  * Prevents unnecessary transactions when attempting to transfer to the same addresses.
- * 
+ *
  * @param newHolder - The proposed new holder address
  * @param newOwner - The proposed new owner (beneficiary) address
  * @param titleEscrow - The title escrow contract instance
@@ -93,7 +93,7 @@ export const validateEndorseChangeOwner = async ({
   // Get current beneficiary and holder from the contract
   const beneficiary = await titleEscrow.beneficiary();
   const holder = await titleEscrow.holder();
-  
+
   // Check if both new addresses match the current ones
   if (newOwner === beneficiary && newHolder === holder) {
     const error =
@@ -111,7 +111,7 @@ interface validateNominateBeneficiaryArgs {
 /**
  * Validates that the nominated beneficiary is different from the current beneficiary.
  * Prevents nominating the same beneficiary that already exists.
- * 
+ *
  * @param beneficiaryNominee - The proposed new beneficiary address
  * @param titleEscrow - The title escrow contract instance
  * @throws Error if the nominee is the same as the current beneficiary
@@ -122,7 +122,7 @@ export const validateNominateBeneficiary = async ({
 }: validateNominateBeneficiaryArgs): Promise<void> => {
   // Get current beneficiary from the contract
   const beneficiary = await titleEscrow.beneficiary();
-  
+
   // Check if the nominee is the same as the current beneficiary
   if (beneficiaryNominee === beneficiary) {
     const error = 'new beneficiary address is the same as the current beneficiary address';
@@ -134,7 +134,7 @@ export const validateNominateBeneficiary = async ({
 /**
  * Validates that a previous beneficiary exists for rejection operations.
  * A previous beneficiary must be set to perform a beneficiary transfer rejection.
- * 
+ *
  * @param titleEscrow - The title escrow contract instance
  * @throws Error if previous beneficiary is not set (zero address)
  */
@@ -143,7 +143,7 @@ export const validatePreviousBeneficiary = async (
 ): Promise<void> => {
   // Get the previous beneficiary from the contract
   const prevBeneficiary = await titleEscrow.prevBeneficiary();
-  
+
   // Check if previous beneficiary is set (not zero address)
   if (prevBeneficiary === ZeroAddress) {
     const error = 'invalid rejection as previous beneficiary is not set';
@@ -155,7 +155,7 @@ export const validatePreviousBeneficiary = async (
 /**
  * Validates that a previous holder exists for rejection operations.
  * A previous holder must be set to perform a holder transfer rejection.
- * 
+ *
  * @param titleEscrow - The title escrow contract instance
  * @throws Error if previous holder is not set (zero address)
  */
@@ -164,7 +164,7 @@ export const validatePreviousHolder = async (
 ): Promise<void> => {
   // Get the previous holder from the contract
   const prevHolder = await titleEscrow.prevHolder();
-  
+
   // Check if previous holder is set (not zero address)
   if (prevHolder === ZeroAddress) {
     const error = 'invalid rejection as previous holder is not set';
@@ -184,7 +184,7 @@ const GENESIS_ADDRESS = ZeroAddress;
 /**
  * Validates that approved owner and holder exist and are not the genesis address.
  * Ensures that there are valid approved addresses before endorsing a transfer.
- * 
+ *
  * @param approvedOwner - The approved owner address (may be undefined)
  * @param approvedHolder - The approved holder address (may be undefined)
  * @throws Error if approved addresses are missing or equal to genesis address
@@ -209,7 +209,7 @@ export const validateEndorseTransferOwner = ({
 /**
  * Validates and encrypts a remark string for blockchain transactions.
  * Ensures the remark meets length requirements and encrypts it with the provided key.
- * 
+ *
  * @param remark - Optional remark string to encrypt (max 120 characters)
  * @param keyId - Optional encryption key ID
  * @returns Encrypted remark as BytesLike (hex string), or '0x' if no remark provided

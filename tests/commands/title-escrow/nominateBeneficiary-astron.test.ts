@@ -1,7 +1,7 @@
 import { v5Contracts, nominate as nominateImpl } from '@trustvc/trustvc';
 import { beforeEach, describe, expect, it, vi, Mock } from 'vitest';
 import { TitleEscrowNominateBeneficiaryCommand } from '../../../src/types';
-import { nominateBeneficiary } from '../../../src/implementations/title-escrow/nominateBeneficiary';
+import { nominateBeneficiary } from '../../../src/commands/title-escrow/nominate-change-of-owner';
 
 const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
 vi.mock('@trustvc/trustvc', async () => {
@@ -12,7 +12,7 @@ vi.mock('@trustvc/trustvc', async () => {
   };
 });
 
-vi.mock('../../../src/implementations/title-escrow/helpers', () => ({
+vi.mock('../../../src/commands/helpers', () => ({
   connectToTitleEscrow: vi.fn().mockResolvedValue({
     beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
   }),

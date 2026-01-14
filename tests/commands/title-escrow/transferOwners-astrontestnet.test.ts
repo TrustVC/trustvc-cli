@@ -1,7 +1,7 @@
 import { transferOwners as transferOwnersImpl } from "@trustvc/trustvc";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TitleEscrowEndorseTransferOfOwnersCommand } from "../../../src/types";
-import { transferOwners } from "../../../src/implementations/title-escrow/transferOwners";
+import { transferOwners } from "../../../src/commands/title-escrow/endorse-change-of-owner";
 
 vi.mock("@trustvc/trustvc", async () => {
   const actual = await vi.importActual<typeof import("@trustvc/trustvc")>("@trustvc/trustvc");
@@ -11,7 +11,7 @@ vi.mock("@trustvc/trustvc", async () => {
   };
 });
 
-vi.mock('../../../src/implementations/title-escrow/helpers', () => {
+vi.mock('../../../src/commands/helpers', () => {
   const mockTitleEscrow = {
     beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
     holder: vi.fn().mockResolvedValue('0x4444444444444444444444444444444444444444'),

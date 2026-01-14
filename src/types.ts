@@ -2,8 +2,8 @@ import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trus
 import { GasOption, NetworkOption, RpcUrlOption, WalletOrSignerOption } from './utils';
 
 export type SignInput = {
-  keyPairData: typeof issuer.IssuedDIDOption;
   credential: RawVerifiableCredential;
+  keyPairData: typeof issuer.IssuedDIDOption;
   encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
   pathToSignedVC: string;
 }

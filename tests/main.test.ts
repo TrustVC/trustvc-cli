@@ -390,10 +390,6 @@ describe('trustvc-cli', () => {
       writeFileSpy = vi.spyOn(utils, 'writeFile') as MockedFunction<typeof utils.writeFile>;
       signaleErrorSpy = signale.error as MockedFunction<typeof signale.error>;
       signaleSuccessSpy = signale.success as MockedFunction<typeof signale.success>;
-
-      writeFileSpy.mockImplementation(((filePath: string) => {
-        signaleSuccessSpy(`Saved: ${filePath}`);
-      }) as any);
     });
 
     it('should sign a credential using ecdsa-sd-2023 and write signed VC', async ({ expect }) => {
@@ -405,14 +401,14 @@ describe('trustvc-cli', () => {
       };
 
       (prompts.input as any)
-        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.outputPath);
       (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
 
       (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
-        .mockReturnValueOnce({ domain: 'https://example.com' })
-        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
       (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
         true,
       );
@@ -426,8 +422,11 @@ describe('trustvc-cli', () => {
         { domain: 'https://example.com' },
         'ecdsa-sd-2023',
       );
-      expect(writeFileSpy).toHaveBeenCalledWith('./signed_vc.json', { proof: 'ok' });
-      expect(signaleSuccessSpy).toHaveBeenCalledWith('Saved: ./signed_vc.json');
+      expect(writeFileSpy).toHaveBeenCalledWith('./signed_vc.json', { proof: 'ok' }, true);
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Verifiable Credential signed successfully');
+      expect(signaleSuccessSpy).toHaveBeenCalledWith(
+        'Signed verifiable credential saved to: ./signed_vc.json',
+      );
       expect(signaleErrorSpy).not.toHaveBeenCalled();
     });
 
@@ -440,14 +439,14 @@ describe('trustvc-cli', () => {
       };
 
       (prompts.input as any)
-        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.outputPath);
       (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
 
       (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
-        .mockReturnValueOnce({ domain: 'https://example.com' })
-        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
       (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
         true,
       );
@@ -461,8 +460,11 @@ describe('trustvc-cli', () => {
         { domain: 'https://example.com' },
         'bbs-2023',
       );
-      expect(writeFileSpy).toHaveBeenCalledWith('./out/signed_vc.json', { proof: 'ok' });
-      expect(signaleSuccessSpy).toHaveBeenCalledWith('Saved: ./out/signed_vc.json');
+      expect(writeFileSpy).toHaveBeenCalledWith('./out/signed_vc.json', { proof: 'ok' }, true);
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Verifiable Credential signed successfully');
+      expect(signaleSuccessSpy).toHaveBeenCalledWith(
+        'Signed verifiable credential saved to: ./out/signed_vc.json',
+      );
       expect(signaleErrorSpy).not.toHaveBeenCalled();
     });
 
@@ -475,14 +477,14 @@ describe('trustvc-cli', () => {
       };
 
       (prompts.input as any)
-        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.outputPath);
       (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
 
       (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
-        .mockReturnValueOnce({ domain: 'https://example.com' })
-        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
       (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
         false,
       );
@@ -504,14 +506,14 @@ describe('trustvc-cli', () => {
       };
 
       (prompts.input as any)
-        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.credentialPath)
+        .mockResolvedValueOnce(input.keyPairPath)
         .mockResolvedValueOnce(input.outputPath);
       (prompts.select as any).mockResolvedValueOnce(input.encryptionAlgorithm);
 
       (utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>)
-        .mockReturnValueOnce({ domain: 'https://example.com' })
-        .mockReturnValueOnce({ id: 'urn:uuid:123' });
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
       (utils.isDirectoryValid as MockedFunction<typeof utils.isDirectoryValid>).mockReturnValue(
         true,
       );
@@ -524,7 +526,7 @@ describe('trustvc-cli', () => {
       await signHandler();
 
       expect(signW3CSpy).toHaveBeenCalled();
-      expect(signaleSuccessSpy).not.toHaveBeenCalled();
+      expect(signaleSuccessSpy).toHaveBeenCalledWith('Verifiable Credential signed successfully');
       expect(signaleErrorSpy).toHaveBeenCalledWith('Unable to write file to ./signed_vc.json');
     });
   });

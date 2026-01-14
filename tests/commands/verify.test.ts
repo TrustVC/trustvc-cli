@@ -57,8 +57,8 @@ vi.mock('signale', () => ({
 
 describe('verify', () => {
     beforeEach(() => {
-        vi.restoreAllMocks();
         vi.clearAllMocks();
+        vi.resetAllMocks();
     });
 
     describe('helper functions', () => {

@@ -4,6 +4,7 @@ import { beforeEach, describe, it, MockedFunction, vi } from 'vitest';
 import { handler as didHandler } from '../src/commands/w3c/did';
 import { handler as keyPairHandler } from '../src/commands/w3c/key-pair';
 import { handler as signHandler } from '../src/commands/w3c/sign';
+import { handler as verifyHandler } from '../src/commands/verify';
 import * as utils from '../src/utils';
 
 vi.mock('signale', () => ({
@@ -529,5 +530,59 @@ describe('trustvc-cli', () => {
       expect(signaleSuccessSpy).toHaveBeenCalledWith('Verifiable Credential signed successfully');
       expect(signaleErrorSpy).toHaveBeenCalledWith('Unable to write file to ./signed_vc.json');
     });
+  });
+
+  describe('trustvc verify command', () => {
+    let signalWarnSpy: MockedFunction<typeof signale.warn>;
+    let signaleSuccessSpy: MockedFunction<typeof signale.success>;
+    let readJsonFileMock: MockedFunction<typeof utils.readJsonFile>;
+    let withAsyncCaptureConsoleWarnMock: MockedFunction<any>;
+
+    const W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH = './tests/fixtures/w3c/certificate-of-origin-default.json';
+    const OA_SIGNED_VC_REVOKED_FIXTURE_PATH = './tests/fixtures/oa/certificate-of-origin-revoked.json';
+
+    beforeEach(async () => {
+      vi.resetAllMocks();
+
+      signalWarnSpy = signale.warn as MockedFunction<typeof signale.warn>;
+      signaleSuccessSpy = signale.success as MockedFunction<typeof signale.success>;
+
+      const actualUtils = await vi.importActual<typeof import('../src/utils')>('../src/utils');
+      readJsonFileMock = utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>;
+      readJsonFileMock.mockImplementation(((filePath: string, fileType: string) => {
+        return (actualUtils.readJsonFile as any)(filePath, fileType);
+      }) as any);
+
+      withAsyncCaptureConsoleWarnMock = utils.withAsyncCaptureConsoleWarn as MockedFunction<any>;
+      withAsyncCaptureConsoleWarnMock.mockImplementation(((fn: any) => {
+        return (actualUtils.withAsyncCaptureConsoleWarn as any)(fn);
+      }) as any);
+    });
+
+    it(
+      'should verify a w3c credential through a given path',
+      async ({ expect }) => {
+        (prompts.input as any).mockResolvedValueOnce(W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH);
+
+        await verifyHandler();
+
+        expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
+        expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_STATUS: VALID');
+        expect(signaleSuccessSpy).toHaveBeenCalledWith('ISSUER_IDENTITY: VALID');
+      },
+    );
+
+    it(
+      'should verify an openattestation credential through a given path',
+      async ({ expect }) => {
+        (prompts.input as any).mockResolvedValueOnce(OA_SIGNED_VC_REVOKED_FIXTURE_PATH);
+
+        await verifyHandler();
+
+        expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
+        expect(signaleSuccessSpy).toHaveBeenCalledWith('ISSUER_IDENTITY: VALID');
+        expect(signalWarnSpy).toHaveBeenCalledWith(expect.stringContaining('DOCUMENT_STATUS: ERROR'));
+      },
+    );
   });
 });

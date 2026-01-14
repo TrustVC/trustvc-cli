@@ -2,10 +2,10 @@ import { TransactionReceipt } from '@ethersproject/providers';
 import * as prompts from '@inquirer/prompts';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import {
-  mintHandler as handler,
+  handler,
   mintToken,
   promptForInputs,
-} from '../../../src/commands/token-registry/token-registry';
+} from '../../../src/commands/token-registry/mint';
 import { NetworkCmdName } from '../../../src/utils';
 
 vi.mock('@inquirer/prompts');

@@ -1,6 +1,12 @@
-import { issuer, credentialStatus } from '@trustvc/trustvc';
+import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
 import { GasOption, NetworkOption, RpcUrlOption, WalletOrSignerOption } from './utils';
 
+export type SignInput = {
+  credential: RawVerifiableCredential;
+  keyPairData: typeof issuer.IssuedDIDOption;
+  encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
+  pathToSignedVC: string;
+}
 export type DidInput = {
   keyPairPath: string;
   domainName: string;

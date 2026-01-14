@@ -1,8 +1,12 @@
+# Sample files for testing
+fixtures
+
 # Generated files from CLI commands
 keypair.json
 didKeyPairs.json
 wellknown.json
 credentialStatus.json
+signed_vc.json
 
 # Dependencies
 node_modules/

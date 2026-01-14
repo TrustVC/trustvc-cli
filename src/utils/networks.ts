@@ -1,4 +1,4 @@
-import { providers } from 'ethers';
+import { Provider, JsonRpcProvider, InfuraProvider } from 'ethers';
 import type { GasStationFunction } from './gas-station';
 import { gasStation } from './gas-station';
 
@@ -6,7 +6,7 @@ export type networkCurrency = 'ETH' | 'MATIC' | 'XDC' | 'FREE' | 'ASTRON';
 
 type SupportedNetwork = {
   explorer: string;
-  provider: () => providers.Provider;
+  provider: () => Provider;
   networkId: number;
   networkName: (typeof NetworkCmdName)[keyof typeof NetworkCmdName];
   currency: networkCurrency;
@@ -28,14 +28,14 @@ export enum NetworkCmdName {
 }
 
 const defaultInfuraProvider =
-  (networkName: string): (() => providers.Provider) =>
+  (networkName: string): (() => Provider) =>
   () =>
-    new providers.InfuraProvider(networkName);
+    new InfuraProvider(networkName);
 
 const jsonRpcProvider =
-  (url: string): (() => providers.Provider) =>
+  (url: string): (() => Provider) =>
   () =>
-    new providers.JsonRpcProvider(url);
+    new JsonRpcProvider(url);
 
 /**
  * Creates a provider that checks for an environment variable override
@@ -46,14 +46,14 @@ const jsonRpcProvider =
 const getProviderWithEnvOverride =
   (
     networkName: NetworkCmdName,
-    defaultProvider: () => providers.Provider,
-  ): (() => providers.Provider) =>
+    defaultProvider: () => Provider,
+  ): (() => Provider) =>
   () => {
     const envVarName = `${networkName.toUpperCase()}_RPC`;
     const customRpcUrl = process.env[envVarName];
 
     if (customRpcUrl) {
-      return new providers.JsonRpcProvider(customRpcUrl);
+      return new JsonRpcProvider(customRpcUrl);
     }
 
     return defaultProvider();
@@ -91,7 +91,10 @@ export const supportedNetwork: {
   },
   [NetworkCmdName.Matic]: {
     explorer: 'https://polygonscan.com',
-    provider: getProviderWithEnvOverride(NetworkCmdName.Matic, defaultInfuraProvider('matic')),
+    provider: getProviderWithEnvOverride(
+      NetworkCmdName.Matic,
+      jsonRpcProvider('https://sepolia.infura.io/v3/bb46da3f80e040e8ab73c0a9ff365d18'),
+    ),
     networkId: 137,
     networkName: NetworkCmdName.Matic,
     currency: 'MATIC',

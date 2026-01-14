@@ -1,12 +1,12 @@
-import { BigNumber, ethers } from 'ethers';
+import { BigNumberish, ethers } from 'ethers';
 import fetch from 'node-fetch';
 
 export type GasStationFunction = (
   gasStationUrl: string,
 ) => () => Promise<GasStationFeeData | undefined>;
 export type GasStationFeeData = {
-  maxPriorityFeePerGas: BigNumber | null;
-  maxFeePerGas: BigNumber | null;
+  maxPriorityFeePerGas: BigNumberish | null;
+  maxFeePerGas: BigNumberish | null;
 };
 
 export const gasStation: GasStationFunction =
@@ -25,7 +25,7 @@ export const gasStation: GasStationFunction =
     }
   };
 
-const safeParseUnits = (_value: number | string, decimals: number): BigNumber => {
+const safeParseUnits = (_value: number | string, decimals: number): BigNumberish => {
   const value = String(_value);
   if (!value.match(/^[0-9.]+$/)) {
     throw new Error(`invalid gwei value: ${_value}`);
@@ -49,8 +49,9 @@ const safeParseUnits = (_value: number | string, decimals: number): BigNumber =>
 
   // Too many decimals and some non-zero ending, take the ceiling
   if (comps[1].length > 9 && !comps[1].substring(9).match(/^0+$/)) {
-    comps[1] = BigNumber.from(comps[1].substring(0, 9)).add(BigNumber.from(1)).toString();
+    const fractionalPart = BigInt(comps[1].substring(0, 9)) + BigInt(1);
+    comps[1] = fractionalPart.toString();
   }
 
-  return ethers.utils.parseUnits(`${comps[0]}.${comps[1]}`, decimals);
+  return ethers.parseUnits(`${comps[0]}.${comps[1]}`, decimals);
 };

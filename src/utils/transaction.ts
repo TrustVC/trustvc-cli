@@ -1,5 +1,4 @@
-import { BigNumber, Overrides, constants, utils, ethers } from 'ethers';
-import { Provider } from '@ethersproject/abstract-provider';
+import { BigNumberish, Overrides, Provider, formatEther } from 'ethers';
 import { info } from 'signale';
 import fetch, { RequestInit } from 'node-fetch';
 import { GasPriceScale } from './cli-options';
@@ -13,22 +12,25 @@ import {
 
 // TransactionReceipt
 export interface TransactionReceiptFees {
-  effectiveGasPrice: BigNumber;
-  gasUsed: BigNumber;
+  effectiveGasPrice: BigNumberish;
+  gasUsed: BigNumberish;
+  transactionHash?: string;
+  hash?: string;
 }
 
 export const scaleBigNumber = (
-  wei: BigNumber | null | undefined,
+  wei: BigNumberish | null | undefined,
   multiplier: number,
   precision = 2,
-): BigNumber => {
+): bigint => {
   if (wei === null || typeof wei === 'undefined') {
     throw new Error('Wei not specified');
   }
   const padding = Math.pow(10, precision);
   const newMultiplier = Math.round(padding * multiplier);
+  const weiBigInt = BigInt(wei.toString());
 
-  const newWei = wei.mul(newMultiplier).div(padding);
+  const newWei = (weiBigInt * BigInt(newMultiplier)) / BigInt(padding);
   return newWei;
 };
 
@@ -48,10 +50,9 @@ export const getGasFees = async ({
   };
 };
 
-export const getFeeData = async (
-  provider: ethers.providers.Provider,
-): Promise<GasStationFeeData> => {
-  const networkName = getSupportedNetworkNameFromId((await provider.getNetwork()).chainId);
+export const getFeeData = async (provider: Provider): Promise<GasStationFeeData> => {
+  const network = await provider.getNetwork();
+  const networkName = getSupportedNetworkNameFromId(Number(network.chainId));
   const gasStation = getSupportedNetwork(networkName)?.gasStation;
 
   const feeData = gasStation && (await gasStation());
@@ -60,10 +61,10 @@ export const getFeeData = async (
 };
 
 export const calculateMaxFee = (
-  maxFee: BigNumber | null | undefined,
-  priorityFee: BigNumber | null | undefined,
+  maxFee: BigNumberish | null | undefined,
+  priorityFee: BigNumberish | null | undefined,
   scale: number,
-): BigNumber => {
+): bigint => {
   if (maxFee === null || typeof maxFee === 'undefined') {
     throw new Error('Max Fee not specified');
   }
@@ -71,11 +72,12 @@ export const calculateMaxFee = (
     throw new Error('Priority Fee not specified');
   }
   if (scale === 1) {
-    return maxFee;
+    return BigInt(maxFee.toString());
   }
-
-  const priorityFeeChange = scaleBigNumber(priorityFee, scale).sub(priorityFee);
-  return maxFee.add(priorityFeeChange);
+  const priorityFeeBigInt = BigInt(priorityFee.toString());
+  const maxFeeBigInt = BigInt(maxFee.toString());
+  const priorityFeeChange = scaleBigNumber(priorityFee, scale) - priorityFeeBigInt;
+  return maxFeeBigInt + priorityFeeChange;
 };
 
 export const canEstimateGasPrice = (network: string): boolean => {
@@ -105,14 +107,21 @@ export const displayTransactionPrice = async (
   ) {
     return;
   }
+
+  // Check if gas data is available (effectiveGasPrice or gasPrice)
+  const gasPrice = (transaction as any).effectiveGasPrice || (transaction as any).gasPrice;
+  if (!gasPrice || !transaction.gasUsed) {
+    return;
+  }
+
   const currency = supportedNetwork[network].currency;
-  const totalWEI = transaction.effectiveGasPrice.mul(transaction.gasUsed);
+  const effectiveGasPrice = BigInt(gasPrice.toString());
+  const gasUsed = BigInt(transaction.gasUsed.toString());
+  const totalWEI = effectiveGasPrice * gasUsed;
   const spotRate = await getSpotRate(currency, 'USD');
   const totalUSD = convertWeiFiatDollars(totalWEI, spotRate);
 
-  info(
-    `Transaction fee of ${utils.formatEther(totalWEI)} ${currency} / ~ ${currency}-USD ${totalUSD}`,
-  );
+  info(`Transaction fee of ${formatEther(totalWEI)} ${currency} / ~ ${currency}-USD ${totalUSD}`);
 };
 
 export const request = (url: string, options?: RequestInit): Promise<any> => {
@@ -136,12 +145,17 @@ export const getSpotRate = async (
 };
 
 // Minimally precision of 2 to get precision of 1 cent
-export const convertWeiFiatDollars = (cost: BigNumber, spotRate: number, precision = 5): number => {
+export const convertWeiFiatDollars = (
+  cost: BigNumberish,
+  spotRate: number,
+  precision = 5,
+): number => {
   const padding = Math.pow(10, precision);
   const spotRateCents = Math.ceil(spotRate * padding); // Higher better than lower
-  const costInWeiFiatCents = cost.mul(BigNumber.from(spotRateCents));
-  const costInFiatDollars = costInWeiFiatCents.div(constants.WeiPerEther).div(padding).toNumber(); // Fiat Dollar
-  const costInFiatCents =
-    (costInWeiFiatCents.div(constants.WeiPerEther).toNumber() % padding) / padding; /// Fiat Cents
+  const costBigInt = BigInt(cost.toString());
+  const costInWeiFiatCents = costBigInt * BigInt(spotRateCents);
+  const WeiPerEther = 1000000000000000000n; // 10^18
+  const costInFiatDollars = Number(costInWeiFiatCents / WeiPerEther / BigInt(padding)); // Fiat Dollar
+  const costInFiatCents = Number((costInWeiFiatCents / WeiPerEther) % BigInt(padding)) / padding; /// Fiat Cents
   return costInFiatDollars + costInFiatCents;
 };

@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [],
   cacheDir: './node_modules/.vitest',
   test: {
-    include: ['tests/**/*.test.{ts,js}'],
+    include: ['tests/**/*.test.{ts,js}', 'src/**/*.test.{ts,js}'],
     exclude: ['dist', 'node_modules', '*/type{s}.{ts,js}'],
     coverage: {
       enabled: false,

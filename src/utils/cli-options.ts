@@ -1,5 +1,7 @@
+import { input, select } from '@inquirer/prompts';
+import { info } from 'signale';
 import { Argv } from 'yargs';
-import { supportedNetwork } from './networks';
+import { NetworkCmdName, supportedNetwork } from './networks';
 
 export interface NetworkOption {
   network: string;
@@ -146,3 +148,135 @@ export const withNetworkAndWalletSignerOption = (yargs: Argv): Argv =>
   withNetworkOption(
     withRpcUrlOption(withAwsKmsSignerOption(withWalletOption(withPrivateKeyOption(yargs)))),
   );
+
+/**
+ * Prompts for network selection with all available networks.
+ * @returns The selected network as NetworkCmdName
+ */
+export const promptNetworkSelection = async (): Promise<string> => {
+  const network = await select({
+    message: 'Select the network:',
+    choices: [
+      { name: 'Local', value: NetworkCmdName.Local },
+      { name: 'Ethereum Mainnet', value: NetworkCmdName.Mainnet },
+      { name: 'Sepolia Testnet', value: NetworkCmdName.Sepolia },
+      { name: 'Polygon Mainnet', value: NetworkCmdName.Matic },
+      { name: 'Polygon Amoy Testnet', value: NetworkCmdName.Amoy },
+      { name: 'XDC Network', value: NetworkCmdName.XDC },
+      { name: 'XDC Apothem Testnet', value: NetworkCmdName.XDCApothem },
+      { name: 'Stability Testnet', value: NetworkCmdName.StabilityTestnet },
+      { name: 'Stability Mainnet', value: NetworkCmdName.Stability },
+      { name: 'Astron', value: NetworkCmdName.Astron },
+      { name: 'Astron Testnet', value: NetworkCmdName.AstronTestnet },
+    ],
+    default: NetworkCmdName.Sepolia,
+  });
+
+  return network;
+};
+
+/**
+ * Prompts for wallet/private key selection and returns the selected credentials.
+ * @returns An object containing encryptedWalletPath, key, or keyFile based on user selection
+ */
+export const promptWalletSelection = async (): Promise<{
+  encryptedWalletPath?: string;
+  key?: string;
+  keyFile?: string;
+}> => {
+  const walletOption = await select({
+    message: 'Select wallet/private key option:',
+    choices: [
+      {
+        name: 'Encrypted wallet file (recommended)',
+        value: 'encryptedWallet',
+        description: 'Path to an encrypted wallet JSON file',
+      },
+      {
+        name: 'Environment variable (OA_PRIVATE_KEY)',
+        value: 'envVariable',
+        description: 'Use private key from OA_PRIVATE_KEY environment variable',
+      },
+      {
+        name: 'Private key file',
+        value: 'keyFile',
+        description: 'Path to a file containing the private key',
+      },
+      {
+        name: 'Private key directly',
+        value: 'keyDirect',
+        description: 'Provide private key directly (will be stored in bash history)',
+      },
+    ],
+    default: 'encryptedWallet',
+  });
+
+  let encryptedWalletPath: string | undefined;
+  let key: string | undefined;
+  let keyFile: string | undefined;
+
+  if (walletOption === 'encryptedWallet') {
+    encryptedWalletPath = await input({
+      message: 'Enter the path to your encrypted wallet JSON file:',
+      default: './wallet.json',
+      required: true,
+    });
+  } else if (walletOption === 'envVariable') {
+    if (!process.env.OA_PRIVATE_KEY) {
+      throw new Error(
+        'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
+      );
+    }
+    info('Using private key from OA_PRIVATE_KEY environment variable');
+    // Return empty object - the key will be picked up from environment variable
+  } else if (walletOption === 'keyFile') {
+    keyFile = await input({
+      message: 'Enter the path to your private key file:',
+      required: true,
+    });
+  } else if (walletOption === 'keyDirect') {
+    key = await input({
+      message: 'Enter your private key:',
+      required: true,
+    });
+  }
+
+  return {
+    encryptedWalletPath,
+    key,
+    keyFile,
+  };
+};
+
+/**
+ * Prompts for optional remark and encryption key.
+ * If a remark is provided, also prompts for the document ID to use as encryption key.
+ * @returns An object containing the remark and encryptionKey (both optional)
+ */
+export const promptRemarkAndEncryptionKey = async (): Promise<{
+  remark?: string;
+  encryptionKey?: string;
+}> => {
+  // Optional: Remark
+  const remark = await input({
+    message: 'Enter a remark (optional):',
+    required: false,
+  });
+
+  // Optional: Encryption Key (only if remark is provided)
+  let encryptionKey: string | undefined;
+  if (remark && remark.trim() !== '') {
+    info(
+      'This document ID will be used to encrypt the Document. You can find it inside your document for example: "urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692"',
+    );
+    encryptionKey = await input({
+      message: 'Enter the document Id :',
+      required: false,
+    });
+  }
+
+  return {
+    remark: remark || undefined,
+    encryptionKey: encryptionKey || undefined,
+  };
+};

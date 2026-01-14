@@ -45,3 +45,23 @@ export type TokenRegistryMintCommand = NetworkOption &
     remark?: string;
     encryptionKey?: string;
   };
+
+export type BaseTitleEscrowCommand = NetworkAndWalletSignerOption &
+  GasOption & {
+    tokenRegistryAddress: string;
+    tokenId: string;
+    remark?: string;
+    encryptionKey?: string;
+  };
+export type TitleEscrowTransferHolderCommand = BaseTitleEscrowCommand & {
+  newHolder: string;
+};
+
+export type TitleEscrowEndorseTransferOfOwnersCommand = BaseTitleEscrowCommand & {
+  newHolder: string;
+  newOwner: string;
+};
+
+export type TitleEscrowNominateBeneficiaryCommand = BaseTitleEscrowCommand & {
+  newBeneficiary: string;
+};

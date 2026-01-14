@@ -21,3 +21,6 @@ export * from './progress';
 
 // Wallet and Signer
 export * from './wallet';
+
+// Dry Run
+export * from './dryRun';

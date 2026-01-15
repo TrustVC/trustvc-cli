@@ -1,14 +1,19 @@
 import { TransactionReceipt } from '@ethersproject/providers';
 import * as prompts from '@inquirer/prompts';
-import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
+import { transferBeneficiary as transferBeneficiaryImpl } from '@trustvc/trustvc';
+import { beforeEach, describe, expect, it, vi, MockedFunction } from 'vitest';
+import { TitleEscrowNominateBeneficiaryCommand } from '../../../src/types';
 import {
+  endorseNominatedBeneficiary,
+  endorseTransferOwnerHandler,
   handler,
-  mintToken,
   promptForInputs,
-} from '../../../src/commands/token-registry/mint';
+} from '../../../src/commands/title-escrow/endorse-transfer-of-owner';
 import { NetworkCmdName } from '../../../src/utils';
+import * as helpers from '../../../src/commands/helpers';
 
 vi.mock('@inquirer/prompts');
+
 vi.mock('signale', async (importOriginal) => {
   const originalSignale = await importOriginal<typeof import('signale')>();
   return {
@@ -18,16 +23,37 @@ vi.mock('signale', async (importOriginal) => {
       success = vi.fn();
       error = vi.fn();
       info = vi.fn();
+      warn = vi.fn();
       constructor() {}
     },
     error: vi.fn(),
     info: vi.fn(),
     success: vi.fn(),
+    warn: vi.fn(),
+    default: {
+      await: vi.fn(),
+      success: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+    },
   };
 });
 
-vi.mock('@trustvc/trustvc', () => ({
-  mint: vi.fn(),
+vi.mock('@trustvc/trustvc', async () => {
+  const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+  return {
+    ...actual,
+    transferBeneficiary: vi.fn(),
+  };
+});
+
+vi.mock('../../../src/commands/helpers', () => ({
+  connectToTitleEscrow: vi.fn().mockResolvedValue({
+    beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
+  }),
+  validateNominateBeneficiary: vi.fn(),
+  validateAndEncryptRemark: vi.fn().mockReturnValue('encrypted-remark'),
 }));
 
 vi.mock('../../../src/utils/wallet', () => ({
@@ -40,21 +66,37 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     ...originalUtils,
     getErrorMessage: vi.fn((e: any) => (e instanceof Error ? e.message : String(e))),
     getEtherscanAddress: vi.fn(() => 'https://etherscan.io'),
-    addAddressPrefix: vi.fn((address?: string) => {
-      if (!address) return '0x';
-      return address.startsWith('0x') ? address : `0x${address}`;
-    }),
     displayTransactionPrice: vi.fn(),
     canEstimateGasPrice: vi.fn(() => false),
     getGasFees: vi.fn(),
   };
 });
 
-describe('token-registry/mint', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.resetAllMocks();
-  });
+const endorseNominatedBeneficiaryParams: TitleEscrowNominateBeneficiaryCommand = {
+  tokenId: '0x12345',
+  tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+  newBeneficiary: '0x1111111111111111111111111111111111111111',
+  network: 'astron',
+  maxPriorityFeePerGasScale: 1,
+  dryRun: false,
+};
+
+describe('title-escrow/endorse-transfer-owner', () => {
+  // increase timeout because ethers is throttling
+  vi.setConfig({ testTimeout: 30_000 });
+  vi.spyOn(global, 'fetch').mockImplementation(
+    vi.fn(() =>
+      Promise.resolve({
+        json: () =>
+          Promise.resolve({
+            standard: {
+              maxPriorityFee: 0,
+              maxFee: 0,
+            },
+          }),
+      }),
+    ) as any,
+  );
 
   describe('promptForInputs', () => {
     beforeEach(() => {
@@ -64,11 +106,10 @@ describe('token-registry/mint', () => {
 
     it('should return correct answers for valid inputs with encrypted wallet', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         remark: 'Test remark',
         encryptionKey: 'test-key',
       };
@@ -78,10 +119,9 @@ describe('token-registry/mint', () => {
         .mockResolvedValueOnce('encryptedWallet'); // Wallet option
 
       (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address) // Token registry address
+        .mockResolvedValueOnce(mockInputs.tokenRegistry) // Token registry address
         .mockResolvedValueOnce(mockInputs.tokenId) // Token ID
-        .mockResolvedValueOnce(mockInputs.beneficiary) // Beneficiary
-        .mockResolvedValueOnce(mockInputs.holder) // Holder
+        .mockResolvedValueOnce(mockInputs.newBeneficiary) // New beneficiary
         .mockResolvedValueOnce('./wallet.json') // Encrypted wallet path
         .mockResolvedValueOnce(mockInputs.remark) // Remark
         .mockResolvedValueOnce(mockInputs.encryptionKey); // Encryption key
@@ -89,10 +129,9 @@ describe('token-registry/mint', () => {
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect(result.address).toBe(mockInputs.address);
+      expect(result.tokenRegistryAddress).toBe(mockInputs.tokenRegistry);
       expect(result.tokenId).toBe(mockInputs.tokenId);
-      expect(result.beneficiary).toBe(mockInputs.beneficiary);
-      expect(result.holder).toBe(mockInputs.holder);
+      expect(result.newBeneficiary).toBe(mockInputs.newBeneficiary);
       expect((result as any).encryptedWalletPath).toBe('./wallet.json');
       expect(result.remark).toBe(mockInputs.remark);
       expect(result.encryptionKey).toBe(mockInputs.encryptionKey);
@@ -102,11 +141,10 @@ describe('token-registry/mint', () => {
 
     it('should return correct answers for valid inputs with private key file', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Mainnet,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Sepolia,
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
       };
 
       (prompts.select as any)
@@ -114,10 +152,9 @@ describe('token-registry/mint', () => {
         .mockResolvedValueOnce('keyFile');
 
       (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
+        .mockResolvedValueOnce(mockInputs.tokenRegistry)
         .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
+        .mockResolvedValueOnce(mockInputs.newBeneficiary)
         .mockResolvedValueOnce('./private-key.txt') // keyFile
         .mockResolvedValueOnce(''); // Empty remark
 
@@ -131,11 +168,10 @@ describe('token-registry/mint', () => {
 
     it('should return correct answers for valid inputs with direct private key', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Matic,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
       };
 
       (prompts.select as any)
@@ -143,10 +179,9 @@ describe('token-registry/mint', () => {
         .mockResolvedValueOnce('keyDirect');
 
       (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
+        .mockResolvedValueOnce(mockInputs.tokenRegistry)
         .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
+        .mockResolvedValueOnce(mockInputs.newBeneficiary)
         .mockResolvedValueOnce('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80') // key
         .mockResolvedValueOnce(''); // Empty remark
 
@@ -164,11 +199,10 @@ describe('token-registry/mint', () => {
         '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
       };
 
       (prompts.select as any)
@@ -176,10 +210,9 @@ describe('token-registry/mint', () => {
         .mockResolvedValueOnce('envVariable');
 
       (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
+        .mockResolvedValueOnce(mockInputs.tokenRegistry)
         .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
+        .mockResolvedValueOnce(mockInputs.newBeneficiary)
         .mockResolvedValueOnce('');
 
       const result = await promptForInputs();
@@ -202,14 +235,13 @@ describe('token-registry/mint', () => {
       delete process.env.OA_PRIVATE_KEY;
 
       (prompts.select as any)
-        .mockResolvedValueOnce(NetworkCmdName.Sepolia)
+        .mockResolvedValueOnce(NetworkCmdName.Astron)
         .mockResolvedValueOnce('envVariable');
 
       (prompts.input as any)
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890')
         .mockResolvedValueOnce('0xabcdef1234567890')
-        .mockResolvedValueOnce('0x0987654321098765432109876543210987654321')
-        .mockResolvedValueOnce('0x1111111111111111111111111111111111111111');
+        .mockResolvedValueOnce('0x0987654321098765432109876543210987654321');
 
       await expect(promptForInputs()).rejects.toThrowError(
         'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
@@ -220,94 +252,17 @@ describe('token-registry/mint', () => {
         process.env.OA_PRIVATE_KEY = originalEnv;
       }
     });
-
-    it('should validate token registry address format', async () => {
-      const invalidAddress = 'invalid-address';
-
-      (prompts.select as any).mockResolvedValueOnce(NetworkCmdName.Sepolia);
-      (prompts.input as any).mockResolvedValueOnce(invalidAddress);
-
-      // The validation happens in the prompt itself, we need to simulate it
-      //   const addressPromptCall = (prompts.input as any).mock.calls;
-
-      // Since we can't directly test the validation function in the prompt,
-      // we'll verify that the validation logic exists by checking the structure
-      expect(prompts.input).toBeDefined();
-    });
-
-    it('should handle optional remark without encryption key', async () => {
-      const mockInputs = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
-        tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
-        remark: '',
-      };
-
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('encryptedWallet');
-
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
-        .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
-        .mockResolvedValueOnce('./wallet.json')
-        .mockResolvedValueOnce(mockInputs.remark);
-
-      const result = await promptForInputs();
-
-      expect(result.remark).toBeUndefined();
-      expect(result.encryptionKey).toBeUndefined();
-    });
-
-    it('should support all network options', async () => {
-      const networks = [
-        NetworkCmdName.Local,
-        NetworkCmdName.Mainnet,
-        NetworkCmdName.Sepolia,
-        NetworkCmdName.Matic,
-        NetworkCmdName.Amoy,
-        NetworkCmdName.XDC,
-        NetworkCmdName.XDCApothem,
-        NetworkCmdName.StabilityTestnet,
-        NetworkCmdName.Stability,
-        NetworkCmdName.Astron,
-        NetworkCmdName.AstronTestnet,
-      ];
-
-      for (const network of networks) {
-        vi.clearAllMocks();
-
-        (prompts.select as any)
-          .mockResolvedValueOnce(network)
-          .mockResolvedValueOnce('encryptedWallet');
-
-        (prompts.input as any)
-          .mockResolvedValueOnce('0x1234567890123456789012345678901234567890')
-          .mockResolvedValueOnce('0xabcdef1234567890')
-          .mockResolvedValueOnce('0x0987654321098765432109876543210987654321')
-          .mockResolvedValueOnce('0x1111111111111111111111111111111111111111')
-          .mockResolvedValueOnce('./wallet.json')
-          .mockResolvedValueOnce('');
-
-        const result = await promptForInputs();
-        expect(result.network).toBe(network);
-      }
-    });
   });
 
-  describe('mintToken', () => {
-    let mintMock: MockedFunction<any>;
+  describe('endorseTransferOwnerHandler', () => {
+    let transferBeneficiaryMock: MockedFunction<any>;
     let getWalletOrSignerMock: MockedFunction<any>;
 
     beforeEach(async () => {
       vi.clearAllMocks();
 
       const trustvcModule = await import('@trustvc/trustvc');
-      mintMock = trustvcModule.mint as MockedFunction<any>;
+      transferBeneficiaryMock = trustvcModule.transferBeneficiary as MockedFunction<any>;
 
       const walletModule = await import('../../../src/utils/wallet');
       getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
@@ -316,22 +271,14 @@ describe('token-registry/mint', () => {
       getWalletOrSignerMock.mockResolvedValue({
         provider: {},
       });
-
-      // Re-setup the addAddressPrefix mock after clearing
-      const utils = await import('../../../src/utils');
-      (utils.addAddressPrefix as any).mockImplementation((address?: string) => {
-        if (!address) return '0x';
-        return address.startsWith('0x') ? address : `0x${address}`;
-      });
     });
 
-    it('should successfully mint token and display transaction details', async () => {
+    it('should successfully endorse transfer and display transaction details', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         dryRun: false,
         maxPriorityFeePerGasScale: 1,
@@ -343,7 +290,7 @@ describe('token-registry/mint', () => {
         blockHash: '0xblockhash',
         confirmations: 1,
         from: '0xfrom',
-        to: mockArgs.address,
+        to: mockArgs.tokenRegistryAddress,
         gasUsed: { toNumber: () => 100000 } as any,
         cumulativeGasUsed: { toNumber: () => 100000 } as any,
         effectiveGasPrice: { toNumber: () => 1000000000 } as any,
@@ -356,34 +303,31 @@ describe('token-registry/mint', () => {
         logsBloom: '0x',
       };
 
-      mintMock.mockResolvedValue({
+      transferBeneficiaryMock.mockResolvedValue({
         hash: mockTransaction.transactionHash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
 
-      const result = await mintToken(mockArgs);
+      const result = await endorseTransferOwnerHandler(mockArgs);
 
-      expect(mintMock).toHaveBeenCalledWith(
-        { tokenRegistryAddress: mockArgs.address },
+      expect(transferBeneficiaryMock).toHaveBeenCalledWith(
+        { tokenRegistryAddress: mockArgs.tokenRegistryAddress, tokenId: mockArgs.tokenId },
         expect.anything(),
         expect.objectContaining({
-          beneficiaryAddress: mockArgs.beneficiary,
-          holderAddress: mockArgs.holder,
-          tokenId: expect.stringContaining('0x'),
+          newBeneficiaryAddress: mockArgs.newBeneficiary,
         }),
         expect.anything(),
       );
-      expect(result).toBe(mockArgs.address);
+      expect(result).toBe(mockArgs.tokenRegistryAddress);
     });
 
-    it('should handle minting with remark and encryption key', async () => {
+    it('should handle endorsement with remark and encryption key', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Mainnet,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
-        remark: 'Important document',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
+        remark: 'Important transfer',
         encryptionKey: 'secret-key-123',
         key: '0xprivatekey',
         dryRun: false,
@@ -396,7 +340,7 @@ describe('token-registry/mint', () => {
         blockHash: '0xblockhash2',
         confirmations: 1,
         from: '0xfrom',
-        to: mockArgs.address,
+        to: mockArgs.tokenRegistryAddress,
         gasUsed: { toNumber: () => 120000 } as any,
         cumulativeGasUsed: { toNumber: () => 120000 } as any,
         effectiveGasPrice: { toNumber: () => 1500000000 } as any,
@@ -409,111 +353,63 @@ describe('token-registry/mint', () => {
         logsBloom: '0x',
       };
 
-      mintMock.mockResolvedValue({
+      transferBeneficiaryMock.mockResolvedValue({
         hash: mockTransaction.transactionHash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
 
-      const result = await mintToken(mockArgs);
+      const result = await endorseTransferOwnerHandler(mockArgs);
 
-      expect(mintMock).toHaveBeenCalledWith(
-        { tokenRegistryAddress: mockArgs.address },
+      expect(transferBeneficiaryMock).toHaveBeenCalledWith(
+        { tokenRegistryAddress: mockArgs.tokenRegistryAddress, tokenId: mockArgs.tokenId },
         expect.anything(),
         expect.objectContaining({
-          beneficiaryAddress: mockArgs.beneficiary,
-          holderAddress: mockArgs.holder,
-          tokenId: expect.stringContaining('0x'),
+          newBeneficiaryAddress: mockArgs.newBeneficiary,
           remarks: mockArgs.remark,
         }),
         expect.objectContaining({
           id: mockArgs.encryptionKey,
         }),
       );
-      expect(result).toBe(mockArgs.address);
+      expect(result).toBe(mockArgs.tokenRegistryAddress);
     });
 
-    it('should handle errors during minting', async () => {
+    it('should handle errors during endorsement', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
       const errorMessage = 'Transaction failed: insufficient funds';
-      mintMock.mockRejectedValue(new Error(errorMessage));
+      transferBeneficiaryMock.mockRejectedValue(new Error(errorMessage));
 
-      const result = await mintToken(mockArgs);
+      const result = await endorseTransferOwnerHandler(mockArgs);
 
       expect(result).toBeUndefined();
-      expect(mintMock).toHaveBeenCalled();
+      expect(transferBeneficiaryMock).toHaveBeenCalled();
     });
 
-    it('should handle non-Error exceptions during minting', async () => {
+    it('should handle non-Error exceptions during endorsement', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
-      mintMock.mockRejectedValue('String error message');
+      transferBeneficiaryMock.mockRejectedValue('String error message');
 
-      const result = await mintToken(mockArgs);
+      const result = await endorseTransferOwnerHandler(mockArgs);
 
       expect(result).toBeUndefined();
-    });
-
-    it('should call addAddressPrefix for tokenId', async () => {
-      const mockArgs: any = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
-        tokenId: 'abcdef1234567890', // Without 0x prefix
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
-        encryptedWalletPath: './wallet.json',
-        dryRun: false,
-        maxPriorityFeePerGasScale: 1,
-      };
-
-      const mockTransaction: TransactionReceipt = {
-        transactionHash: '0xtxhash789',
-        blockNumber: 12347,
-        blockHash: '0xblockhash3',
-        confirmations: 1,
-        from: '0xfrom',
-        to: mockArgs.address,
-        gasUsed: { toNumber: () => 100000 } as any,
-        cumulativeGasUsed: { toNumber: () => 100000 } as any,
-        effectiveGasPrice: { toNumber: () => 1000000000 } as any,
-        byzantium: true,
-        type: 2,
-        status: 1,
-        contractAddress: '',
-        transactionIndex: 0,
-        logs: [],
-        logsBloom: '0x',
-      };
-
-      mintMock.mockResolvedValue({
-        hash: mockTransaction.transactionHash,
-        wait: vi.fn().mockResolvedValue(mockTransaction),
-      });
-
-      const utils = await import('../../../src/utils');
-      const addAddressPrefixSpy = utils.addAddressPrefix as MockedFunction<any>;
-
-      await mintToken(mockArgs);
-
-      expect(addAddressPrefixSpy).toHaveBeenCalledWith(mockArgs.tokenId);
     });
   });
 
@@ -523,13 +419,12 @@ describe('token-registry/mint', () => {
       vi.resetAllMocks();
     });
 
-    it('should successfully execute the complete mint flow', async () => {
+    it('should successfully execute the complete endorse transfer flow', async () => {
       const mockInputs: any = {
-        network: NetworkCmdName.Sepolia,
-        address: '0x1234567890123456789012345678901234567890',
+        network: NetworkCmdName.Astron,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        beneficiary: '0x0987654321098765432109876543210987654321',
-        holder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         dryRun: false,
         maxPriorityFeePerGasScale: 1,
@@ -541,7 +436,7 @@ describe('token-registry/mint', () => {
         blockHash: '0xblockhash',
         confirmations: 1,
         from: '0xfrom',
-        to: mockInputs.address,
+        to: mockInputs.tokenRegistryAddress,
         gasUsed: { toNumber: () => 100000 } as any,
         cumulativeGasUsed: { toNumber: () => 100000 } as any,
         effectiveGasPrice: { toNumber: () => 1000000000 } as any,
@@ -559,16 +454,15 @@ describe('token-registry/mint', () => {
         .mockResolvedValueOnce('encryptedWallet');
 
       (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
+        .mockResolvedValueOnce(mockInputs.tokenRegistryAddress)
         .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
+        .mockResolvedValueOnce(mockInputs.newBeneficiary)
         .mockResolvedValueOnce(mockInputs.encryptedWalletPath)
         .mockResolvedValueOnce('');
 
       const trustvcModule = await import('@trustvc/trustvc');
-      const mintMock = trustvcModule.mint as MockedFunction<any>;
-      mintMock.mockResolvedValue({
+      const transferBeneficiaryMock = trustvcModule.transferBeneficiary as MockedFunction<any>;
+      transferBeneficiaryMock.mockResolvedValue({
         hash: mockTransaction.transactionHash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
@@ -602,6 +496,48 @@ describe('token-registry/mint', () => {
 
       const signaleModule = await import('signale');
       expect(signaleModule.error).toHaveBeenCalledWith(errorMessage);
+    });
+  });
+
+  describe('endorseNominatedBeneficiary', () => {
+    beforeEach(() => {
+      delete process.env.OA_PRIVATE_KEY;
+      vi.mocked(transferBeneficiaryImpl).mockResolvedValue({
+        hash: 'hash',
+        wait: () => Promise.resolve({ transactionHash: 'transactionHash' }),
+      } as any);
+
+      // Re-setup the validateNominateBeneficiary mock
+      vi.mocked(helpers.validateNominateBeneficiary).mockImplementation(
+        async ({ beneficiaryNominee }) => {
+          if (beneficiaryNominee === '0x2222222222222222222222222222222222222222') {
+            throw new Error(
+              'new beneficiary address is the same as the current beneficiary address',
+            );
+          }
+        },
+      );
+    });
+
+    it('should pass in the correct params and call the following procedures to invoke an endorsement of transfer of owner of a transferable record', async () => {
+      const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
+      await endorseNominatedBeneficiary({
+        ...endorseNominatedBeneficiaryParams,
+        key: privateKey,
+      });
+
+      expect(transferBeneficiaryImpl).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw an error if nominee is the owner address', async () => {
+      const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
+      await expect(
+        endorseNominatedBeneficiary({
+          ...endorseNominatedBeneficiaryParams,
+          newBeneficiary: '0x2222222222222222222222222222222222222222',
+          key: privateKey,
+        }),
+      ).rejects.toThrow(`new beneficiary address is the same as the current beneficiary address`);
     });
   });
 });

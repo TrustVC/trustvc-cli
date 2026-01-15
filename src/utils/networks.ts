@@ -1,4 +1,4 @@
-import { Provider, JsonRpcProvider, InfuraProvider } from 'ethers';
+import { ethers } from 'ethers';
 import type { GasStationFunction } from './gas-station';
 import { gasStation } from './gas-station';
 
@@ -6,7 +6,7 @@ export type networkCurrency = 'ETH' | 'MATIC' | 'XDC' | 'FREE' | 'ASTRON';
 
 type SupportedNetwork = {
   explorer: string;
-  provider: () => Provider;
+  provider: () => ethers.providers.Provider;
   networkId: number;
   networkName: (typeof NetworkCmdName)[keyof typeof NetworkCmdName];
   currency: networkCurrency;
@@ -28,14 +28,14 @@ export enum NetworkCmdName {
 }
 
 const defaultInfuraProvider =
-  (networkName: string): (() => Provider) =>
+  (networkName: string): (() => ethers.providers.Provider) =>
   () =>
-    new InfuraProvider(networkName);
+    new ethers.providers.InfuraProvider(networkName);
 
 const jsonRpcProvider =
-  (url: string): (() => Provider) =>
+  (url: string): (() => ethers.providers.Provider) =>
   () =>
-    new JsonRpcProvider(url);
+    new ethers.providers.JsonRpcProvider(url);
 
 /**
  * Creates a provider that checks for an environment variable override
@@ -46,14 +46,14 @@ const jsonRpcProvider =
 const getProviderWithEnvOverride =
   (
     networkName: NetworkCmdName,
-    defaultProvider: () => Provider,
-  ): (() => Provider) =>
+    defaultProvider: () => ethers.providers.Provider,
+  ): (() => ethers.providers.Provider) =>
   () => {
     const envVarName = `${networkName.toUpperCase()}_RPC`;
     const customRpcUrl = process.env[envVarName];
 
     if (customRpcUrl) {
-      return new JsonRpcProvider(customRpcUrl);
+      return new ethers.providers.JsonRpcProvider(customRpcUrl);
     }
 
     return defaultProvider();

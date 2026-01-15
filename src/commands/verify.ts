@@ -1,7 +1,8 @@
 import { input } from '@inquirer/prompts';
-import { readJsonFile, withAsyncCaptureConsoleWarn } from '../utils';
-import { SignedVerifiableCredential, VerificationFragment, VerificationFragmentWithData, verifyDocument } from '@trustvc/trustvc';
+import { getSupportedNetwork, getSupportedNetworkNameFromId, readJsonFile, withAsyncCaptureConsoleWarn } from '../utils';
+import { getChainId, getDocumentData, isWrappedV2Document, isWrappedV3Document, SignedVerifiableCredential, VerificationFragment, VerificationFragmentWithData, verifyDocument } from '@trustvc/trustvc';
 import signale from 'signale';
+import { getDefaultProvider } from 'ethers';
 
 export const command = 'verify';
 export const describe = 'Verify a document signed using w3c or OpenAttestation';
@@ -36,8 +37,33 @@ export const promptQuestions = async (): Promise<SignedVerifiableCredential> => 
 }
 
 export const verify = async (signedVC: SignedVerifiableCredential) => {
-    const { result, warnings } = await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC));
-    handleExpiredCredentialWarning(warnings);
+    const isOpenAttestationV2 = isWrappedV2Document(signedVC);
+    const isOpenAttestationV3 = isWrappedV3Document(signedVC);
+    const isW3C = !isOpenAttestationV2 && !isOpenAttestationV3;
+
+    let result: VerificationFragment[];
+    let warnings: unknown[][];
+
+    if (isW3C) {
+        signale.info('Verifying W3C document...');
+        ({ result, warnings } = await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC)));
+        handleExpiredCredentialWarning(warnings);
+    } else {
+        signale.info('Verifying OpenAttestation document...');
+        const documentData = getDocumentData(signedVC);
+
+        if (documentData.expirationDate && documentData.expirationDate < new Date().toISOString()) {
+            signale.warn(`The Verifiable Credential has expired.`);
+        }
+
+        const chainId = Number(documentData.network?.chainId);
+        const chainName = getSupportedNetworkNameFromId(chainId); 
+        if (chainId) {
+            result = await verifyDocument(signedVC, { provider: getSupportedNetwork(chainName).provider() });
+        } else {
+            result = await verifyDocument(signedVC);
+        }
+    }
 
     logResultStatus(getResultFromFragment('DOCUMENT_INTEGRITY', result));
     logResultStatus(getResultFromFragment('DOCUMENT_STATUS', result));
@@ -67,6 +93,6 @@ export const handleExpiredCredentialWarning = (warnings: unknown[][]) => {
     const expiredWarning = warnings.find((warning) => warning[0] === 'Credential has expired.');
     // currently not logging to align output for w3c (reports expiration) and openattestation (does not report expiration)
     if (expiredWarning) {
-        // signale.warn(`The Verifiable Credential has expired.`);
+        signale.warn(`The Verifiable Credential has expired.`);
     }
 }

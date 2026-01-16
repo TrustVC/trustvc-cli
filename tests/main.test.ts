@@ -536,7 +536,7 @@ describe('trustvc-cli', () => {
     let signalWarnSpy: MockedFunction<typeof signale.warn>;
     let signaleSuccessSpy: MockedFunction<typeof signale.success>;
     let readJsonFileMock: MockedFunction<typeof utils.readJsonFile>;
-    let withAsyncCaptureConsoleWarnMock: MockedFunction<any>;
+    let withAsyncCaptureConsoleWarnMock: MockedFunction<typeof utils.withAsyncCaptureConsoleWarn>;
     let getSupportedNetworkMock: MockedFunction<typeof utils.getSupportedNetwork>;
     let getSupportedNetworkNameFromIdMock: MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
 
@@ -550,26 +550,18 @@ describe('trustvc-cli', () => {
       signaleSuccessSpy = signale.success as MockedFunction<typeof signale.success>;
 
       const actualUtils = await vi.importActual<typeof import('../src/utils')>('../src/utils');
-      readJsonFileMock = utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>;
-      readJsonFileMock.mockImplementation(((filePath: string, fileType: string) => {
-        return (actualUtils.readJsonFile as any)(filePath, fileType);
-      }) as any);
 
-      withAsyncCaptureConsoleWarnMock = utils.withAsyncCaptureConsoleWarn as MockedFunction<any>;
-      withAsyncCaptureConsoleWarnMock.mockImplementation(((fn: any) => {
-        return (actualUtils.withAsyncCaptureConsoleWarn as any)(fn);
-      }) as any);
+      readJsonFileMock = utils.readJsonFile as MockedFunction<typeof utils.readJsonFile>;
+      readJsonFileMock.mockImplementation(actualUtils.readJsonFile);
 
       getSupportedNetworkMock = utils.getSupportedNetwork as MockedFunction<typeof utils.getSupportedNetwork>;
-      getSupportedNetworkMock.mockImplementation(((networkCmdName: string) => {
-        return (actualUtils.getSupportedNetwork as any)(networkCmdName);
-      }) as any);
+      getSupportedNetworkMock.mockImplementation(actualUtils.getSupportedNetwork);
 
-      getSupportedNetworkNameFromIdMock =
-        utils.getSupportedNetworkNameFromId as MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
-      getSupportedNetworkNameFromIdMock.mockImplementation(((networkId: number) => {
-        return (actualUtils.getSupportedNetworkNameFromId as any)(networkId);
-      }) as any);
+      getSupportedNetworkNameFromIdMock = utils.getSupportedNetworkNameFromId as MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
+      getSupportedNetworkNameFromIdMock.mockImplementation(actualUtils.getSupportedNetworkNameFromId);
+
+      withAsyncCaptureConsoleWarnMock = utils.withAsyncCaptureConsoleWarn as MockedFunction<typeof utils.withAsyncCaptureConsoleWarn>;
+      withAsyncCaptureConsoleWarnMock.mockImplementation((fn: any) => actualUtils.withAsyncCaptureConsoleWarn(fn));
     });
 
     it(

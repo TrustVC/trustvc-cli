@@ -88,12 +88,17 @@ const verifyW3CDocument = async (
     signedVC: SignedVerifiableCredential
 ): Promise<{ result: VerificationFragment[]; warnings: unknown[][] }> => {
     signale.info('Verifying W3C document...');
-
     if (isTransferableRecord(signedVC)) {
-        const credentialStatus = getTransferableRecordsCredentialStatus(signedVC);
-        const chainId = Number(credentialStatus.tokenNetwork.chainId);
-        const providerForTrustVC = resolveProviderForChainId(chainId);
-        return await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC, { provider: providerForTrustVC }));
+        const credentialStatus = getTransferableRecordsCredentialStatus(signedVC);        
+
+        if (credentialStatus.tokenNetwork.chainId != null) {
+            const chainId = Number(credentialStatus.tokenNetwork.chainId);
+            const providerForTrustVC = resolveProviderForChainId(chainId);
+            return await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC, { provider: providerForTrustVC }));
+        } else {
+            signale.error('Could not find blockchain information');
+            throw new Error('Could not find blockchain information');
+        }
     } else {
         return await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC));
     }
@@ -109,9 +114,8 @@ const verifyOpenAttestationDocument = async (
         signale.warn(`The document credential has expired.`);
     }
 
-    const chainId = Number(documentData.network?.chainId);
-
-    if (chainId) {
+    if (documentData.network?.chainId != null) {
+        const chainId = Number(documentData.network?.chainId);
         const providerForTrustVC = resolveProviderForChainId(chainId);
         return await verifyDocument(signedVC, { provider: providerForTrustVC });
     } else {

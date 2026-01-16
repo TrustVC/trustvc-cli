@@ -8,6 +8,7 @@ A command-line interface tool for working with Decentralized Identifiers (DIDs),
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
 - ✅ **Sign Verifiable Credentials**: Sign verifiable credentials
+- ✅ **Verify Documents**: Verify documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Credential Status**: Create and update W3C credential status lists
 - ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
@@ -28,6 +29,7 @@ This CLI leverages the TrustVC package:
   - [`trustvc key-pair-generation`](#trustvc-key-pair-generation)
   - [`trustvc did-web`](#trustvc-did-web)
   - [`trustvc w3c-sign`](#trustvc-w3c-sign)
+  - [`trustvc verify`](#trustvc-verify)
   - [`trustvc credential-status-create`](#trustvc-credential-status-create)
   - [`trustvc credential-status-update`](#trustvc-credential-status-update)
   - [`trustvc mint`](#trustvc-mint)
@@ -61,6 +63,9 @@ trustvc did-web
 # Sign a verifiable credential
 trustvc w3c-sign
 
+# Verify a document
+trustvc verify
+
 # Create a credential status list
 trustvc credential-status-create
 
@@ -78,6 +83,8 @@ trustvc mint
 - **Generating Well-Known DID**: The CLI uses the `issueDID` function from `@trustvc/trustvc` to generate a did:web identifier. This allows users to self-host their DID as a unique identifier in decentralized systems.
 
 - **Sign Verifiable Credentials**: The CLI uses the `w3cSign` function from `@trustvc/trustvc` to sign verifiable credentials with the provided did:web identifier.
+
+- **Verify Documents**: The CLI uses the `verifyDocument` function from `@trustvc/trustvc` to verify documents. This supports both W3C and OA standards. For W3C documents, both transferable and non-transferable documents are also supported.
 
 - **Credential Status Management**: The CLI provides commands to create and update W3C credential status lists for managing the revocation status of verifiable credentials.
 
@@ -139,6 +146,28 @@ Signs a verifiable credential using a did:web identifier.
 **Example:**
 ```sh
 trustvc w3c-sign
+```
+
+### `trustvc verify`
+
+Verifies a verifiable credential document and shows expiration warning if the document is expired. This supports both W3C (transferable and non-transferable documents) and OA standards. 
+
+**Interactive prompts:**
+- Path to verifiable credential document
+
+**Output:** Results are directly displayed in the CLI 
+```
+// Example
+info: Verifying W3C document...
+warning: The document credential has expired.
+success: DOCUMENT_INTEGRITY: VALID
+success: DOCUMENT_STATUS: INVALID [Document has been revoked.]
+success: ISSUER_IDENTITY: VALID
+```
+
+**Example:**
+```sh
+trustvc verify
 ```
 
 ### `trustvc credential-status-create`
@@ -283,6 +312,7 @@ npm test
 │   │       └── credentialStatus/
 │   │           ├── create.ts        # Create credential status
 │   │           └── update.ts        # Update credential status
+│   │       └── verify.ts            # Verify document
 │   ├── utils/
 │   │   ├── wallet.ts                # Wallet and signer utilities
 │   │   ├── networks.ts              # Network configurations
@@ -301,6 +331,7 @@ npm test
 │   │       └── credentialStatus/
 │   │           ├── create.test.ts
 │   │           └── update.test.ts
+│   │       └── verify.test.ts
 │   └── main.test.ts
 ├── package.json
 └── README.md

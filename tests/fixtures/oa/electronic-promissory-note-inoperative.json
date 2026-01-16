@@ -1,0 +1,71 @@
+{
+  "version": "https://schema.openattestation.com/2.0/schema.json",
+  "data": {
+    "issuers": [
+      {
+        "id": "89e619e8-a715-4297-898f-c9147c936a13:string:did:ethr:0x433097a1C1b8a3e9188d8C54eCC057B1D69f1638",
+        "name": "bfcc1275-369d-4d94-8b9f-4f4b9c6244dc:string:DEMO STORE",
+        "revocation": {
+          "type": "73afa4c5-3aa6-4689-82c0-bfc5100e0e10:string:NONE"
+        },
+        "tokenRegistry": "cee96408-6a9c-4db2-99ad-3cf67101f64c:string:0x7202363bBDb126036F7C3243Ebac310d9d145040",
+        "identityProof": {
+          "type": "2491effe-65a9-4ccc-a391-8175610b5383:string:DID",
+          "key": "854d99cb-b2c8-4df6-b033-684a7b49a3a8:string:did:ethr:0x433097a1C1b8a3e9188d8C54eCC057B1D69f1638#controller"
+        }
+      }
+    ],
+    "network": {
+      "chain": "0f33eb03-7b51-4792-9f68-43ef0634756c:string:FREE",
+      "chainId": "dd81db90-bf81-4be6-9c41-9af23743b763:string:101010"
+    },
+    "$template": {
+      "type": "8d476854-2e22-429b-ad95-32cda496bbb1:string:EMBEDDED_RENDERER",
+      "name": "f3453160-9ba1-437f-bbe4-192b3186d9e9:string:PROMISSORY_NOTE",
+      "url": "e44c4b39-6b3c-4340-b069-3441cea46d4c:string:https://generic-templates.tradetrust.io"
+    },
+    "links": {
+      "self": {
+        "href": "45dea79e-d378-417d-b0af-8d529106432e:string:https://actions.tradetrust.io?q=%7B%22type%22%3A%22DOCUMENT%22%2C%22payload%22%3A%7B%22uri%22%3A%22https%3A%2F%2Fgallery.tradetrust.io%2Fstatic%2FOA%2Felectronic-promissory-note-inoperative.json%22%2C%22redirect%22%3A%22https%3A%2F%2Fref.tradetrust.io%2F%22%2C%22chainId%22%3A%22101010%22%7D%7D"
+      }
+    },
+    "type": ["6246c6f3-802d-4877-bc48-37a6db4cefce:string:PromissoryNote"],
+    "drawerCompanyName": "6ba57d43-3b76-48ae-a9c7-8caf12b37ad4:string:XYZ Exports Pvt. Ltd.",
+    "drawerCompanyNo": "daac2130-b0a3-4a78-8b85-e3d21dabe752:string:CIN-XYZ1234567",
+    "drawerJurisdiction": "ce2399ee-e52b-4825-b8b1-6d3cbc210e6c:string:India",
+    "drawerEmail": "5c440e61-6aa1-4cc2-9470-0d6d357d7664:string:accounts@xyzexports.com",
+    "drawerWalletAddress": "8559cc37-367e-4211-bb2d-f1485472fdb4:string:0x433097a1C1b8a3e9188d8C54eCC057B1D69f1638",
+    "drawerPlaceOfIssue": "9e833d79-6f32-4382-bccd-11c86400e220:string:Mumbai, India",
+    "draweeCompanyName": "26fe49d5-dbf3-44ad-a8bc-ccd2a68a6ebf:string:XYZ Imports Ltd.",
+    "draweeCompanyNo": "310d5978-0a2d-4560-9dcd-c8eaa5311e69:string:REG-XYZ9876543",
+    "draweeJurisdiction": "dd17b411-500c-4453-90bf-49c33ff2d916:string:United Kingdom",
+    "draweeEmail": "210a2df3-ba9f-42e1-814d-5033b2c193f3:string:finance@xyzimports.co.uk",
+    "draweeWalletAddress": "e14d6999-537e-4dd6-b87d-84f9c3ab2940:string:0xca93690bb57eeab273c796a9309246bc0fb93649",
+    "dueDate": "9e57d162-2919-4177-96b5-7cc4084161b2:string:2025-06-19",
+    "currency": "a6eb075b-2044-429e-a911-c4fd72c853bf:string:USD",
+    "amount": "62f93c17-c597-492c-be55-b3fb382cc240:string:50,000.00",
+    "clause": "f19c1d55-6ab9-435b-a889-b6194d5fad88:string:Payment to be made in full without set-off or counterclaim, subject to terms agreed between Drawer and Drawee.",
+    "signerName": "9c6300b3-7334-44f6-a97e-31d5df7bdf80:string:John Doe",
+    "signerPosition": "a8a62f86-19a2-44aa-aa57-3d0eb9a171d1:string:Chief Financial Officer",
+    "signerEmail": "6186d335-7520-4a3a-bbe8-76b8eb4682d8:string:j.doe@xyzexports.com",
+    "signerTimeStamp": "dc5c3742-1359-4ead-8869-bd3555065692:string:2025-06-19",
+    "logo": "d3173012-4152-4d8d-99ba-cdc8b0bce30d:string:data:image/png;base64,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",
+    "pNoteId": "0b45657b-d094-4537-92d1-33e9905e5239:string:PN-9081-2231-SGP",
+    "commitmentDate": "043c9541-fcfb-435a-b66b-ae85253b11da:string:2025-06-19"
+  },
+  "signature": {
+    "type": "SHA3MerkleProof",
+    "targetHash": "6f968142ce6e5de930ca759b7fec8764d989e195f99245aabc493615825dee69",
+    "proof": [],
+    "merkleRoot": "6f968142ce6e5de930ca759b7fec8764d989e195f99245aabc493615825dee69"
+  },
+  "proof": [
+    {
+      "type": "OpenAttestationSignature2018",
+      "created": "2025-08-22T02:19:11.283Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:ethr:0x433097a1C1b8a3e9188d8C54eCC057B1D69f1638#controller",
+      "signature": "0xf5f60011568e131ad4eeb024a8cd7669d8f53123ebbd2da4a1a24b53505ed07c0d9a40d472702b1eec45d364bdb3258c2724ded0b9feb37b5153e2389161c3571c"
+    }
+  ]
+}

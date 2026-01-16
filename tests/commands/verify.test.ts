@@ -5,38 +5,40 @@ import { promptQuestions, verify } from '../../src/commands/verify';
 import { SignedVerifiableCredential } from '@trustvc/trustvc';
 import { getResultFromFragment, handleExpiredCredentialWarning, logResultStatus } from '../../src/commands/verify';
 
+// Different types of Credentials for W3C (Non-Transferable Records and Transferable Records)
+const W3C_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH = path.resolve(
+    process.cwd(),
+    'tests/fixtures/w3c/bill-of-lading-operative.json',
+);
+const W3C_SIGNED_VC_INVOICE_EXPIRED_FIXTURE_PATH = path.resolve(
+    process.cwd(),
+    'tests/fixtures/w3c/invoice-expired.json',
+);
+const W3C_SIGNED_VC_INVOICE_REVOKED_FIXTURE_PATH = path.resolve(
+    process.cwd(),
+    'tests/fixtures/w3c/invoice-revoked.json',
+);
+const W3C_SIGNED_VC_ELECTRONIC_PROMISSORY_NOTE_INOPERATIVE_FIXTURE_PATH = path.resolve(
+    process.cwd(),
+    'tests/fixtures/w3c/electronic-promissory-note-inoperative.json',
+);
 
-const W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH = path.resolve(
+// Different types of Credentials for OA (Non-Transferable Records and Transferable Records)
+const OA_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH = path.resolve(
     process.cwd(),
-    'tests/fixtures/w3c/certificate-of-origin-default.json',
+    'tests/fixtures/oa/bill-of-lading-operative.json',
 );
-const W3C_SIGNED_VC_EXPIRED_FIXTURE_PATH = path.resolve(
+const OA_SIGNED_VC_INVOICE_EXPIRED_FIXTURE_PATH = path.resolve(
     process.cwd(),
-    'tests/fixtures/w3c/certificate-of-origin-expired.json',
-);  
-const W3C_SIGNED_VC_REDACTED_FIXTURE_PATH = path.resolve(
-    process.cwd(),
-    'tests/fixtures/w3c/certificate-of-origin-redacted.json',
+    'tests/fixtures/oa/invoice-expired.json',
 );
-const W3C_SIGNED_VC_REVOKED_FIXTURE_PATH = path.resolve(
+const OA_SIGNED_VC_INVOICE_REVOKED_FIXTURE_PATH = path.resolve(
     process.cwd(),
-    'tests/fixtures/w3c/certificate-of-origin-revoked.json',
+    'tests/fixtures/oa/invoice-revoked.json',
 );
-const OA_SIGNED_VC_DEFAULT_FIXTURE_PATH = path.resolve(
+const OA_SIGNED_VC_ELECTRONIC_PROMISSORY_NOTE_INOPERATIVE_FIXTURE_PATH = path.resolve(
     process.cwd(),
-    'tests/fixtures/oa/certificate-of-origin-default.json',
-);
-const OA_SIGNED_VC_EXPIRED_FIXTURE_PATH = path.resolve(
-    process.cwd(),
-    'tests/fixtures/oa/certificate-of-origin-expired.json',
-);
-const OA_SIGNED_VC_REDACTED_FIXTURE_PATH = path.resolve(
-    process.cwd(),
-    'tests/fixtures/oa/certificate-of-origin-redacted.json',
-);
-const OA_SIGNED_VC_REVOKED_FIXTURE_PATH = path.resolve(
-    process.cwd(),
-    'tests/fixtures/oa/certificate-of-origin-revoked.json',
+    'tests/fixtures/oa/electronic-promissory-note-inoperative.json',
 );
 
 
@@ -113,9 +115,9 @@ describe('verify', () => {
         });
 
         describe('handleExpiredCredentialWarning', () => {
-            it('should not log when expiration warning is present (currently intentionally silent)', () => {
+            it('should log when expiration warning is present', () => {
                 handleExpiredCredentialWarning([['Credential has expired.']]);
-                expect(signaleWarnMock).not.toHaveBeenCalled();
+                expect(signaleWarnMock).toHaveBeenCalledWith('The document credential has expired.');
             });
 
             it('should not log when there is no expiration warning', () => {
@@ -123,11 +125,15 @@ describe('verify', () => {
                 expect(signaleWarnMock).not.toHaveBeenCalled();
             });
         });
+
+
     });
 
     describe('promptQuestions', () => {
         it('should return parsed signed VC from readJsonFile', async () => {
-            (prompts.input as any).mockResolvedValueOnce(W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH);
+            (prompts.input as any).mockResolvedValueOnce(
+                W3C_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH,
+            );
 
             const result = await promptQuestions();
 
@@ -135,15 +141,17 @@ describe('verify', () => {
         });
 
         it('should abide by validation rules for path input', async () => {
-            (prompts.input as any).mockResolvedValueOnce(W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH);
+            (prompts.input as any).mockResolvedValueOnce(
+                W3C_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH,
+            );
 
             await promptQuestions();
 
             const inputArgs = (prompts.input as any).mock.calls[0][0];
 
             expect(inputArgs.required).toBe(true);
-            expect(inputArgs.validate('')).toBe('signed Verifiable Credential file path is required');
-            expect(inputArgs.validate('   ')).toBe('signed Verifiable Credential file path is required');
+            expect(inputArgs.validate('')).toBe('Document file path is required');
+            expect(inputArgs.validate('   ')).toBe('Document file path is required');
             expect(inputArgs.validate('./signed_vc.json')).toBe(true);
         });
 
@@ -158,7 +166,7 @@ describe('verify', () => {
         });
     });
 
-    describe.sequential('verify', () => {
+    describe('verify', () => {
         let signaleSuccessMock: MockedFunction<any>;
         let signaleWarnMock: MockedFunction<any>;
 
@@ -170,50 +178,50 @@ describe('verify', () => {
 
         const testCases = [
             {
-                name: 'default w3c',
-                filePath: W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH,
-                expectWarn: false,
+                name: 'bill-of-lading operative w3c',
+                filePath: W3C_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH,
+                expectedWarning: 'none',
             },
             {
-                name: 'expired w3c',
-                filePath: W3C_SIGNED_VC_EXPIRED_FIXTURE_PATH,
-                expectWarn: false,
+                name: 'invoice expired w3c',
+                filePath: W3C_SIGNED_VC_INVOICE_EXPIRED_FIXTURE_PATH,
+                expectedWarning: 'expired',
             },
             {
-                name: 'redacted w3c',
-                filePath: W3C_SIGNED_VC_REDACTED_FIXTURE_PATH,
-                expectWarn: false,
+                name: 'invoice revoked w3c',
+                filePath: W3C_SIGNED_VC_INVOICE_REVOKED_FIXTURE_PATH,
+                expectedWarning: 'revoked',
             },
             {
-                name: 'revoked w3c',
-                filePath: W3C_SIGNED_VC_REVOKED_FIXTURE_PATH,
-                expectWarn: true,
+                name: 'electronic-promissory-note inoperative w3c',
+                filePath: W3C_SIGNED_VC_ELECTRONIC_PROMISSORY_NOTE_INOPERATIVE_FIXTURE_PATH,
+                expectedWarning: 'none',
             },
             {
-                name: 'default oa',
-                filePath: OA_SIGNED_VC_DEFAULT_FIXTURE_PATH,
-                expectWarn: false,
+                name: 'bill-of-lading operative oa',
+                filePath: OA_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH,
+                expectedWarning: 'none',
             },
             {
-                name: 'expired oa',
-                filePath: OA_SIGNED_VC_EXPIRED_FIXTURE_PATH,
-                expectWarn: false,
+                name: 'invoice expired oa',
+                filePath: OA_SIGNED_VC_INVOICE_EXPIRED_FIXTURE_PATH,
+                expectedWarning: 'expired',
             },
             {
-                name: 'redacted oa',
-                filePath: OA_SIGNED_VC_REDACTED_FIXTURE_PATH,
-                expectWarn: false,
+                name: 'invoice revoked oa',
+                filePath: OA_SIGNED_VC_INVOICE_REVOKED_FIXTURE_PATH,
+                expectedWarning: 'revoked',
             },
             {
-                name: 'revoked oa',
-                filePath: OA_SIGNED_VC_REVOKED_FIXTURE_PATH,
-                expectWarn: true,
+                name: 'electronic-promissory-note inoperative oa',
+                filePath: OA_SIGNED_VC_ELECTRONIC_PROMISSORY_NOTE_INOPERATIVE_FIXTURE_PATH,
+                expectedWarning: 'none',
             },
         ];
 
         it.each(testCases)(
             'should verify real signed VC fixture: $name',
-            async ({ filePath, expectWarn }) => {
+            async ({ filePath, expectedWarning }) => {
                 const utils = await import('../../src/utils');
                 const signedVC = utils.readJsonFile<SignedVerifiableCredential>(filePath, 'document');
 
@@ -227,14 +235,21 @@ describe('verify', () => {
 
                 const combinedMessages = [...successMessages, ...warnMessages];
 
-                expect(successMessages.join('\n')).toContain('DOCUMENT_INTEGRITY:');
-                expect(successMessages.join('\n')).toContain('ISSUER_IDENTITY:');
+                expect(combinedMessages.join('\n')).toContain('DOCUMENT_INTEGRITY:');
+                expect(combinedMessages.join('\n')).toContain('ISSUER_IDENTITY:');
                 expect(combinedMessages.join('\n')).toContain('DOCUMENT_STATUS:');
 
-                if (expectWarn) {
+                if (expectedWarning === 'revoked') {
                     expect(warnMessages.length).toBeGreaterThan(0);
                     expect(warnMessages.join('\n')).toContain('DOCUMENT_STATUS:');
-                } else {
+                }
+
+                if (expectedWarning === 'expired') {
+                    expect(warnMessages.length).toBeGreaterThan(0);
+                    expect(warnMessages.join('\n')).toContain('The document credential has expired.');
+                }
+
+                if (expectedWarning === 'none') {
                     expect(warnMessages.length).toBe(0);
                     expect(successMessages).toEqual(
                         expect.arrayContaining([

@@ -537,9 +537,11 @@ describe('trustvc-cli', () => {
     let signaleSuccessSpy: MockedFunction<typeof signale.success>;
     let readJsonFileMock: MockedFunction<typeof utils.readJsonFile>;
     let withAsyncCaptureConsoleWarnMock: MockedFunction<any>;
+    let getSupportedNetworkMock: MockedFunction<typeof utils.getSupportedNetwork>;
+    let getSupportedNetworkNameFromIdMock: MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
 
     const W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH = './tests/fixtures/w3c/certificate-of-origin-default.json';
-    const OA_SIGNED_VC_REVOKED_FIXTURE_PATH = './tests/fixtures/oa/certificate-of-origin-revoked.json';
+    const OA_SIGNED_VC_REVOKED_FIXTURE_PATH = './tests/fixtures/oa/invoice-revoked.json';
 
     beforeEach(async () => {
       vi.resetAllMocks();
@@ -556,6 +558,17 @@ describe('trustvc-cli', () => {
       withAsyncCaptureConsoleWarnMock = utils.withAsyncCaptureConsoleWarn as MockedFunction<any>;
       withAsyncCaptureConsoleWarnMock.mockImplementation(((fn: any) => {
         return (actualUtils.withAsyncCaptureConsoleWarn as any)(fn);
+      }) as any);
+
+      getSupportedNetworkMock = utils.getSupportedNetwork as MockedFunction<typeof utils.getSupportedNetwork>;
+      getSupportedNetworkMock.mockImplementation(((networkCmdName: string) => {
+        return (actualUtils.getSupportedNetwork as any)(networkCmdName);
+      }) as any);
+
+      getSupportedNetworkNameFromIdMock =
+        utils.getSupportedNetworkNameFromId as MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
+      getSupportedNetworkNameFromIdMock.mockImplementation(((networkId: number) => {
+        return (actualUtils.getSupportedNetworkNameFromId as any)(networkId);
       }) as any);
     });
 
@@ -581,7 +594,7 @@ describe('trustvc-cli', () => {
 
         expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
         expect(signaleSuccessSpy).toHaveBeenCalledWith('ISSUER_IDENTITY: VALID');
-        expect(signalWarnSpy).toHaveBeenCalledWith(expect.stringContaining('DOCUMENT_STATUS: ERROR'));
+        expect(signalWarnSpy).toHaveBeenCalledWith(expect.stringContaining('DOCUMENT_STATUS: INVALID'));
       },
     );
   });

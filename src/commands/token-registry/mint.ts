@@ -68,7 +68,6 @@ export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
     holder,
     remark,
     encryptionKey,
-    dryRun: false,
     maxPriorityFeePerGasScale: 1,
   };
 
@@ -132,15 +131,9 @@ const mintToTokenRegistry = async ({
   remark,
   encryptionKey,
   network,
-  dryRun,
   ...rest
 }: TokenRegistryMintCommand): Promise<TransactionReceipt> => {
   const wallet = await getWalletOrSigner({ network, ...rest });
-
-  if (dryRun) {
-    console.log('🔧 Dry run mode is currently undergoing upgrades and will be available soon.');
-    process.exit(0);
-  }
 
   // Automatic dry run for Ethereum and Polygon networks
   const shouldProceed = await performDryRunWithConfirmation({

@@ -4,6 +4,7 @@ import { OpenAttestationDocument, wrapOADocument, wrapOADocuments, WrappedOrSign
 import signale from "signale";
 import path from "path";
 import { WrapMode, WrapOAInput } from "../../types";
+import { mkdirSync } from "fs";
 
 export const command = 'oa-wrap';
 export const describe = 'Wrap OpenAttestation document(s)';
@@ -74,7 +75,10 @@ export const promptForInputs = async (): Promise<WrapOAInput> => {
         default: '.',
     })
 
-    if (!isDirectoryValid(pathToOutputDirectory)) throw new Error('Output Directory is not valid');
+    if (!isDir(pathToOutputDirectory)) {
+        signale.info(`Directory not found; Creating new directory: ${pathToOutputDirectory}`);
+        mkdirSync(pathToOutputDirectory, { recursive: true });
+    }
 
     return {
         mode,
@@ -88,30 +92,42 @@ export const wrapOA = async ({
     docPaths,
     pathToOutputDirectory,
 }: WrapOAInput) => {
+    const docData = docPaths.map((docPath) => ({
+        path: docPath,
+        fileName: path.basename(docPath),
+        document: readOpenAttestationFile(docPath),
+    }));
+
     if (mode === WrapMode.Batch) {
-        const oaDocs: OpenAttestationDocument[] = docPaths.map((doc) => readOpenAttestationFile(doc));
-        const wrappedDocuments = await wrapOADocuments(oaDocs);
-        signale.success('OpenAttestation document batch successfully wrapped');
+        const wrappedDocuments = await wrapOADocuments(docData.map(d => d.document));
 
-        const pathToOutputFile = path.join(pathToOutputDirectory, "batchwrapped_oa_docs.json");
-        writeFile(pathToOutputFile, wrappedDocuments, true);
-        signale.success(`Wrapped OpenAttestation document batch saved to: ${pathToOutputFile}`);
-        return;
+        const results = docData.map((data, index) => ({
+            ...data,
+            wrappedDocument: wrappedDocuments[index],
+        }));
+
+        results.forEach(({ fileName, wrappedDocument }) => {
+            const outFile = path.join(pathToOutputDirectory, `${fileName}`);
+            writeFile(outFile, wrappedDocument, true);
+            signale.success(`Wrapped OpenAttestation document: ${outFile}`);
+        });
+
+        signale.success('All documents wrapped in batch mode');
     } else {
-        const wrappedDocs: Record<string, WrappedOrSignedOpenAttestationDocument> = {};
-        for (const doc of docPaths) {
-            const oaDoc: OpenAttestationDocument = readOpenAttestationFile(doc);
-            const wrappedDoc = await wrapOADocument(oaDoc);
-            const outFile = path.join(pathToOutputDirectory, path.basename(doc));
-            wrappedDocs[outFile] = wrappedDoc;
-        }
-        // Only save wrapped documents if all documents are valid
-        for (const [outFile, wrappedDoc] of Object.entries(wrappedDocs)) {
-            writeFile(outFile, wrappedDoc, true);
+        for (const data of docData) {
+            try {
+                const wrappedDocument = await wrapOADocument(data.document);
+                const outFile = path.join(pathToOutputDirectory, `${data.fileName}`);
+                writeFile(outFile, wrappedDocument, true);
+                signale.success(`Wrapped OpenAttestation document: ${outFile}`);
+            } catch (err: unknown) {
+                signale.error(`Error while wrapping OpenAttestation document: ${data.path}`);
+                if (err instanceof Error) {
+                    signale.error(err.message);
+                }
+            }
         }
 
-        signale.success(`OpenAttestation ${docPaths.length > 1 ? 'documents' : 'document'} successfully wrapped`);
-        signale.success(`Wrapped OpenAttestation ${docPaths.length > 1 ? 'documents' : 'document'} saved to: ${pathToOutputDirectory}`);
-        return;
+        signale.success('All documents wrapped in individual mode');
     }
 };

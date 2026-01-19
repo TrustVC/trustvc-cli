@@ -4,6 +4,7 @@ import { UnwrapOAInput } from "../../types";
 import { documentsInDirectory, isDir, isDirectoryValid, isFile, readOpenAttestationFile, writeFile } from "../../utils";
 import signale from "signale";
 import path from "path";
+import { mkdirSync } from "fs";
 
 export const command = 'oa-unwrap';
 export const describe = 'Unwrap wrapped OpenAttestation document(s) (Only for individual documents)';
@@ -49,7 +50,9 @@ export const promptForInputs = async (): Promise<UnwrapOAInput> => {
         default: '.',
     });
 
-    if (!isDirectoryValid(pathToOutputDirectory)) throw new Error('Output Directory is not valid');
+    if (!isDirectoryValid(pathToOutputDirectory)) {
+        mkdirSync(pathToOutputDirectory, { recursive: true });
+    }
 
     return {
         docPaths,
@@ -61,20 +64,16 @@ export const unwrapOA = async ({
     docPaths,
     pathToOutputDirectory,
 }: UnwrapOAInput) => {
-    const unwrappedDocs: Record<string, OpenAttestationDocument> = {};
     for (const doc of docPaths) {
         const wrappedOADocument: WrappedOrSignedOpenAttestationDocument = readOpenAttestationFile(doc);
-        const unwrappedDocument: OpenAttestationDocument = getDataV2(wrappedOADocument as any); // Any to resolve the module resolution conflict for WrappedDocument between @trustvc/trustvc and @tradetrust-tt/tradetrust
-        if (!unwrappedDocument) throw new Error('Invalid wrapped OpenAttestation document');
-
-        const outFile = path.join(pathToOutputDirectory, path.basename(doc));
-        unwrappedDocs[outFile] = unwrappedDocument;
+        try {
+            const unwrappedDocument: OpenAttestationDocument = getDataV2(wrappedOADocument as any); // Any to resolve the module resolution conflict for WrappedDocument between @trustvc/trustvc and @tradetrust-tt/tradetrust
+            if (!unwrappedDocument) throw new Error('Invalid wrapped OpenAttestation document');
+            const outFile = path.join(pathToOutputDirectory, path.basename(doc));
+            writeFile(outFile, unwrappedDocument, true);
+            signale.success(`Unwrapped OpenAttestation document: ${doc}`);
+        } catch (err: unknown) {
+            signale.error(`Error while unwrapping OpenAttestation document: ${doc}`);
+        }
     }
-
-    for (const [outFile, unwrappedDocument] of Object.entries(unwrappedDocs)) {
-        writeFile(outFile, unwrappedDocument, true);
-    }
-
-    signale.success(`OpenAttestation ${docPaths.length > 1 ? 'documents' : 'document'} unwrapped successfully`);
-    signale.success(`Unwrapped OpenAttestation ${docPaths.length > 1 ? 'documents' : 'document'} saved to: ${pathToOutputDirectory}`);
 };

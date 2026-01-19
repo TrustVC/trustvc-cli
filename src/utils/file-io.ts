@@ -22,7 +22,7 @@ export const readFile = (filename: string): any => {
   return fs.readFileSync(filename, 'utf8');
 };
 
-export const readOpenAttestationFile = (filename: string): any => {
+export const readDocumentFile = (filename: string): any => {
   return JSON.parse(readFile(filename));
 };
 

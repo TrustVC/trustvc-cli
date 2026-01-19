@@ -1,4 +1,3 @@
-import { input } from '@inquirer/prompts';
 import signale, { error, info, success } from 'signale';
 import { TokenRegistryMintCommand } from '../../types';
 import {
@@ -7,14 +6,18 @@ import {
   getErrorMessage,
   getEtherscanAddress,
   NetworkCmdName,
-  promptRemarkAndEncryptionKey,
-  promptNetworkSelection,
   promptWalletSelection,
   getWalletOrSigner,
   canEstimateGasPrice,
   getGasFees,
+  extractDocumentInfo,
+  promptAndReadDocument,
+  promptRemark,
+  promptAddress,
+  performDryRunWithConfirmation,
 } from '../../utils';
-import { BigNumberish, TransactionReceipt } from 'ethers';
+import { connectToTokenRegistry, validateAndEncryptRemark } from '../helpers';
+import { TransactionReceipt } from 'ethers';
 import { mint } from '@trustvc/trustvc';
 
 export const command = 'mint';
@@ -34,76 +37,32 @@ export const handler = async (): Promise<void> => {
 
 // Prompt user for all required inputs
 export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
-  // Network selection
-  const network = await promptNetworkSelection();
+  // Extract document information using utility function
+  const document = await promptAndReadDocument();
 
-  // Token Registry Address
-  const address = await input({
-    message: 'Enter the token registry contract address:',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Token registry address is required';
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-        return 'Invalid Ethereum address format';
-      }
-      return true;
-    },
-  });
-
-  // Token ID (Document Hash)
-  const tokenId = await input({
-    message: 'Enter the document hash (tokenId) to mint:',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Token ID is required';
-      }
-      return true;
-    },
-  });
+  // Extract document information using utility function
+  const { tokenRegistry, tokenId, network, documentId, registryVersion } =
+    await extractDocumentInfo(document);
 
   // Beneficiary Address
-  const beneficiary = await input({
-    message: 'Enter the beneficiary address (initial recipient):',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Beneficiary address is required';
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-        return 'Invalid Ethereum address format';
-      }
-      return true;
-    },
-  });
+  const beneficiary = await promptAddress('beneficiary', 'initial recipient');
 
   // Holder Address
-  const holder = await input({
-    message: 'Enter the holder address (initial holder):',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Holder address is required';
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-        return 'Invalid Ethereum address format';
-      }
-      return true;
-    },
-  });
+  const holder = await promptAddress('holder', 'initial holder');
 
   // Wallet selection
   const { encryptedWalletPath, key, keyFile } = await promptWalletSelection();
 
-  // Optional: Remark and Encryption Key
-  const { remark, encryptionKey } = await promptRemarkAndEncryptionKey();
+  // Optional: Remark (only for V5)
+  const remark = await promptRemark(registryVersion);
+
+  // Use document ID as encryption key
+  const encryptionKey = documentId;
 
   // Build the result object with proper typing
   const baseResult = {
     network,
-    address,
+    address: tokenRegistry,
     tokenId,
     beneficiary,
     holder,
@@ -177,30 +136,76 @@ const mintToTokenRegistry = async ({
   ...rest
 }: TokenRegistryMintCommand): Promise<TransactionReceipt> => {
   const wallet = await getWalletOrSigner({ network, ...rest });
-  let transactionOptions: { maxFeePerGas?: BigNumberish; maxPriorityFeePerGas?: BigNumberish } = {};
 
   if (dryRun) {
     console.log('🔧 Dry run mode is currently undergoing upgrades and will be available soon.');
     process.exit(0);
   }
 
+  // Automatic dry run for Ethereum and Polygon networks
+  const shouldProceed = await performDryRunWithConfirmation({
+    network,
+    getTransactionCallback: async () => {
+      const tokenRegistry = await connectToTokenRegistry({ address, wallet });
+      
+      // Validate and encrypt the remark with document ID as encryption key
+      const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
+      
+      // Populate the transaction for gas estimation
+      const tx = await tokenRegistry.mint.populateTransaction(
+        beneficiary,
+        holder,
+        tokenId,
+        encryptedRemark
+      );
+      
+      // Ensure the transaction has a 'from' address for proper gas estimation
+      return {
+        ...tx,
+        from: await wallet.getAddress(),
+      };
+    },
+  });
+
+  if (!shouldProceed) {
+    process.exit(0);
+  }
+
+  let transaction;
+
+  // Execute transaction with appropriate gas settings based on network capabilities
   if (canEstimateGasPrice(network)) {
+    // Ensure provider is available for gas estimation
     if (!wallet.provider) {
       throw new Error('Provider is required for gas estimation');
     }
+
+    // Get current gas fees from the network
     const gasFees = await getGasFees({ provider: wallet.provider, ...rest });
-    transactionOptions = {
-      maxFeePerGas: gasFees.maxFeePerGas as BigNumberish,
-      maxPriorityFeePerGas: gasFees.maxPriorityFeePerGas as BigNumberish,
-    };
+
+    // Execute mint with EIP-1559 gas parameters
+    transaction = await mint(
+      { tokenRegistryAddress: address },
+      wallet,
+      { beneficiaryAddress: beneficiary, holderAddress: holder, tokenId, remarks: remark },
+      {
+        id: encryptionKey,
+        maxFeePerGas: gasFees.maxFeePerGas?.toString(),
+        maxPriorityFeePerGas: gasFees.maxPriorityFeePerGas?.toString(),
+      },
+    );
+  } else {
+    // Execute mint without gas estimation (for networks that don't support it)
+    transaction = await mint(
+      { tokenRegistryAddress: address },
+      wallet,
+      { beneficiaryAddress: beneficiary, holderAddress: holder, tokenId, remarks: remark },
+      {
+        id: encryptionKey,
+      },
+    );
   }
 
-  const transaction = await mint(
-    { tokenRegistryAddress: address },
-    wallet,
-    { beneficiaryAddress: beneficiary, holderAddress: holder, tokenId, remarks: remark },
-    { id: encryptionKey, ...transactionOptions },
-  );
   signale.await(`Waiting for transaction ${transaction.hash} to be mined`);
   const receipt = (await transaction.wait()) as unknown as TransactionReceipt;
   if (!receipt) {

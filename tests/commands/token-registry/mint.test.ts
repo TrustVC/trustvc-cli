@@ -1,14 +1,7 @@
 import { TransactionReceipt } from '@ethersproject/providers';
-import * as prompts from '@inquirer/prompts';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
-import {
-  handler,
-  mintToken,
-  promptForInputs,
-} from '../../../src/commands/token-registry/mint';
+import { handler, mintToken, promptForInputs } from '../../../src/commands/token-registry/mint';
 import { NetworkCmdName } from '../../../src/utils';
-
-vi.mock('@inquirer/prompts');
 vi.mock('signale', async (importOriginal) => {
   const originalSignale = await importOriginal<typeof import('signale')>();
   return {
@@ -28,6 +21,18 @@ vi.mock('signale', async (importOriginal) => {
 
 vi.mock('@trustvc/trustvc', () => ({
   mint: vi.fn(),
+  v5Contracts: {
+    TitleEscrow__factory: {},
+    TradeTrustToken__factory: {},
+  },
+  checkSupportsInterface: vi.fn(),
+  v4SupportInterfaceIds: {},
+  v5SupportInterfaceIds: {},
+  encrypt: vi.fn(),
+  getTokenRegistryAddress: vi.fn(),
+  getTokenId: vi.fn(),
+  getChainId: vi.fn(),
+  SUPPORTED_CHAINS: {},
 }));
 
 vi.mock('../../../src/utils/wallet', () => ({
@@ -47,8 +52,30 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     displayTransactionPrice: vi.fn(),
     canEstimateGasPrice: vi.fn(() => false),
     getGasFees: vi.fn(),
+    promptAndReadDocument: vi.fn(),
+    extractDocumentInfo: vi.fn(),
+    promptAddress: vi.fn(),
+    promptWalletSelection: vi.fn(),
+    promptRemark: vi.fn(),
+    performDryRunWithConfirmation: vi.fn(async () => true), // Mock to always proceed
   };
 });
+
+vi.mock('../../../src/commands/helpers', () => ({
+  connectToTokenRegistry: vi.fn(async () => ({
+    mint: {
+      populateTransaction: vi.fn(),
+    },
+  })),
+  connectToTitleEscrow: vi.fn(),
+  validateEndorseChangeOwner: vi.fn(),
+  validateNominateBeneficiary: vi.fn(),
+  validatePreviousBeneficiary: vi.fn(),
+  validatePreviousHolder: vi.fn(),
+  validateEndorseTransferOwner: vi.fn(),
+  validateAndEncryptRemark: vi.fn((remark?: string) => (remark ? `0x${remark}` : '0x')),
+  getTokenRegistryVersion: vi.fn(),
+}));
 
 describe('token-registry/mint', () => {
   beforeEach(() => {
@@ -70,21 +97,31 @@ describe('token-registry/mint', () => {
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
         remark: 'Test remark',
-        encryptionKey: 'test-key',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network) // Network selection
-        .mockResolvedValueOnce('encryptedWallet'); // Wallet option
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.address,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address) // Token registry address
-        .mockResolvedValueOnce(mockInputs.tokenId) // Token ID
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.address,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.beneficiary) // Beneficiary
-        .mockResolvedValueOnce(mockInputs.holder) // Holder
-        .mockResolvedValueOnce('./wallet.json') // Encrypted wallet path
-        .mockResolvedValueOnce(mockInputs.remark) // Remark
-        .mockResolvedValueOnce(mockInputs.encryptionKey); // Encryption key
+        .mockResolvedValueOnce(mockInputs.holder); // Holder
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        encryptedWalletPath: './wallet.json',
+      });
+      (utils.promptRemark as any).mockResolvedValue(mockInputs.remark);
 
       const result = await promptForInputs();
 
@@ -95,7 +132,7 @@ describe('token-registry/mint', () => {
       expect(result.holder).toBe(mockInputs.holder);
       expect((result as any).encryptedWalletPath).toBe('./wallet.json');
       expect(result.remark).toBe(mockInputs.remark);
-      expect(result.encryptionKey).toBe(mockInputs.encryptionKey);
+      expect(result.encryptionKey).toBe(mockInputs.documentId);
       expect(result.dryRun).toBe(false);
       expect(result.maxPriorityFeePerGasScale).toBe(1);
     });
@@ -107,26 +144,38 @@ describe('token-registry/mint', () => {
         tokenId: '0xabcdef1234567890',
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('keyFile');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.address,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.address,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v4',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
-        .mockResolvedValueOnce('./private-key.txt') // keyFile
-        .mockResolvedValueOnce(''); // Empty remark
+        .mockResolvedValueOnce(mockInputs.holder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        keyFile: './private-key.txt',
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
       expect((result as any).keyFile).toBe('./private-key.txt');
       expect(result.remark).toBeUndefined();
-      expect(result.encryptionKey).toBeUndefined();
+      expect(result.encryptionKey).toBe(mockInputs.documentId);
     });
 
     it('should return correct answers for valid inputs with direct private key', async () => {
@@ -136,19 +185,31 @@ describe('token-registry/mint', () => {
         tokenId: '0xabcdef1234567890',
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('keyDirect');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.address,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.address,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
-        .mockResolvedValueOnce('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80') // key
-        .mockResolvedValueOnce(''); // Empty remark
+        .mockResolvedValueOnce(mockInputs.holder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        key: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
@@ -169,18 +230,29 @@ describe('token-registry/mint', () => {
         tokenId: '0xabcdef1234567890',
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('envVariable');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.address,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.address,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
-        .mockResolvedValueOnce('');
+        .mockResolvedValueOnce(mockInputs.holder);
+      (utils.promptWalletSelection as any).mockResolvedValue({});
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
@@ -201,15 +273,38 @@ describe('token-registry/mint', () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
       delete process.env.OA_PRIVATE_KEY;
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(NetworkCmdName.Sepolia)
-        .mockResolvedValueOnce('envVariable');
+      const mockInputs = {
+        network: NetworkCmdName.Sepolia,
+        address: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        beneficiary: '0x0987654321098765432109876543210987654321',
+        holder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce('0x1234567890123456789012345678901234567890')
-        .mockResolvedValueOnce('0xabcdef1234567890')
-        .mockResolvedValueOnce('0x0987654321098765432109876543210987654321')
-        .mockResolvedValueOnce('0x1111111111111111111111111111111111111111');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.address,
+      };
+
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.address,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
+        .mockResolvedValueOnce(mockInputs.beneficiary)
+        .mockResolvedValueOnce(mockInputs.holder);
+      (utils.promptWalletSelection as any).mockRejectedValue(
+        new Error(
+          'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
+        ),
+      );
 
       await expect(promptForInputs()).rejects.toThrowError(
         'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
@@ -221,18 +316,15 @@ describe('token-registry/mint', () => {
       }
     });
 
-    it('should validate token registry address format', async () => {
-      const invalidAddress = 'invalid-address';
+    it('should validate document file path', async () => {
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockRejectedValue(
+        new Error('Failed to read document file: File does not exist'),
+      );
 
-      (prompts.select as any).mockResolvedValueOnce(NetworkCmdName.Sepolia);
-      (prompts.input as any).mockResolvedValueOnce(invalidAddress);
-
-      // The validation happens in the prompt itself, we need to simulate it
-      //   const addressPromptCall = (prompts.input as any).mock.calls;
-
-      // Since we can't directly test the validation function in the prompt,
-      // we'll verify that the validation logic exists by checking the structure
-      expect(prompts.input).toBeDefined();
+      await expect(promptForInputs()).rejects.toThrowError(
+        'Failed to read document file: File does not exist',
+      );
     });
 
     it('should handle optional remark without encryption key', async () => {
@@ -242,25 +334,36 @@ describe('token-registry/mint', () => {
         tokenId: '0xabcdef1234567890',
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
-        remark: '',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('encryptedWallet');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.address,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.address,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
-        .mockResolvedValueOnce('./wallet.json')
-        .mockResolvedValueOnce(mockInputs.remark);
+        .mockResolvedValueOnce(mockInputs.holder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        encryptedWalletPath: './wallet.json',
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
       expect(result.remark).toBeUndefined();
-      expect(result.encryptionKey).toBeUndefined();
+      expect(result.encryptionKey).toBe(mockInputs.documentId);
     });
 
     it('should support all network options', async () => {
@@ -281,17 +384,36 @@ describe('token-registry/mint', () => {
       for (const network of networks) {
         vi.clearAllMocks();
 
-        (prompts.select as any)
-          .mockResolvedValueOnce(network)
-          .mockResolvedValueOnce('encryptedWallet');
+        const mockInputs = {
+          address: '0x1234567890123456789012345678901234567890',
+          tokenId: '0xabcdef1234567890',
+          beneficiary: '0x0987654321098765432109876543210987654321',
+          holder: '0x1111111111111111111111111111111111111111',
+          documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
+        };
 
-        (prompts.input as any)
-          .mockResolvedValueOnce('0x1234567890123456789012345678901234567890')
-          .mockResolvedValueOnce('0xabcdef1234567890')
-          .mockResolvedValueOnce('0x0987654321098765432109876543210987654321')
-          .mockResolvedValueOnce('0x1111111111111111111111111111111111111111')
-          .mockResolvedValueOnce('./wallet.json')
-          .mockResolvedValueOnce('');
+        const mockDocument = {
+          id: mockInputs.documentId,
+          tokenRegistry: mockInputs.address,
+        };
+
+        const utils = await import('../../../src/utils');
+        (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+        (utils.extractDocumentInfo as any).mockResolvedValue({
+          document: mockDocument,
+          tokenRegistry: mockInputs.address,
+          tokenId: mockInputs.tokenId,
+          network: network,
+          documentId: mockInputs.documentId,
+          registryVersion: 'v5',
+        });
+        (utils.promptAddress as any)
+          .mockResolvedValueOnce(mockInputs.beneficiary)
+          .mockResolvedValueOnce(mockInputs.holder);
+        (utils.promptWalletSelection as any).mockResolvedValue({
+          encryptedWalletPath: './wallet.json',
+        });
+        (utils.promptRemark as any).mockResolvedValue(undefined);
 
         const result = await promptForInputs();
         expect(result.network).toBe(network);
@@ -323,6 +445,9 @@ describe('token-registry/mint', () => {
         if (!address) return '0x';
         return address.startsWith('0x') ? address : `0x${address}`;
       });
+      
+      // Re-setup performDryRunWithConfirmation to always return true (proceed)
+      (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
 
     it('should successfully mint token and display transaction details', async () => {
@@ -531,8 +656,14 @@ describe('token-registry/mint', () => {
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
         dryRun: false,
         maxPriorityFeePerGasScale: 1,
+      };
+
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.address,
       };
 
       const mockTransaction: TransactionReceipt = {
@@ -554,17 +685,23 @@ describe('token-registry/mint', () => {
         logsBloom: '0x',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('encryptedWallet');
-
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.address)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.address,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.beneficiary)
-        .mockResolvedValueOnce(mockInputs.holder)
-        .mockResolvedValueOnce(mockInputs.encryptedWalletPath)
-        .mockResolvedValueOnce('');
+        .mockResolvedValueOnce(mockInputs.holder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        encryptedWalletPath: mockInputs.encryptedWalletPath,
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const trustvcModule = await import('@trustvc/trustvc');
       const mintMock = trustvcModule.mint as MockedFunction<any>;
@@ -586,7 +723,8 @@ describe('token-registry/mint', () => {
 
     it('should handle errors in handler', async () => {
       const errorMessage = 'Prompt error';
-      (prompts.select as any).mockRejectedValue(new Error(errorMessage));
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockRejectedValue(new Error(errorMessage));
 
       await handler();
 
@@ -596,7 +734,8 @@ describe('token-registry/mint', () => {
 
     it('should handle non-Error exceptions in handler', async () => {
       const errorMessage = 'String error';
-      (prompts.select as any).mockRejectedValue(errorMessage);
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockRejectedValue(errorMessage);
 
       await handler();
 

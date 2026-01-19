@@ -44,10 +44,7 @@ const jsonRpcProvider =
  * Example: SEPOLIA_RPC=https://sepolia.infura.io/v3/your-key
  */
 const getProviderWithEnvOverride =
-  (
-    networkName: NetworkCmdName,
-    defaultProvider: () => Provider,
-  ): (() => Provider) =>
+  (networkName: NetworkCmdName, defaultProvider: () => Provider): (() => Provider) =>
   () => {
     const envVarName = `${networkName.toUpperCase()}_RPC`;
     const customRpcUrl = process.env[envVarName];
@@ -109,7 +106,7 @@ export const supportedNetwork: {
     networkId: 80002,
     networkName: NetworkCmdName.Amoy,
     currency: 'MATIC',
-    gasStation: gasStation('https://gasstation.polygon.technology/amoy'),
+    gasStation: gasStation('https://gasstation.polygon.technology/v2'),
   },
   [NetworkCmdName.XDC]: {
     explorer: 'https://xdcscan.io',

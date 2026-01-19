@@ -1,7 +1,7 @@
 // External dependencies
-import { BytesLike, Wallet, HDNodeWallet, ZeroAddress } from 'ethers';
+import { BytesLike, Wallet, HDNodeWallet, ZeroAddress, Provider } from 'ethers';
 import signale from 'signale';
-import { v5Contracts } from '@trustvc/trustvc';
+import { v5Contracts, checkSupportsInterface, v4SupportInterfaceIds, v5SupportInterfaceIds } from '@trustvc/trustvc';
 import { encrypt } from '@trustvc/trustvc';
 
 // Internal utilities
@@ -9,6 +9,46 @@ import { ConnectedSigner } from '../utils';
 
 // Contract factories from TrustVC v5
 const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
+
+// Interface for connectToTokenRegistry function arguments
+interface ConnectToTokenRegistryArgs {
+  address: string;
+  wallet: Wallet | HDNodeWallet | ConnectedSigner;
+}
+
+/**
+ * Connects to a token registry contract instance.
+ * 
+ * @param address - The address of the token registry contract
+ * @param wallet - The wallet or signer to use for the connection
+ * @returns Promise resolving to the connected TradeTrustToken contract instance
+ * @throws Error if connection fails
+ */
+export const connectToTokenRegistry = async ({
+  address,
+  wallet,
+}: ConnectToTokenRegistryArgs): Promise<InstanceType<typeof TradeTrustToken__factory>> => {
+  try {
+    // Connect to the token registry contract
+    signale.info(`Connecting to token registry at: ${address}`);
+    const tokenRegistry = TradeTrustToken__factory.connect(address, wallet);
+
+    // Validate the connection was successful
+    if (!tokenRegistry) {
+      const error = `Failed to connect to token registry at address: ${address}`;
+      signale.error(error);
+      throw new Error(error);
+    }
+
+    signale.success(`Successfully connected to token registry`);
+    return tokenRegistry;
+  } catch (error) {
+    signale.error(
+      `Error in connectToTokenRegistry: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
+  }
+};
 // Interface for connectToTitleEscrow function arguments
 interface ConnectToTitleEscrowArgs {
   tokenId: string;
@@ -231,4 +271,45 @@ export const validateAndEncryptRemark = (remark?: string, keyId?: string): Bytes
   // Encrypt the remark and ensure it has '0x' prefix
   const encrpyted = encrypt(remark, keyId ?? '');
   return encrpyted.startsWith('0x') ? encrpyted : `0x${encrpyted}`;
+};
+
+/**
+ * Determines the version of a token registry contract by checking supported interfaces.
+ * Checks for V5 first, then V4 compatibility.
+ *
+ * @param tokenRegistryAddress - The address of the token registry contract
+ * @param provider - The provider to use for the contract call
+ * @returns Promise resolving to 'v5', 'v4', or 'unknown'
+ */
+export const getTokenRegistryVersion = async (
+  tokenRegistryAddress: string,
+  provider: Provider,
+): Promise<'v5' | 'v4' | 'unknown'> => {
+  try {
+    // Check if it's V5
+    const isV5 = await checkSupportsInterface(
+      tokenRegistryAddress,
+      v5SupportInterfaceIds.SBT,
+      provider,
+    );
+
+    if (isV5) {
+      return 'v5';
+    }
+
+    // Check if it's V4
+    const isV4 = await checkSupportsInterface(
+      tokenRegistryAddress,
+      v4SupportInterfaceIds.SBT,
+      provider,
+    );
+
+    if (isV4) {
+      return 'v4';
+    }
+
+    return 'unknown';
+  } catch (error) {
+    throw new Error(`Failed to determine token registry version: ${error instanceof Error ? error.message : String(error)}`);
+  }
 };

@@ -19,6 +19,7 @@ import {
 } from '@trustvc/trustvc';
 import signale from 'signale';
 import type { Provider as V5Provider } from '@ethersproject/providers';
+import { FragmentType } from '../types';
 
 export const command = 'verify';
 export const describe = 'Verify a document signed using w3c or OpenAttestation';
@@ -52,44 +53,29 @@ export const promptQuestions = async (): Promise<SignedVerifiableCredential> => 
 };
 
 export const verify = async (signedVC: SignedVerifiableCredential) => {
-    const isOpenAttestationV2 = isWrappedV2Document(signedVC);
-    const isOpenAttestationV3 = isWrappedV3Document(signedVC);
-    const isW3C = !isOpenAttestationV2 && !isOpenAttestationV3;
+    const isOpenAttestation = isWrappedV2Document(signedVC) || isWrappedV3Document(signedVC);
 
-    let result: VerificationFragment[];
-    let warnings: unknown[][] | undefined;
-
-    if (isW3C) {
-        ({ result, warnings } = await verifyW3CDocument(signedVC));
-    } else {
-        result = await verifyOpenAttestationDocument(signedVC);
-    }
+    const { result, warnings } = isOpenAttestation
+        ? { result: await verifyOpenAttestationDocument(signedVC), warnings: undefined }
+        : await verifyW3CDocument(signedVC);
 
     if (warnings) {
         handleExpiredCredentialWarning(warnings);
     }
 
-    logResultStatus(getResultFromFragment('DOCUMENT_INTEGRITY', result));
-    logResultStatus(getResultFromFragment('DOCUMENT_STATUS', result));
-    logResultStatus(getResultFromFragment('ISSUER_IDENTITY', result));
+    logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_INTEGRITY, result));
+    logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_STATUS, result));
+    logResultStatus(getResultFromFragment(FragmentType.ISSUER_IDENTITY, result));
 };
 
 // ==== Helper Functions ==== 
-
-type FragmentType = 'DOCUMENT_INTEGRITY' | 'DOCUMENT_STATUS' | 'ISSUER_IDENTITY';
-
-const resolveProviderForChainId = (chainId: number): V5Provider => {
-    const chainName = getSupportedNetworkNameFromId(chainId);
-    const provider = getSupportedNetwork(chainName).provider();
-    return provider as unknown as V5Provider;
-};
 
 const verifyW3CDocument = async (
     signedVC: SignedVerifiableCredential
 ): Promise<{ result: VerificationFragment[]; warnings: unknown[][] }> => {
     signale.info('Verifying W3C document...');
     if (isTransferableRecord(signedVC)) {
-        const credentialStatus = getTransferableRecordsCredentialStatus(signedVC);        
+        const credentialStatus = getTransferableRecordsCredentialStatus(signedVC);
 
         if (credentialStatus.tokenNetwork.chainId != null) {
             const chainId = Number(credentialStatus.tokenNetwork.chainId);
@@ -109,22 +95,43 @@ const verifyOpenAttestationDocument = async (
 ): Promise<VerificationFragment[]> => {
     signale.info('Verifying OpenAttestation document...');
     const documentData = getDocumentData(signedVC);
-
-    if (documentData.expirationDate && documentData.expirationDate < new Date().toISOString()) {
-        signale.warn(`The document credential has expired.`);
+    checkExpiration(signedVC);
+    if (isWrappedV2Document(signedVC)) {
+        const chainId = Number(documentData.network?.chainId);
+        return await verifyWithProvider(signedVC, chainId);
     }
 
-    if (documentData.network?.chainId != null) {
-        const chainId = Number(documentData.network?.chainId);
-        const providerForTrustVC = resolveProviderForChainId(chainId);
-        return await verifyDocument(signedVC, { provider: providerForTrustVC });
-    } else {
-        signale.error('Could not find blockchain information');
+    if (isWrappedV3Document(signedVC)) {
+        if (isTransferableRecord(signedVC)) {
+            const chainId = Number(documentData.network?.chainId);
+            return await verifyWithProvider(signedVC, chainId);
+        }
+        return await verifyDocument(signedVC);
+    }
+
+    throw new Error("Document is not a valid OpenAttestation document");
+};
+
+const resolveProviderForChainId = (chainId: number): V5Provider => {
+    const chainName = getSupportedNetworkNameFromId(chainId);
+    return getSupportedNetwork(chainName).provider() as unknown as V5Provider;
+};
+
+const verifyWithProvider = async (signedVC: any, chainId: number | undefined) => {
+    if (chainId == null) {
         throw new Error('Could not find blockchain information');
     }
 
+    const provider = resolveProviderForChainId(Number(chainId));
+    return await verifyDocument(signedVC, { provider });
 };
 
+const checkExpiration = (signedVC: WrappedOrSignedOpenAttestationDocument) => {
+    const documentData = getDocumentData(signedVC);
+    if (documentData.expirationDate && documentData.expirationDate < new Date().toISOString()) {
+        signale.warn('The document credential has expired.');
+    }
+};
 
 export const getResultFromFragment = (fragmentType: FragmentType, resultFragments: VerificationFragment[]): VerificationFragmentWithData => {
     const fragment = resultFragments.find((fragment: VerificationFragment) => fragment.type === fragmentType && fragment.status !== 'SKIPPED');

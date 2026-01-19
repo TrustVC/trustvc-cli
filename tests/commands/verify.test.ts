@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import { promptQuestions, verify } from '../../src/commands/verify';
 import { SignedVerifiableCredential } from '@trustvc/trustvc';
 import { getResultFromFragment, handleExpiredCredentialWarning, logResultStatus } from '../../src/commands/verify';
+import { FragmentType } from '../../src/types';
 
 // Different types of Credentials for W3C (Non-Transferable Records and Transferable Records)
 const W3C_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH = path.resolve(
@@ -41,6 +42,15 @@ const OA_SIGNED_VC_ELECTRONIC_PROMISSORY_NOTE_INOPERATIVE_FIXTURE_PATH = path.re
     'tests/fixtures/oa/electronic-promissory-note-inoperative.json',
 );
 
+const OA_SIGNED_VC_BILL_OF_LADING_DNS_DID_V3_FIXTURE_PATH = path.resolve(
+    process.cwd(),
+    'tests/fixtures/oa/bill-of-lading-OA-DNS-DID-V3.json',
+);
+
+const OA_SIGNED_VC_BILL_OF_LADING_DNS_TXT_V3_FIXTURE_PATH = path.resolve(
+    process.cwd(),
+    'tests/fixtures/oa/bill-of-lading-OA-DNS-TXT-V3.json',
+);
 
 vi.mock('@inquirer/prompts');
 
@@ -76,21 +86,21 @@ describe('verify', () => {
         describe('getResultFromFragment', () => {
             it('should return the first non-SKIPPED fragment with matching type', () => {
                 const fragments: any[] = [
-                    { type: 'DOCUMENT_STATUS', status: 'SKIPPED' },
-                    { type: 'DOCUMENT_STATUS', status: 'VALID', data: { ok: true } },
+                    { type: FragmentType.DOCUMENT_STATUS, status: 'SKIPPED' },
+                    { type: FragmentType.DOCUMENT_STATUS, status: 'VALID', data: { ok: true } },
                 ];
 
-                const fragment = getResultFromFragment('DOCUMENT_STATUS', fragments as any);
-                expect(fragment).toMatchObject({ type: 'DOCUMENT_STATUS', status: 'VALID' });
+                const fragment = getResultFromFragment(FragmentType.DOCUMENT_STATUS, fragments as any);
+                expect(fragment).toMatchObject({ type: FragmentType.DOCUMENT_STATUS, status: 'VALID' });
             });
 
             it('should throw when no matching non-SKIPPED fragment exists', () => {
                 const fragments: any[] = [
-                    { type: 'DOCUMENT_STATUS', status: 'SKIPPED' },
-                    { type: 'DOCUMENT_INTEGRITY', status: 'VALID' },
+                    { type: FragmentType.DOCUMENT_STATUS, status: 'SKIPPED' },
+                    { type: FragmentType.DOCUMENT_INTEGRITY, status: 'VALID' },
                 ];
 
-                expect(() => getResultFromFragment('ISSUER_IDENTITY', fragments as any)).toThrow(
+                expect(() => getResultFromFragment(FragmentType.ISSUER_IDENTITY, fragments as any)).toThrow(
                     'ISSUER_IDENTITY could not be verified.',
                 );
             });
@@ -98,7 +108,7 @@ describe('verify', () => {
 
         describe('logResultStatus', () => {
             it('should log success when fragment status is VALID', () => {
-                logResultStatus({ type: 'DOCUMENT_INTEGRITY', status: 'VALID' } as any);
+                logResultStatus({ type: FragmentType.DOCUMENT_INTEGRITY, status: 'VALID' } as any);
                 expect(signaleSuccessMock).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
                 expect(signaleWarnMock).not.toHaveBeenCalled();
             });
@@ -198,25 +208,35 @@ describe('verify', () => {
                 expectedWarning: 'none',
             },
             {
-                name: 'bill-of-lading operative oa',
+                name: 'bill-of-lading operative V2 oa',
                 filePath: OA_SIGNED_VC_BILL_OF_LADING_OPERATIVE_FIXTURE_PATH,
                 expectedWarning: 'none',
             },
             {
-                name: 'invoice expired oa',
+                name: 'invoice expired V2 oa',
                 filePath: OA_SIGNED_VC_INVOICE_EXPIRED_FIXTURE_PATH,
                 expectedWarning: 'expired',
             },
             {
-                name: 'invoice revoked oa',
+                name: 'invoice revoked V2 oa',
                 filePath: OA_SIGNED_VC_INVOICE_REVOKED_FIXTURE_PATH,
                 expectedWarning: 'revoked',
             },
             {
-                name: 'electronic-promissory-note inoperative oa',
+                name: 'electronic-promissory-note inoperative V2 oa',
                 filePath: OA_SIGNED_VC_ELECTRONIC_PROMISSORY_NOTE_INOPERATIVE_FIXTURE_PATH,
                 expectedWarning: 'none',
             },
+            {
+                name: 'bill-of-lading operative V3 oa DNS TXT',
+                filePath: OA_SIGNED_VC_BILL_OF_LADING_DNS_TXT_V3_FIXTURE_PATH,
+                expectedWarning: 'none',
+            },
+            {
+                name: 'bill-of-lading operative V3 oa DNS DID',
+                filePath: OA_SIGNED_VC_BILL_OF_LADING_DNS_DID_V3_FIXTURE_PATH,
+                expectedWarning: 'tampered',
+            }
         ];
 
         it.each(testCases)(
@@ -247,6 +267,11 @@ describe('verify', () => {
                 if (expectedWarning === 'expired') {
                     expect(warnMessages.length).toBeGreaterThan(0);
                     expect(warnMessages.join('\n')).toContain('The document credential has expired.');
+                }
+
+                if (expectedWarning === 'tampered') {
+                    expect(warnMessages.length).toBeGreaterThan(0);
+                    expect(warnMessages.join('\n')).toContain('Document has been tampered with');
                 }
 
                 if (expectedWarning === 'none') {

@@ -1,5 +1,5 @@
 import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
-import { GasOption, NetworkOption, RpcUrlOption, WalletOrSignerOption } from './utils';
+import { GasOption, NetworkAndWalletSignerOption, NetworkOption, RpcUrlOption, WalletOrSignerOption } from './utils';
 
 export type SignInput = {
   credential: RawVerifiableCredential;
@@ -12,6 +12,12 @@ export type DidInput = {
   domainName: string;
   outputPath: string;
 };
+
+export enum FragmentType {
+    DOCUMENT_INTEGRITY = 'DOCUMENT_INTEGRITY',
+    DOCUMENT_STATUS = 'DOCUMENT_STATUS',
+    ISSUER_IDENTITY = 'ISSUER_IDENTITY'
+}
 
 export type KeyPairGenerateInput = {
   encAlgo: typeof issuer.VerificationType;

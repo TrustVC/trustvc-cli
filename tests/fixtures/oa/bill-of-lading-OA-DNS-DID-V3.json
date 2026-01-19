@@ -1,0 +1,75 @@
+{
+  "version": "https://schema.openattestation.com/3.0/schema.json",
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://schemata.openattestation.com/com/openattestation/1.0/OpenAttestation.v3.json",
+    "https://schemata.openattestation.com/io/tradetrust/bill-of-lading/1.0/bill-of-lading-context.json"
+  ],
+  "credentialSubject": {
+    "id": "urn:uuid:a013fb9d-bb03-4056-b696-05575eceaf42",
+    "shipper": {
+      "address": {
+        "street": "456 Orchard Road",
+        "country": "SG"
+      }
+    },
+    "consignee": {
+      "name": "TradeTrust"
+    },
+    "notifyParty": {
+      "name": "TrustVC"
+    },
+    "packages": [
+      {
+        "description": "1 Pallet",
+        "weight": "1",
+        "measurement": "KG"
+      }
+    ],
+    "blNumber": "20240315",
+    "scac": "20240315"
+  },
+  "openAttestationMetadata": {
+    "template": {
+      "type": "EMBEDDED_RENDERER",
+      "name": "BILL_OF_LADING",
+      "url": "https://generic-templates.tradetrust.io"
+    },
+    "proof": {
+      "type": "OpenAttestationProofMethod",
+      "method": "DID",
+      "value": "did:ethr:0xB26B4941941C51a4885E5B7D3A1B861E54405f90#controller",
+      "revocation": {
+        "type": "NONE"
+      }
+    },
+    "identityProof": {
+      "type": "DNS-DID",
+      "identifier": "example.tradetrust.io"
+    }
+  },
+  "issuanceDate": "2021-12-03T12:19:52Z",
+  "expirationDate": "2029-12-03T12:19:52Z",
+  "issuer": {
+    "id": "https://example.tradetrust.io",
+    "name": "DEMO TOKEN REGISTRY",
+    "type": "OpenAttestationIssuer"
+  },
+  "type": [
+    "VerifiableCredential",
+    "OpenAttestationCredential"
+  ],
+  "proof": {
+    "type": "OpenAttestationMerkleProofSignature2018",
+    "proofPurpose": "assertionMethod",
+    "targetHash": "8f832ec1d27e09b2530cd051c9acea960971c238a3627369f33cdc58af9548cd",
+    "proofs": [],
+    "merkleRoot": "8f832ec1d27e09b2530cd051c9acea960971c238a3627369f33cdc58af9548cd",
+    "salts": "W3sidmFsdWUiOiI2MmZjMzg5NWVmZjg1ODI5Mjc1YmY5MzQxMzI4N2QwY2NjNDliYTcyY2VhOWM1NTA2NjFjYzk4YTA1YTczNjU0IiwicGF0aCI6InZlcnNpb24ifSx7InZhbHVlIjoiYzI1NWZhZmFkNWQ2YmFlODE3YWJmNDExOGVmZDMwODRiNDMwOTIyZjE4MDU2OGE2NmY4ZDFjZWUxMTFjZDA3NyIsInBhdGgiOiJAY29udGV4dFswXSJ9XQ==",
+    "privacy": {
+      "obfuscated": []
+    },
+    "key": "did:ethr:0xB26B4941941C51a4885E5B7D3A1B861E54405f90#controller",
+    "signature": "0x836a2547654da43f01641b3a0efff6797adc7e8b806d65cb9c67e25b119c70c34aa4c73a14d8138f52c05f6f7e1048ead225c85eb981fac8c2207895e48f14a91c"
+  }
+}

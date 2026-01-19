@@ -1,5 +1,5 @@
 import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
-import { GasOption, NetworkOption, RpcUrlOption, WalletOrSignerOption } from './utils';
+import { GasOption, NetworkAndWalletSignerOption, NetworkOption, RpcUrlOption, WalletOrSignerOption } from './utils';
 
 export type SignInput = {
   credential: RawVerifiableCredential;
@@ -7,6 +7,23 @@ export type SignInput = {
   encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
   pathToSignedVC: string;
 }
+
+export enum WrapMode {
+    Individual = "individual",
+    Batch = "batch",
+}
+
+export type WrapOAInput = {
+    mode: WrapMode;
+    docPaths: string[];
+    pathToOutputDirectory: string;
+};
+
+export type UnwrapOAInput = {
+  docPaths: string[];
+  pathToOutputDirectory: string;
+}
+
 export type DidInput = {
   keyPairPath: string;
   domainName: string;

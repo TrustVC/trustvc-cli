@@ -6,6 +6,16 @@ import { getSupportedNetwork } from './networks';
 
 const readdir = util.promisify(fs.readdir);
 
+export const isFile = (path: fs.PathLike): boolean => {
+  try {
+    const stat = fs.lstatSync(path);
+    return stat.isFile();
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+};
+
 export const isDir = (path: fs.PathLike): boolean => {
   try {
     const stat = fs.lstatSync(path);

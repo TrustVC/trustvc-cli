@@ -133,7 +133,6 @@ describe('token-registry/mint', () => {
       expect((result as any).encryptedWalletPath).toBe('./wallet.json');
       expect(result.remark).toBe(mockInputs.remark);
       expect(result.encryptionKey).toBe(mockInputs.documentId);
-      expect(result.dryRun).toBe(false);
       expect(result.maxPriorityFeePerGasScale).toBe(1);
     });
 
@@ -458,7 +457,6 @@ describe('token-registry/mint', () => {
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -511,7 +509,6 @@ describe('token-registry/mint', () => {
         remark: 'Important document',
         encryptionKey: 'secret-key-123',
         key: '0xprivatekey',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -565,7 +562,6 @@ describe('token-registry/mint', () => {
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -586,7 +582,6 @@ describe('token-registry/mint', () => {
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -605,7 +600,6 @@ describe('token-registry/mint', () => {
         beneficiary: '0x0987654321098765432109876543210987654321',
         holder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -657,7 +651,6 @@ describe('token-registry/mint', () => {
         holder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
         documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 

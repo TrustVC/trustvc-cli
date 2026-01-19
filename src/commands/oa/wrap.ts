@@ -1,6 +1,6 @@
 import { input, select } from "@inquirer/prompts";
-import { documentsInDirectory, isDir, isDirectoryValid, isFile, readOpenAttestationFile, writeFile } from "../../utils";
-import { OpenAttestationDocument, wrapOADocument, wrapOADocuments, WrappedOrSignedOpenAttestationDocument } from "@trustvc/trustvc";
+import { documentsInDirectory, isDir, isFile, readOpenAttestationFile, writeFile } from "../../utils";
+import { wrapOADocument, wrapOADocuments } from "@trustvc/trustvc";
 import signale from "signale";
 import path from "path";
 import { WrapMode, WrapOAInput } from "../../types";

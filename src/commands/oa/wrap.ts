@@ -1,10 +1,9 @@
 import { input, select } from "@inquirer/prompts";
-import { documentsInDirectory, isDir, isFile, readOpenAttestationFile, writeFile } from "../../utils";
+import { documentsInDirectory , isDir, isDirectoryValid, isFile, readOpenAttestationFile, writeFile } from "../../utils";
 import { wrapOADocument, wrapOADocuments } from "@trustvc/trustvc";
 import signale from "signale";
 import path from "path";
 import { WrapMode, WrapOAInput } from "../../types";
-import { mkdirSync } from "fs";
 
 export const command = 'oa-wrap';
 export const describe = 'Wrap OpenAttestation document(s)';
@@ -75,10 +74,7 @@ export const promptForInputs = async (): Promise<WrapOAInput> => {
         default: '.',
     })
 
-    if (!isDir(pathToOutputDirectory)) {
-        signale.info(`Directory not found; Creating new directory: ${pathToOutputDirectory}`);
-        mkdirSync(pathToOutputDirectory, { recursive: true });
-    }
+    if (!isDirectoryValid(pathToOutputDirectory)) throw new Error('Output path is not valid');
 
     return {
         mode,

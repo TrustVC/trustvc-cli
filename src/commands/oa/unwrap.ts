@@ -1,10 +1,9 @@
 import { input } from "@inquirer/prompts";
-import { getDataV2 } from "@trustvc/trustvc";
+import { getDocumentData } from "@trustvc/trustvc";
 import { UnwrapOAInput } from "../../types";
-import { documentsInDirectory, isDir, isFile, readOpenAttestationFile, writeFile } from "../../utils";
+import { documentsInDirectory, isDir, isDirectoryValid, isFile, readOpenAttestationFile, writeFile } from "../../utils";
 import signale from "signale";
 import path from "path";
-import { mkdirSync } from "fs";
 
 export const command = 'oa-unwrap';
 export const describe = 'Unwrap wrapped OpenAttestation document(s) (Only for individual documents)';
@@ -50,10 +49,7 @@ export const promptForInputs = async (): Promise<UnwrapOAInput> => {
         default: '.',
     });
 
-    if (!isDir(pathToOutputDirectory)) {
-        signale.info(`Directory not found; Creating new directory: ${pathToOutputDirectory}`);
-        mkdirSync(pathToOutputDirectory, { recursive: true });
-    }
+    if (!isDirectoryValid(pathToOutputDirectory)) throw new Error('Output path is not valid');
 
     return {
         docPaths,
@@ -68,7 +64,7 @@ export const unwrapOA = async ({
     for (const doc of docPaths) {
         const wrappedOADocument = readOpenAttestationFile(doc);
         try {
-            const unwrappedDocument = getDataV2(wrappedOADocument as any); // Any to resolve the module resolution conflict for WrappedDocument between @trustvc/trustvc and @tradetrust-tt/tradetrust
+            const unwrappedDocument = getDocumentData(wrappedOADocument);
             if (!unwrappedDocument) throw new Error('Invalid wrapped OpenAttestation document');
             const outFile = path.join(pathToOutputDirectory, path.basename(doc));
             writeFile(outFile, unwrappedDocument, true);

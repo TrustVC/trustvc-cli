@@ -1,0 +1,57 @@
+{
+  "version": "https://schema.openattestation.com/2.0/schema.json",
+  "data": {
+    "id": "b5e5901d-f4ea-48b4-a4c7-c9ee4f7b1b3b:string:SGCNM21566325",
+    "$template": {
+      "name": "8a9d86d2-d35b-42cc-85c0-238c73b7ffd6:string:CERTIFICATE_OF_NON_MANIPULATION",
+      "type": "8c553f65-cbe1-47ba-aa85-5401de05b35e:string:EMBEDDED_RENDERER",
+      "url": "b16778b0-26cc-4acf-84f4-2fa8846fe03b:string:https://demo-cnm.openattestation.com"
+    },
+    "issuers": [
+      {
+        "id": "ce62dce3-6be3-427f-8f90-759ba4f0f2f8:string:did:ethr:0xE712878f6E8d5d4F9e87E10DA604F9cB564C9a89",
+        "name": "f915f170-159d-443d-9fe1-43a046210dfa:string:DEMO STORE",
+        "revocation": {
+          "type": "3679436b-5d35-4003-a724-6795e7d72bd7:string:NONE"
+        },
+        "identityProof": {
+          "type": "75f35352-6e25-4d75-b672-0ef6661e9e22:string:DID",
+          "key": "9aa2b73d-47e0-4e6e-ae03-00bca26e909d:string:did:ethr:0xE712878f6E8d5d4F9e87E10DA604F9cB564C9a89#controller"
+        }
+      }
+    ],
+    "recipient": {
+      "name": "2af424c2-3304-457c-a580-8e8695b9408a:string:SG FREIGHT",
+      "address": {
+        "street": "f8c82385-a07c-48f7-8d94-73726e7707fd:string:101 ORCHARD ROAD",
+        "country": "043d7095-ebff-4755-aec2-2b14cb255e85:string:SINGAPORE"
+      }
+    },
+    "consignment": {
+      "description": "608349fe-847a-4bcb-bc90-bb6014138e52:string:16667 CARTONS OF RED WINE",
+      "quantity": {
+        "value": "aca9e8fd-82aa-4abf-93d1-877bcd24a8a1:number:5000",
+        "unit": "96fa2474-e0d8-4727-89ce-604a2b887db7:string:LITRES"
+      },
+      "countryOfOrigin": "d371b225-b0bd-469e-b091-6cedaeee6277:string:AUSTRALIA",
+      "outwardBillNo": "06802dfe-7e22-4294-b733-38b128b67721:string:AQSIQ170923130",
+      "dateOfDischarge": "bc036568-ae6f-40b7-b8c7-f089e604ecb8:string:2018-01-26",
+      "dateOfDeparture": "b696b575-8577-4af9-bc36-fb8e0d8318fd:string:2018-01-30",
+      "countryOfFinalDestination": "9a541562-4676-475a-87e3-1644fef34d29:string:CHINA",
+      "outgoingVehicleNo": "65f2b0ae-2055-4f7d-b3ac-158297f5d580:string:COSCO JAPAN 074E/30-JAN"
+    },
+    "declaration": {
+      "name": "9bfeebcf-4114-449b-b1bd-ed4ffc2b1233:string:PETER LEE",
+      "designation": "20abf82c-6d18-4fc7-a361-6cefdf8a4d9b:string:SHIPPING MANAGER",
+      "date": "c361f878-0d28-43d7-9a12-71e3f7ede37f:string:2018-01-28"
+    }
+  },
+  "signature": {
+    "type": "SHA3MerkleProof",
+    "targetHash": "9af31a78a71c5fbe992c0986bfa2f4ddcae32bb4a481649fb9bf30efd0972369",
+    "proof": [
+      "a4d79a601f5edc79ef21ff75da2b1434a649503c44157e87ab5936140b16135e"
+    ],
+    "merkleRoot": "99f04b546a607bdd8265a784334522dc555498f359a5f6327bd1de054adc96ce"
+  }
+}

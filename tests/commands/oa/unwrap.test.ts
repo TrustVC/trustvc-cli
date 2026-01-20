@@ -18,20 +18,13 @@ vi.mock('signale', () => ({
   })),
 }));
 
-vi.mock('fs', async () => {
-  const actual = await vi.importActual<typeof import('fs')>('fs');
-  return {
-    ...actual,
-    mkdirSync: vi.fn(),
-  };
-});
-
 vi.mock('../../../src/utils', async () => {
   const actual = await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
   return {
     ...actual,
     documentsInDirectory: vi.fn(),
     isDir: vi.fn(),
+    isDirectoryValid: vi.fn(),
     isFile: vi.fn(),
     readOpenAttestationFile: vi.fn(),
     writeFile: vi.fn(),
@@ -42,7 +35,7 @@ vi.mock('@trustvc/trustvc', async () => {
   const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
   return {
     ...actual,
-    getDataV2: vi.fn(),
+    getDocumentData: vi.fn(),
   };
 });
 
@@ -58,7 +51,7 @@ describe('oa-unwrap', () => {
 
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       const result = await promptForInputs();
 
@@ -74,6 +67,7 @@ describe('oa-unwrap', () => {
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(false);
       (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
       (utils.documentsInDirectory as MockedFunction<any>).mockResolvedValue(['./docs/a.json', './docs/b.json']);
 
       const signale = await import('signale');
@@ -113,7 +107,7 @@ describe('oa-unwrap', () => {
 
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       await promptForInputs();
 
@@ -124,28 +118,6 @@ describe('oa-unwrap', () => {
       expect(wrappedPathArgs.validate('./wrapped.json')).toBe(true);
     });
 
-    it('should create output directory when it does not exist', async () => {
-      (prompts.input as any)
-        .mockResolvedValueOnce('./wrapped.json')
-        .mockResolvedValueOnce('./new-out');
-
-      const utils = await import('../../../src/utils');
-      (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockImplementation((p: any) => p !== './new-out');
-
-      const fs = await import('fs');
-      const mkdirSyncMock = fs.mkdirSync as unknown as MockedFunction<any>;
-
-      const signale = await import('signale');
-      const infoMock = (signale.default as any).info as MockedFunction<any>;
-
-      const result = await promptForInputs();
-
-      expect(result.pathToOutputDirectory).toBe('./new-out');
-      expect(infoMock).toHaveBeenCalledWith('Directory not found; Creating new directory: ./new-out');
-      expect(mkdirSyncMock).toHaveBeenCalledWith('./new-out', { recursive: true });
-    });
-
     it('should set default output directory to . when user provides no value', async () => {
       (prompts.input as any)
         .mockResolvedValueOnce('./wrapped.json')
@@ -153,7 +125,7 @@ describe('oa-unwrap', () => {
 
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       const result = await promptForInputs();
 
@@ -162,32 +134,19 @@ describe('oa-unwrap', () => {
       expect(outputArgs.required).toBe(false);
       expect(outputArgs.default).toBe('.');
     });
+
+    it('should throw error when output directory is invalid', async () => {
+      (prompts.input as any).mockResolvedValueOnce('./wrapped.json').mockResolvedValueOnce('./bad-out');
+
+      const utils = await import('../../../src/utils');
+      (utils.isFile as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(false);
+
+      await expect(promptForInputs()).rejects.toThrow('Output path is not valid');
+    });
   });
 
   describe('unwrapOA', () => {
-    it('should unwrap a document and write unwrapped content to output directory', async () => {
-      const utils = await import('../../../src/utils');
-      const trustvc = await import('@trustvc/trustvc');
-      const signale = await import('signale');
-
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
-      const writeMock = utils.writeFile as MockedFunction<any>;
-      const getDataV2Mock = trustvc.getDataV2 as MockedFunction<any>;
-      const successMock = (signale.default as any).success as MockedFunction<any>;
-
-      readMock.mockReturnValueOnce({ wrapped: true });
-      getDataV2Mock.mockReturnValueOnce({ unwrapped: true });
-
-      await unwrapOA({
-        docPaths: ['./docs/a.json'],
-        pathToOutputDirectory: './out',
-      });
-
-      expect(getDataV2Mock).toHaveBeenCalledWith({ wrapped: true });
-      expect(writeMock).toHaveBeenCalledWith('out/a.json', { unwrapped: true }, true);
-      expect(successMock).toHaveBeenCalledWith('Unwrapped OpenAttestation document: ./docs/a.json');
-    });
-
     it('should error when unwrapped document is falsy and not write to disk', async () => {
       const utils = await import('../../../src/utils');
       const trustvc = await import('@trustvc/trustvc');
@@ -195,11 +154,11 @@ describe('oa-unwrap', () => {
 
       const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
-      const getDataV2Mock = trustvc.getDataV2 as MockedFunction<any>;
+      const getDocumentDataMock = trustvc.getDocumentData as MockedFunction<any>;
       const errorMock = (signale.default as any).error as MockedFunction<any>;
 
       readMock.mockReturnValueOnce({ wrapped: true });
-      getDataV2Mock.mockReturnValueOnce(undefined);
+      getDocumentDataMock.mockReturnValueOnce(undefined);
 
       await unwrapOA({
         docPaths: ['./docs/a.json'],
@@ -210,22 +169,22 @@ describe('oa-unwrap', () => {
       expect(errorMock).toHaveBeenCalledWith('Error while unwrapping OpenAttestation document: ./docs/a.json');
     });
 
-    it('should error when getDataV2 throws and continue processing remaining documents', async () => {
+    it('should error when getDocumentData throws and continue processing remaining documents', async () => {
       const utils = await import('../../../src/utils');
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
 
       const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
-      const getDataV2Mock = trustvc.getDataV2 as MockedFunction<any>;
+      const getDocumentDataMock = trustvc.getDocumentData as MockedFunction<any>;
       const errorMock = (signale.default as any).error as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
 
       readMock.mockReturnValueOnce({ wrapped: 1 }).mockReturnValueOnce({ wrapped: 2 });
-      getDataV2Mock.mockImplementationOnce(() => {
+      getDocumentDataMock.mockImplementationOnce(() => {
         throw new Error('boom');
       });
-      getDataV2Mock.mockReturnValueOnce({ unwrapped: 2 });
+      getDocumentDataMock.mockReturnValueOnce({ unwrapped: 2 });
 
       await unwrapOA({
         docPaths: ['./docs/a.json', './docs/b.json'],
@@ -237,23 +196,163 @@ describe('oa-unwrap', () => {
       expect(writeMock).toHaveBeenCalledWith('out/b.json', { unwrapped: 2 }, true);
       expect(successMock).toHaveBeenCalledWith('Unwrapped OpenAttestation document: ./docs/b.json');
     });
+  });
 
-    it('should call readOpenAttestationFile once per document', async () => {
+  describe('testing with OA v2 fixtures', () => {
+    const RAW_OA_V2_DID_FILE = 'tests/fixtures/wrap/oa_v2/raw_oa_docs_v2/raw-did.json';
+    const RAW_OA_V2_TXT_FILE = 'tests/fixtures/wrap/oa_v2/raw_oa_docs_v2/raw-txt.json';
+
+    const BATCH_WRAPPED_OA_V2_DID_FILE =
+      'tests/fixtures/wrap/oa_v2/batch_wrap_oa_docs_v2/batch-wrapped-did.json';
+    const BATCH_WRAPPED_OA_V2_TXT_FILE =
+      'tests/fixtures/wrap/oa_v2/batch_wrap_oa_docs_v2/batch-wrapped-txt.json';
+
+    const INDIV_WRAPPED_OA_V2_DID_FILE =
+      'tests/fixtures/wrap/oa_v2/indiv_wrap_oa_docs_v2/indiv-wrapped-did.json';
+    const INDIV_WRAPPED_OA_V2_TXT_FILE =
+      'tests/fixtures/wrap/oa_v2/indiv_wrap_oa_docs_v2/indiv-wrapped-txt.json';
+
+    it('should unwrap batch wrapped documents back to the original raw document', async () => {
       const utils = await import('../../../src/utils');
       const trustvc = await import('@trustvc/trustvc');
 
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
-      const getDataV2Mock = trustvc.getDataV2 as MockedFunction<any>;
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
-      readMock.mockReturnValue({ wrapped: true });
-      getDataV2Mock.mockReturnValue({ unwrapped: true });
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const getDocumentDataMock = trustvc.getDocumentData as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      getDocumentDataMock.mockImplementation(actualTrustvc.getDocumentData as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V2_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V2_TXT_FILE);
 
       await unwrapOA({
-        docPaths: ['./docs/a.json', './docs/b.json', './docs/c.json'],
-        pathToOutputDirectory: '.',
+        docPaths: [BATCH_WRAPPED_OA_V2_DID_FILE, BATCH_WRAPPED_OA_V2_TXT_FILE],
+        pathToOutputDirectory: './out',
       });
 
-      expect(readMock).toHaveBeenCalledTimes(3);
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/batch-wrapped-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/batch-wrapped-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      expect(didCall![1]).toStrictEqual(originalDidData);
+      expect(txtCall![1]).toStrictEqual(originalTxtData);
+    });
+
+    it('should unwrap individually wrapped documents back to the original raw document', async () => {
+      const utils = await import('../../../src/utils');
+      const trustvc = await import('@trustvc/trustvc');
+
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const getDocumentDataMock = trustvc.getDocumentData as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      getDocumentDataMock.mockImplementation(actualTrustvc.getDocumentData as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V2_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V2_TXT_FILE);
+
+      await unwrapOA({
+        docPaths: [INDIV_WRAPPED_OA_V2_DID_FILE, INDIV_WRAPPED_OA_V2_TXT_FILE],
+        pathToOutputDirectory: './out',
+      });
+
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/indiv-wrapped-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/indiv-wrapped-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      expect(didCall![1]).toStrictEqual(originalDidData);
+      expect(txtCall![1]).toStrictEqual(originalTxtData);
+    });
+  });
+
+  describe('testing with OA v3 fixtures', () => {
+    const RAW_OA_V3_DID_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json';
+    const RAW_OA_V3_TXT_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-txt.json';
+
+    const BATCH_WRAPPED_OA_V3_DID_FILE = 'tests/fixtures/wrap/oa_v3/batch_wrap_oa_docs_v3/raw-dns-did.json';
+    const BATCH_WRAPPED_OA_V3_TXT_FILE = 'tests/fixtures/wrap/oa_v3/batch_wrap_oa_docs_v3/raw-dns-txt.json';
+
+    const INDIV_WRAPPED_OA_V3_DID_FILE = 'tests/fixtures/wrap/oa_v3/indiv_wrap_oa_docs_v3/raw-dns-did.json';
+    const INDIV_WRAPPED_OA_V3_TXT_FILE = 'tests/fixtures/wrap/oa_v3/indiv_wrap_oa_docs_v3/raw-dns-txt.json';
+
+    it('should unwrap batch wrapped documents back to the original raw document', async () => {
+      const utils = await import('../../../src/utils');
+      const trustvc = await import('@trustvc/trustvc');
+
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const getDocumentDataMock = trustvc.getDocumentData as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      getDocumentDataMock.mockImplementation(actualTrustvc.getDocumentData as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V3_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V3_TXT_FILE);
+
+      await unwrapOA({
+        docPaths: [BATCH_WRAPPED_OA_V3_DID_FILE, BATCH_WRAPPED_OA_V3_TXT_FILE],
+        pathToOutputDirectory: './out',
+      });
+
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      expect(didCall![1]).toStrictEqual(originalDidData);
+      expect(txtCall![1]).toStrictEqual(originalTxtData);
+    });
+
+    it('should unwrap individually wrapped documents back to the original raw document', async () => {
+      const utils = await import('../../../src/utils');
+      const trustvc = await import('@trustvc/trustvc');
+
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const getDocumentDataMock = trustvc.getDocumentData as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      getDocumentDataMock.mockImplementation(actualTrustvc.getDocumentData as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V3_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V3_TXT_FILE);
+
+      await unwrapOA({
+        docPaths: [INDIV_WRAPPED_OA_V3_DID_FILE, INDIV_WRAPPED_OA_V3_TXT_FILE],
+        pathToOutputDirectory: './out',
+      });
+
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      expect(didCall![1]).toStrictEqual(originalDidData);
+      expect(txtCall![1]).toStrictEqual(originalTxtData);
     });
   });
 });

@@ -1,0 +1,28 @@
+{
+  "$template": {
+    "name": "main",
+    "type": "EMBEDDED_RENDERER",
+    "url": "https://tutorial-renderer.openattestation.com"
+  },
+  "recipient": {
+    "name": "John Doe"
+  },
+  "issuers": [
+    {
+      "name": "Demo Issuer",
+      "documentStore": "0xBBb55Bd1D709955241CAaCb327A765e2b6D69c8b",
+      "identityProof": {
+        "type": "DNS-TXT",
+        "location": "few-green-cat.sandbox.openattestation.com"
+      }
+    }
+  ],
+  "id": "did:example:JOHN_DOE_DID",
+  "licenseNumber": "S1234567a",
+  "birthDate": "1977-02-22",
+  "name": "John Doe",
+  "class": [
+    { "type": "3", "effectiveDate": "2010-01-01T19:23:24Z" },
+    { "type": "3A", "effectiveDate": "2010-01-01T19:23:24Z" }
+  ]
+}

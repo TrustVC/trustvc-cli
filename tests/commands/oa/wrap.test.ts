@@ -18,20 +18,13 @@ vi.mock('signale', () => ({
   })),
 }));
 
-vi.mock('fs', async () => {
-  const actual = await vi.importActual<typeof import('fs')>('fs');
-  return {
-    ...actual,
-    mkdirSync: vi.fn(),
-  };
-});
-
 vi.mock('../../../src/utils', async () => {
   const actual = await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
   return {
     ...actual,
     documentsInDirectory: vi.fn(),
     isDir: vi.fn(),
+    isDirectoryValid: vi.fn(),
     isFile: vi.fn(),
     readOpenAttestationFile: vi.fn(),
     writeFile: vi.fn(),
@@ -59,7 +52,8 @@ describe('oa-wrap', () => {
       (prompts.input as any).mockResolvedValueOnce('./docs').mockResolvedValueOnce('./out');
 
       const utils = await import('../../../src/utils');
-      (utils.isDir as MockedFunction<any>).mockImplementation((p: any) => p === './docs' || p === './out');
+      (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
       (utils.documentsInDirectory as MockedFunction<any>).mockResolvedValue([
         './docs/a.json',
         './docs/b.json',
@@ -80,6 +74,7 @@ describe('oa-wrap', () => {
 
       const utils = await import('../../../src/utils');
       (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
       (utils.documentsInDirectory as MockedFunction<any>).mockResolvedValue(['./docs/only.json']);
 
       const signale = await import('signale');
@@ -108,7 +103,7 @@ describe('oa-wrap', () => {
 
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       const result = await promptForInputs();
 
@@ -126,6 +121,7 @@ describe('oa-wrap', () => {
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(false);
       (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
       (utils.documentsInDirectory as MockedFunction<any>).mockResolvedValue([
         './docs/a.json',
         './docs/b.json',
@@ -171,7 +167,7 @@ describe('oa-wrap', () => {
 
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       await promptForInputs();
 
@@ -188,7 +184,7 @@ describe('oa-wrap', () => {
 
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockReturnValue(true);
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
 
       await promptForInputs();
 
@@ -202,56 +198,19 @@ describe('oa-wrap', () => {
       );
     });
 
-    it('should create output directory when it does not exist', async () => {
+    it('should throw error when output directory is invalid', async () => {
       (prompts.select as any).mockResolvedValueOnce(WrapMode.Individual);
-      (prompts.input as any).mockResolvedValueOnce('./doc.json').mockResolvedValueOnce('./new-out');
+      (prompts.input as any).mockResolvedValueOnce('./doc.json').mockResolvedValueOnce('./bad-out');
 
       const utils = await import('../../../src/utils');
       (utils.isFile as MockedFunction<any>).mockReturnValue(true);
-      (utils.isDir as MockedFunction<any>).mockImplementation((p: any) => p !== './new-out');
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(false);
 
-      const fs = await import('fs');
-      const mkdirSyncMock = fs.mkdirSync as unknown as MockedFunction<any>;
-
-      const signale = await import('signale');
-      const infoMock = (signale.default as any).info as MockedFunction<any>;
-
-      const result = await promptForInputs();
-
-      expect(result.pathToOutputDirectory).toBe('./new-out');
-      expect(infoMock).toHaveBeenCalledWith('Directory not found; Creating new directory: ./new-out');
-      expect(mkdirSyncMock).toHaveBeenCalledWith('./new-out', { recursive: true });
+      await expect(promptForInputs()).rejects.toThrow('Output path is not valid');
     });
   });
 
   describe('wrapOA', () => {
-    it('should wrap documents in batch mode and write each wrapped document to disk', async () => {
-      const utils = await import('../../../src/utils');
-      const trustvc = await import('@trustvc/trustvc');
-      const signale = await import('signale');
-
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
-      const writeMock = utils.writeFile as MockedFunction<any>;
-      const wrapOADocumentsMock = trustvc.wrapOADocuments as MockedFunction<any>;
-      const successMock = (signale.default as any).success as MockedFunction<any>;
-
-      readMock.mockReturnValueOnce({ raw: 1 }).mockReturnValueOnce({ raw: 2 });
-      wrapOADocumentsMock.mockResolvedValue([{ wrapped: 1 }, { wrapped: 2 }]);
-
-      await wrapOA({
-        mode: WrapMode.Batch,
-        docPaths: ['./docs/a.json', './docs/b.json'],
-        pathToOutputDirectory: './out',
-      });
-
-      expect(wrapOADocumentsMock).toHaveBeenCalledWith([{ raw: 1 }, { raw: 2 }]);
-      expect(writeMock).toHaveBeenCalledWith('out/a.json', { wrapped: 1 }, true);
-      expect(writeMock).toHaveBeenCalledWith('out/b.json', { wrapped: 2 }, true);
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/a.json');
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/b.json');
-      expect(successMock).toHaveBeenCalledWith('All documents wrapped in batch mode');
-    });
-
     it('should wrap documents individually and continue when one document fails', async () => {
       const utils = await import('../../../src/utils');
       const trustvc = await import('@trustvc/trustvc');
@@ -284,28 +243,233 @@ describe('oa-wrap', () => {
       expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/a.json');
       expect(successMock).toHaveBeenCalledWith('All documents wrapped in individual mode');
     });
+  });
 
-    it('should not log error message twice when thrown value is not an Error in individual mode', async () => {
+  describe('testing with OA v2 fixtures', () => {
+    const RAW_OA_V2_DID_FILE = 'tests/fixtures/wrap/oa_v2/raw_oa_docs_v2/raw-did.json';
+    const RAW_OA_V2_TXT_FILE = 'tests/fixtures/wrap/oa_v2/raw_oa_docs_v2/raw-txt.json';
+
+    it('should wrap documents in batch mode with deterministic proof properties', async () => {
       const utils = await import('../../../src/utils');
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
 
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
-      const wrapOADocumentMock = trustvc.wrapOADocument as MockedFunction<any>;
-      const errorMock = (signale.default as any).error as MockedFunction<any>;
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
-      readMock.mockReturnValueOnce({ raw: 1 });
-      wrapOADocumentMock.mockRejectedValueOnce('non-error');
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const wrapOADocumentsMock = trustvc.wrapOADocuments as MockedFunction<any>;
+      const successMock = (signale.default as any).success as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      wrapOADocumentsMock.mockImplementation(actualTrustvc.wrapOADocuments as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V2_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V2_TXT_FILE);
+
+      await wrapOA({
+        mode: WrapMode.Batch,
+        docPaths: [RAW_OA_V2_DID_FILE, RAW_OA_V2_TXT_FILE],
+        pathToOutputDirectory: './out',
+      });
+
+      expect(wrapOADocumentsMock).toHaveBeenCalledTimes(1);
+      expect(wrapOADocumentsMock.mock.calls[0][0]).toHaveLength(2);
+
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      const file1 = didCall![1] as any;
+      const file2 = txtCall![1] as any;
+      const proof1 = file1.signature;
+      const proof2 = file2.signature;
+
+      const merkleRoot = proof1.merkleRoot as string;
+      expect(merkleRoot).toHaveLength(64);
+      expect(merkleRoot).toStrictEqual(proof2.merkleRoot);
+      expect(merkleRoot).not.toStrictEqual(proof1.targetHash);
+      expect(merkleRoot).not.toStrictEqual(proof2.targetHash);
+      expect(proof1.targetHash).not.toStrictEqual(proof2.targetHash);
+
+      expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
+      expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
+
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-did.json');
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-txt.json');
+      expect(successMock).toHaveBeenCalledWith('All documents wrapped in batch mode');
+    });
+
+    it('should wrap documents in individual mode with merkleRoot equal to targetHash', async () => {
+      const utils = await import('../../../src/utils');
+      const trustvc = await import('@trustvc/trustvc');
+      const signale = await import('signale');
+
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const wrapOADocumentMock = trustvc.wrapOADocument as MockedFunction<any>;
+      const successMock = (signale.default as any).success as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      wrapOADocumentMock.mockImplementation(actualTrustvc.wrapOADocument as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V2_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V2_TXT_FILE);
 
       await wrapOA({
         mode: WrapMode.Individual,
-        docPaths: ['./docs/a.json'],
-        pathToOutputDirectory: '.',
+        docPaths: [RAW_OA_V2_DID_FILE, RAW_OA_V2_TXT_FILE],
+        pathToOutputDirectory: './out',
       });
 
-      expect(errorMock).toHaveBeenCalledTimes(1);
-      expect(errorMock).toHaveBeenCalledWith('Error while wrapping OpenAttestation document: ./docs/a.json');
+      expect(wrapOADocumentMock).toHaveBeenCalledTimes(2);
+
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      const file1 = didCall![1] as any;
+      const file2 = txtCall![1] as any;
+      const proof1 = file1.signature;
+      const proof2 = file2.signature;
+
+      expect(proof1.merkleRoot).toHaveLength(64);
+      expect(proof2.merkleRoot).toHaveLength(64);
+      expect(proof1.merkleRoot).toStrictEqual(proof1.targetHash);
+      expect(proof2.merkleRoot).toStrictEqual(proof2.targetHash);
+      expect(proof1.targetHash).not.toStrictEqual(proof2.targetHash);
+
+      expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
+      expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
+
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-did.json');
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-txt.json');
+      expect(successMock).toHaveBeenCalledWith('All documents wrapped in individual mode');
+    });
+  });
+
+  describe('testing with OA v3 fixtures', () => {
+    const RAW_OA_V3_DIRECTORY = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3';
+    const RAW_OA_V3_DID_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json';
+    const RAW_OA_V3_TXT_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-txt.json';
+
+    it('should wrap documents in batch mode successfully', async () => {
+      const utils = await import('../../../src/utils');
+      const trustvc = await import('@trustvc/trustvc');
+      const signale = await import('signale');
+
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const wrapOADocumentsMock = trustvc.wrapOADocuments as MockedFunction<any>;
+      const successMock = (signale.default as any).success as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      wrapOADocumentsMock.mockImplementation(actualTrustvc.wrapOADocuments as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V3_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V3_TXT_FILE);
+
+      await wrapOA({
+        mode: WrapMode.Batch,
+        docPaths: [RAW_OA_V3_DID_FILE, RAW_OA_V3_TXT_FILE],
+        pathToOutputDirectory: './out',
+      });
+
+      expect(wrapOADocumentsMock).toHaveBeenCalledTimes(1);
+      expect(wrapOADocumentsMock.mock.calls[0][0]).toHaveLength(2);
+
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      const file1 = didCall![1] as any;
+      const file2 = txtCall![1] as any;
+      const proof1 = file1.proof;
+      const proof2 = file2.proof;
+
+      const merkleRoot = proof1.merkleRoot as string;
+      expect(merkleRoot).toHaveLength(64);
+      expect(merkleRoot).toStrictEqual(proof1.merkleRoot);
+      expect(merkleRoot).toStrictEqual(proof2.merkleRoot);
+      expect(merkleRoot).not.toStrictEqual(proof1.targetHash);
+      expect(merkleRoot).not.toStrictEqual(proof2.targetHash);
+      expect(proof1.targetHash).not.toStrictEqual(proof2.targetHash);
+
+      expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
+      expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
+
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-did.json');
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-txt.json');
+      expect(successMock).toHaveBeenCalledWith('All documents wrapped in batch mode');
+    });
+
+    it('should wrap documents in individual mode with merkleRoot equal to targetHash', async () => {
+      const utils = await import('../../../src/utils');
+      const trustvc = await import('@trustvc/trustvc');
+      const signale = await import('signale');
+
+      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
+        '../../../src/utils',
+      );
+      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+
+      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const writeMock = utils.writeFile as MockedFunction<any>;
+      const wrapOADocumentMock = trustvc.wrapOADocument as MockedFunction<any>;
+      const successMock = (signale.default as any).success as MockedFunction<any>;
+
+      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      wrapOADocumentMock.mockImplementation(actualTrustvc.wrapOADocument as unknown as any);
+
+      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V3_DID_FILE);
+      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V3_TXT_FILE);
+
+      await wrapOA({
+        mode: WrapMode.Individual,
+        docPaths: [RAW_OA_V3_DID_FILE, RAW_OA_V3_TXT_FILE],
+        pathToOutputDirectory: './out',
+      });
+
+      expect(wrapOADocumentMock).toHaveBeenCalledTimes(2);
+
+      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-did.json');
+      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-txt.json');
+      expect(didCall).toBeTruthy();
+      expect(txtCall).toBeTruthy();
+
+      const file1 = didCall![1] as any;
+      const file2 = txtCall![1] as any;
+      const proof1 = file1.proof;
+      const proof2 = file2.proof;
+
+      expect(proof1.merkleRoot).toHaveLength(64);
+      expect(proof2.merkleRoot).toHaveLength(64);
+      expect(proof1.merkleRoot).toStrictEqual(proof1.targetHash);
+      expect(proof2.merkleRoot).toStrictEqual(proof2.targetHash);
+      expect(proof1.targetHash).not.toStrictEqual(proof2.targetHash);
+
+      expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
+      expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
+
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-did.json');
+      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-txt.json');
+      expect(successMock).toHaveBeenCalledWith('All documents wrapped in individual mode');
     });
   });
 });
-

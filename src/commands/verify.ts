@@ -4,7 +4,6 @@ import {
     getSupportedNetworkNameFromId,
     readJsonFile,
     CaptureConsoleWarnAsync,
-    NetworkCmdName
 } from '../utils';
 import {
     getChainId,

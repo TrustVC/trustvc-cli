@@ -3,9 +3,11 @@ import {
     getSupportedNetwork,
     getSupportedNetworkNameFromId,
     readJsonFile,
-    withAsyncCaptureConsoleWarn
+    CaptureConsoleWarnAsync,
+    NetworkCmdName
 } from '../utils';
 import {
+    getChainId,
     getDocumentData,
     getTransferableRecordsCredentialStatus,
     isTransferableRecord,
@@ -56,7 +58,7 @@ export const verify = async (signedVC: SignedVerifiableCredential) => {
     const isOpenAttestation = isWrappedV2Document(signedVC) || isWrappedV3Document(signedVC);
 
     const { result, warnings } = isOpenAttestation
-        ? { result: await verifyOpenAttestationDocument(signedVC), warnings: undefined }
+        ? { result: await verifyOpenAttestationDocument(signedVC), warnings: null }
         : await verifyW3CDocument(signedVC);
 
     if (warnings) {
@@ -74,56 +76,53 @@ const verifyW3CDocument = async (
     signedVC: SignedVerifiableCredential
 ): Promise<{ result: VerificationFragment[]; warnings: unknown[][] }> => {
     signale.info('Verifying W3C document...');
-    if (isTransferableRecord(signedVC)) {
-        const credentialStatus = getTransferableRecordsCredentialStatus(signedVC);
 
-        if (credentialStatus.tokenNetwork.chainId != null) {
-            const chainId = Number(credentialStatus.tokenNetwork.chainId);
-            const providerForTrustVC = resolveProviderForChainId(chainId);
-            return await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC, { provider: providerForTrustVC }));
-        } else {
-            signale.error('Could not find blockchain information');
-            throw new Error('Could not find blockchain information');
-        }
-    } else {
-        return await withAsyncCaptureConsoleWarn(() => verifyDocument(signedVC));
+    // Non-transferable record: verify directly
+    if (!isTransferableRecord(signedVC)) {
+        return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC));
     }
+
+    const credentialStatus = getTransferableRecordsCredentialStatus(signedVC);
+    const chainId = credentialStatus.tokenNetwork.chainId;
+
+    if (chainId == null) {
+        signale.error('Could not find blockchain information');
+        throw new Error('Could not find blockchain information');
+    }
+
+    try {
+        const chainName = getSupportedNetworkNameFromId(Number(chainId));
+        const network = getSupportedNetwork(chainName);
+        const provider = network.provider() as unknown as V5Provider;
+        if (provider) {
+            return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC, { provider }));
+        }
+    } catch (err: unknown) {
+        signale.warn(`${err instanceof Error ? err.message : String(err)}`);
+    }
+    // Fallback: Verify without provider
+    return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC));
 };
 
 const verifyOpenAttestationDocument = async (
     signedVC: WrappedOrSignedOpenAttestationDocument
 ): Promise<VerificationFragment[]> => {
     signale.info('Verifying OpenAttestation document...');
-    const documentData = getDocumentData(signedVC);
+    // if chainId is defined, it is a TXT document, else DID document.
     checkExpiration(signedVC);
-    if (isWrappedV2Document(signedVC)) {
-        const chainId = Number(documentData.network?.chainId);
-        return await verifyWithProvider(signedVC, chainId);
-    }
-
-    if (isWrappedV3Document(signedVC)) {
-        if (isTransferableRecord(signedVC)) {
-            const chainId = Number(documentData.network?.chainId);
-            return await verifyWithProvider(signedVC, chainId);
+    try {
+        const chainId = getChainId(signedVC);
+        const chainName = getSupportedNetworkNameFromId(Number(chainId));
+        const network = getSupportedNetwork(chainName);
+        const provider = network.provider() as unknown as V5Provider;
+        if (provider) {
+            return await verifyDocument(signedVC, { provider });
         }
-        return await verifyDocument(signedVC);
+    } catch (err: unknown) {
+        signale.warn(`${err instanceof Error ? err.message : String(err)}`);
     }
-
-    throw new Error("Document is not a valid OpenAttestation document");
-};
-
-const resolveProviderForChainId = (chainId: number): V5Provider => {
-    const chainName = getSupportedNetworkNameFromId(chainId);
-    return getSupportedNetwork(chainName).provider() as unknown as V5Provider;
-};
-
-const verifyWithProvider = async (signedVC: any, chainId: number | undefined) => {
-    if (chainId == null) {
-        throw new Error('Could not find blockchain information');
-    }
-
-    const provider = resolveProviderForChainId(Number(chainId));
-    return await verifyDocument(signedVC, { provider });
+    // Fallback: Verify without provider
+    return await verifyDocument(signedVC);
 };
 
 const checkExpiration = (signedVC: WrappedOrSignedOpenAttestationDocument) => {

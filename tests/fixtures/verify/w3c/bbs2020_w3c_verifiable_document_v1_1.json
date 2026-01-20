@@ -4,23 +4,13 @@
     "https://trustvc.io/context/invoice.json",
     "https://trustvc.io/context/render-method-context.json",
     "https://trustvc.io/context/qrcode-context.json",
-    "https://w3id.org/security/bbs/v1",
-    "https://w3id.org/vc/status-list/2021/v1"
+    "https://w3id.org/security/bbs/v1"
   ],
   "renderMethod": [
     {
       "type": "EMBEDDED_RENDERER",
       "templateName": "INVOICE",
       "id": "https://generic-templates.tradetrust.io"
-    }
-  ],
-  "credentialStatus": [
-    {
-      "id": "https://trustvc.github.io/did/credentials/statuslist/sample#2",
-      "statusListCredential": "https://trustvc.github.io/did/credentials/statuslist/sample",
-      "statusListIndex": "2",
-      "statusPurpose": "revocation",
-      "type": "StatusList2021Entry"
     }
   ],
   "credentialSubject": {
@@ -64,16 +54,16 @@
   "type": ["VerifiableCredential"],
   "qrCode": {
     "type": "TrustVCQRCode",
-    "uri": "https://actions.tradetrust.io?q=%7B%22type%22%3A%22DOCUMENT%22%2C%22payload%22%3A%7B%22uri%22%3A%22https%3A%2F%2Fgallery.tradetrust.io%2Fstatic%2Finvoice-revoked.json%22%2C%22redirect%22%3A%22https%3A%2F%2Fref.tradetrust.io%2F%22%2C%22chainId%22%3A%22101010%22%7D%7D"
+    "uri": "https://actions.tradetrust.io?q=%7B%22type%22%3A%22DOCUMENT%22%2C%22payload%22%3A%7B%22uri%22%3A%22https%3A%2F%2Fgallery.tradetrust.io%2Fstatic%2Finvoice-default.json%22%2C%22redirect%22%3A%22https%3A%2F%2Fref.tradetrust.io%2F%22%2C%22chainId%22%3A%22101010%22%7D%7D"
   },
   "issuer": "did:web:trustvc.github.io:did:1",
   "issuanceDate": "2025-06-09T09:36:15.971Z",
-  "id": "urn:bnid:_:0198cc98-e733-7889-a56a-6586989b658e",
+  "id": "urn:bnid:_:0198d00f-e703-700e-8262-3411f6f1a7b4",
   "proof": {
     "type": "BbsBlsSignature2020",
-    "created": "2025-08-21T12:27:10Z",
+    "created": "2025-08-22T04:35:59Z",
     "proofPurpose": "assertionMethod",
-    "proofValue": "t6MiyaBT0FkPkM2/vP8NdIvocdjx+09fYMFtIJxc2+xKzA0d8P7srdEaAu1xpYHUclQLD8rTJuP6ihzlME4rh1mbz/6PepuxJy7uSbc+gxBaa7IPiDOkLYL+OjOQdh/JzEPUpryTHlswSDz1qLmDug==",
-    "verificationMethod": "did:web:trustvc.github.io:did:1#keys-2"
+    "proofValue": "o32r+zLI4dcOeLY1omIXoqQKXwwC6z9ihFkGowUvlpgdk3lBA02NRiOuTNQt8CExDEfRAbq+17MwX8sMkSSN7Drbug0evckYllVnzTy4hzRTItiHNrGr9979b4i486eQCEF3QwrQPSU1k/v3LXx6lQ==",
+    "verificationMethod": "did:web:trustvc.github.io:did:1#keys-1"
   }
 }

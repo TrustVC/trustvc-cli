@@ -1,0 +1,79 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://w3id.org/security/data-integrity/v2",
+    "https://trustvc.io/context/render-method-context-v2.json",
+    "https://trustvc.io/context/invoice.json",
+    "https://trustvc.io/context/qrcode-context.json"
+  ],
+  "renderMethod": [
+    {
+      "type": "EMBEDDED_RENDERER",
+      "templateName": "INVOICE",
+      "id": "https://generic-templates.tradetrust.io"
+    }
+  ],
+  "credentialStatus": [
+    {
+      "id": "https://trustvc.github.io/did/credentials/statuslist/2#5",
+      "statusListCredential": "https://trustvc.github.io/did/credentials/statuslist/2",
+      "statusListIndex": "5",
+      "statusPurpose": "revocation",
+      "type": "BitstringStatusListEntry"
+    }
+  ],
+  "credentialSubject": {
+    "type": ["Invoice"],
+    "billFromName": "ABC Exports Pvt. Ltd.",
+    "billFromStreetAddress": "12/F, Industrial Plaza, Near MIDC",
+    "billFromCity": "Navi Mumbai",
+    "billFromPostalCode": "400703",
+    "billFromPhoneNumber": "+91-22-4455-9988",
+    "billToName": "David Thomson",
+    "billToEmail": "david.thomson@example.co.uk",
+    "billToCompanyName": "XYZ Foods Ltd.",
+    "billToCompanyStreetAddress": "Unit 17, Royal Wharf, Docklands Industrial Area",
+    "billToCompanyCity": "London",
+    "billToCompanyPostalCode": "E16 2AA",
+    "billToCompanyPhoneNumber": "+44-20-8899-4455",
+    "billableItems": [
+      {
+        "billableItemsDescription": "Organic Basmati Rice (20kg Bags)",
+        "billableItemsQuantity": "100",
+        "billableItemsUnitPrice": "125",
+        "billableItemsAmount": "12500"
+      },
+      {
+        "billableItemsDescription": "Vacuum-Packed Almonds (10kg)",
+        "billableItemsQuantity": "50",
+        "billableItemsUnitPrice": "80",
+        "billableItemsAmount": "4000"
+      }
+    ],
+    "invoiceId": "INV-20250604-001",
+    "invoiceName": "Export of Organic Basmati Rice",
+    "date": "2025-06-04",
+    "customerId": "CUST-UK-55678",
+    "terms": "Net 30 Days",
+    "subtotal": "$16,500.00",
+    "tax": "5%",
+    "taxTotal": "$825.00",
+    "total": "$17,325.00"
+  },
+  "type": ["VerifiableCredential"],
+  "qrCode": {
+    "type": "TrustVCQRCode",
+    "uri": "https://actions.tradetrust.io?q=%7B%22type%22%3A%22DOCUMENT%22%2C%22payload%22%3A%7B%22uri%22%3A%22https%3A%2F%2Fgallery.tradetrust.io%2Fstatic%2Fw3c%2Fv2_0%2Finvoice-revoked.json%22%2C%22redirect%22%3A%22https%3A%2F%2Fref.tradetrust.io%2F%22%2C%22chainId%22%3A%22101010%22%7D%7D"
+  },
+  "issuer": "did:web:trustvc.github.io:did:1",
+  "validFrom": "2024-04-01T12:19:52Z",
+  "id": "urn:uuid:019931db-b8b0-7ff3-bdbc-f3ac820c7668",
+  "proof": {
+    "type": "DataIntegrityProof",
+    "created": "2025-09-10T04:21:47Z",
+    "verificationMethod": "did:web:trustvc.github.io:did:1#multikey-1",
+    "cryptosuite": "ecdsa-sd-2023",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "u2V0AhVhAJkFjMn4zWrJXhY-EqWhy-NvFRdLm_dF7IIMd4UbLPwjGJyJAnuwqqiM79LZT4bxow0jXYfNF4XWL5bqVFI1MPFgjgCQDuTPhBc6tZKIWyZZZKeARqDErduYv0x3bD7QfG1ke0cNYINX2Sd4geOSiHU73zBQ3d9GTYw79js0OaXhYlf15Z9f4mCZYQCF6ABtuDUFHHkHwG-AsYwmKXytxMMNeSwW2rPP9LHvUt0Ip75uLBjhPONLssKKj_nM7jrRnRAVyNegggCILiZVYQJIxUqZt95fsygUkWlvPkHShl9ZYkf6IZIheKS-uR-SZI7-xcffLx4xZAx1i5dWIJGJC58oBmjlUwsQuM_hKKLlYQFFDtmRXcM1WTY4l3tZdgV1XYPDm8TgvM7m0eguGP1Cwmu2LrGQjFOGLK3PWV89h_GJrRY9zqyDV8019GPztc3FYQABL9bzxVJimp-Zx7rhuN4PsHprgE4jnsk037M3Ge7fcLGXS6j81xtdlCRxMrOOuI4A6VKGufmaTCoyOEbw5KkdYQPXhkK7IO60JL1B8N9VJuZISeF2agzBVLIGZ30XhOc6o6eew9kh9mOtGrJsboEdDL1avqJ5ljs9fRbkGNW4ielFYQGsERhavqeEJAPjw-8Nmqasok0dbtIuwSJK3LuQ-Hw2ac3kkvAC1_qs6wrq2NJZAAPb0osrD4AtRbhadvAih5T5YQIJsg5i4MLmJFmB3Xqh8Fgt-2Bj5yE6k97dWW4z7yAkg9pOBQscRSrooVK5UUhD-pxNaN_pAIJEQSgKp83E_gClYQDAkopPK1GYD_EbAPZtismuEeQ1gyGMPV4-F-Hq25L1XekQrT9xgBtPuq7_YJFErgGGCwq1bdMQNj9WCGRYleIlYQLvmP8E8h9YpwLvTyhQc9U2tS9SNN8ygF4H2671VoL8nnlW57Id8aCdn_tUmjbCQfvCXw3ipHX5umiUEC-OZPU5YQDBDLEuMbQaL4pUjAKr5h3HO_llDwJEHfitVFA21wDkye5kEdAazzA9ar7KgD_p3BwjtBJBsJt4zK5n8A5up9lhYQEj3rJ3XuKwu9PuAsEKJyRk1K5uL7uiLgXZAbZuHVH4cLJSFM3QdwJFz_JiA0IvkrbHReUw5HjLEgFdX1RDE7tpYQGDY7GFYBxlA4ZHTBEQSuGphQ8sCoAU0EufbkdUZDDe8-4BSu9c76qkzyJ4cPygBMgyXVpL4rAoPlQN_zvbTukdYQIhO2jtOfbydRUWukWaAS_Gvc_dWwBRxzKhQ2ESUR2iN_bwIPWlYjQhr2Erhw-ELq1TeMoTMsDInS9zHa6FWD2ZYQC93YRsCDVTFoLdA6MZw1sLafxknnrvX9qJQrYQltDjMGqDCLGXF-LWgWrL2qa2q4mOgho-HiRa8vAhwYkfNSpVYQDL9Xk94G1IH82smnWRuSHcTeLnJjnr6c2SOMz9aP4x13WQOd06R4gEjfgnSJQsUUbL_wrqxmauaVz2jXXfRC_JYQNocs3VegQSfmTkvq1C8Z5dVixoG0KhNxJASSuaAztL5GC_kxxYtjcwwlY2q3MzEBrj2UPXdBJL2fyYi5WqJtZVYQLDjRcAQ0krynJpv-yP3cWqsMhM73dCu59gncXaOw5WJ5UgLnYc2YFa1cd-gTXWHGsW-IWnF6tsi90ZYCerPNXVYQJnoq7XnxXv2LgzJEVAkYUz219wZvMzDokZLa6dM0FaUhE73MOz804icZCqNFInVJfEyaiq1NZMmIucLEmM0vVRYQOJrji5BLxnKLgKT7J8Wry_Zk5jKrS0u1gAyvoT7ncae6-_mvBHqwEBTp3RCJCI57CqW3Q88FlZxWVAlXCnCzKxYQEZoZWUtK3Y7LYaI8M5ZV5VeenK1aRf5KinI0OWBMicpTDUxtsvjHY-3gMUc650S1fDfTQiSENCZwmV9FxjoxbdYQKroB5h1N-9QPPC41dpVws0ugwmtcBUkiM2Nnu34TH65Nd9inaM26RNEQkYopXt9VyuCQDjhkKxHA5W2M7nTYQlYQCL2PoH71g3kID39lWoK2zJRGujHo1FrHkdwulPtPdUgS5SDhjXQfmjVRnStBufeSv6vmWN7csQN6nRbt2YcO4xYQBxYT5jPmvyfYDaZ03w7cWcXDXu5Y4kNYDdyjrIOM_fcpMW-VKTWT6wD8_AJVbHCPO-BSM_pQ0Ov_JrDZssi9UJYQCWuFoWeJslXYK9gYE9m0aF9R9MO--92j4Nrxf4lf4PXP357Jt3LiDd0kKa6LoCHHYd1x1DVoAwQn323oECyrIJYQMm00znThXQHQ1H4cPNXO9JLwmYTrm-vygxgXaAhwU4Jzn2GD-0vcLhINVRYc0d8inTS9skpooOLcvxEwrBqa9NYQPBT4mzzUThagwfa6YImH8JQ501YL_yPXw9ztrfKcbTf6JlseTzW0eTyxcNTrpQv5yUlUTu0OOy9FM2TVKB-_KZYQHrO2SxRwP4t2L_S-hkBBi9F5MxWJNL-udV_e92PhPr176bVyT3MJ-DDKg242iRed_dr3QOpcPHxJMzgqfGhpupYQJE_UDT_FvTy0fz8nuQlvEVr0ToTl7lmiMZMi5WWQgxS0Hl9OHi1agMgGIg3H2qt5Qk_j0YcmbSDyPM52uiufyFYQBgcljiVyU03hcQk-ZjvwuvvtFU9WBqWIsyQv1mot-nIql5N0-0kWmSYRAmGCpICh0wodYp3xewB-0W8qRLVtplYQM9kWzMGkAcFtqyNN64H2GCaKEK9aGZ0RTjYh5HcQZ8FghNcHrJ24lBus3TfQNTHnTYe6o8NfnRaaBFw65g6UjJYQPF_qKw0cjByCfTwO4sqgFtZih3KMwcRYH--L9SVaQaYI3UtmH2IvARu8vaw7S4rRg9KlO2EcNATmLD63ipOghdYQEhgvX1uH4X6uACyOIKWNG6QjQQRVlnxdhi8a1iTBqkpZkqwlP1bWHQUHn7lqJ3whWFJmX5cBxgfwGglIBw5znFYQF1pocG5tSvP_EnYB_uZcK0nkN3-p4T0-PA_c5KO8aq__jgsGmAG0aFl3A_ITN7JQ3UXHhuVDX1ubQdHT2v8wRNYQKqG-6HeI66LRORGVywhlpoOPCrYfUYeBCgtApKHgwn6DWz_VpdKv_01gEuu_FWi_tD8KOdSJbBbvBjpDZA_wOhYQBtBYPPaGwEHANhFjhMMBFgHTuxT1a1f56Ij1IqK8EKeUvZsEN8NX3VVsB2_2w0AC1bw4bABzDoE3Ok4FCn5B_tYQLmyeMXuQCJVXbi91StAwvI-Gp5yLDTOACuxd0Bqj4_N8DtxaFvakp3KoSxySdY2O5fixsfhUf_EX_vBXPdZ3S9YQJNPn48f1iUCkuGI9UInd9g6aYoQ1sDmGMpU_D7irjKe1CWPx_6aRLqeT-SqO3X5DzNm689trKLSRfDgX5ucM_JYQEnc98-_RPkcGVdcfIUEOs-WnbDPgf9zacuIaDH_Nx14RhJt0XTZ4x0YQBOd7a6yKo-P_lLizKva4V-uC4p0q6yFZy9pc3N1ZXJqL3ZhbGlkRnJvbW0vcmVuZGVyTWV0aG9kZy9xckNvZGVlL3R5cGU"
+  }
+}

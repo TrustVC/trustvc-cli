@@ -536,12 +536,12 @@ describe('trustvc-cli', () => {
     let signalWarnSpy: MockedFunction<typeof signale.warn>;
     let signaleSuccessSpy: MockedFunction<typeof signale.success>;
     let readJsonFileMock: MockedFunction<typeof utils.readJsonFile>;
-    let withAsyncCaptureConsoleWarnMock: MockedFunction<typeof utils.withAsyncCaptureConsoleWarn>;
+    let CaptureConsoleWarnAsyncMock: MockedFunction<typeof utils.CaptureConsoleWarnAsync>;
     let getSupportedNetworkMock: MockedFunction<typeof utils.getSupportedNetwork>;
     let getSupportedNetworkNameFromIdMock: MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
 
-    const W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH = './tests/fixtures/w3c/certificate-of-origin-default.json';
-    const OA_SIGNED_VC_REVOKED_FIXTURE_PATH = './tests/fixtures/oa/invoice-revoked.json';
+    const OA_V3_DNS_TXT_TOKEN_REGISTRY_FIXTURE = './tests/fixtures/verify/oa/3.0/signed_wrapped_oa_dns_txt_token_registry_v3.json';
+    const W3C_REVOKED_DNS_DID_FIXTURE = './tests/fixtures/verify/w3c/revoked_ecdsa_w3c_verifiable_document_v2_0.json';
 
     beforeEach(async () => {
       vi.resetAllMocks();
@@ -560,17 +560,16 @@ describe('trustvc-cli', () => {
       getSupportedNetworkNameFromIdMock = utils.getSupportedNetworkNameFromId as MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
       getSupportedNetworkNameFromIdMock.mockImplementation(actualUtils.getSupportedNetworkNameFromId);
 
-      withAsyncCaptureConsoleWarnMock = utils.withAsyncCaptureConsoleWarn as MockedFunction<typeof utils.withAsyncCaptureConsoleWarn>;
-      withAsyncCaptureConsoleWarnMock.mockImplementation((fn: any) => actualUtils.withAsyncCaptureConsoleWarn(fn));
+      CaptureConsoleWarnAsyncMock = utils.CaptureConsoleWarnAsync as MockedFunction<typeof utils.CaptureConsoleWarnAsync>;
+      CaptureConsoleWarnAsyncMock.mockImplementation((fn: any) => actualUtils.CaptureConsoleWarnAsync(fn));
     });
 
     it(
       'should verify a w3c credential through a given path',
       async ({ expect }) => {
-        (prompts.input as any).mockResolvedValueOnce(W3C_SIGNED_VC_DEFAULT_FIXTURE_PATH);
+        (prompts.input as any).mockResolvedValueOnce(OA_V3_DNS_TXT_TOKEN_REGISTRY_FIXTURE);
 
         await verifyHandler();
-
         expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
         expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_STATUS: VALID');
         expect(signaleSuccessSpy).toHaveBeenCalledWith('ISSUER_IDENTITY: VALID');
@@ -578,15 +577,15 @@ describe('trustvc-cli', () => {
     );
 
     it(
-      'should verify an openattestation credential through a given path',
+      'should verify an W3C credential through a given path',
       async ({ expect }) => {
-        (prompts.input as any).mockResolvedValueOnce(OA_SIGNED_VC_REVOKED_FIXTURE_PATH);
+        (prompts.input as any).mockResolvedValueOnce(W3C_REVOKED_DNS_DID_FIXTURE);
 
         await verifyHandler();
 
         expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
         expect(signaleSuccessSpy).toHaveBeenCalledWith('ISSUER_IDENTITY: VALID');
-        expect(signalWarnSpy).toHaveBeenCalledWith(expect.stringContaining('DOCUMENT_STATUS: INVALID'));
+        expect(signalWarnSpy).toHaveBeenCalledWith(expect.stringContaining('DOCUMENT_STATUS: INVALID [Document has been revoked.]'));
       },
     );
   });

@@ -1,0 +1,60 @@
+{
+  "version": "https://schema.openattestation.com/2.0/schema.json",
+  "data": {
+    "id": "e9d95822-dfd4-4f0a-9b3a-b21de76fb9e9:string:urn:uuid:a013fb9d-bb03-4056-b696-05575eceaf42",
+    "shipper": {
+      "address": {
+        "street": "76b35ba3-a12b-4626-9d8e-21cbfee7f082:string:456 Orchard Road",
+        "country": "89273055-befa-4940-bcbf-6cd531d9b060:string:SG"
+      }
+    },
+    "consignee": {
+      "name": "137eb8b9-2da0-4608-8bd3-17e495b332cd:string:TradeTrust"
+    },
+    "notifyParty": {
+      "name": "bd6b7b59-c3c4-4ab2-8c4a-b68cf9124f02:string:TrustVC"
+    },
+    "packages": [
+      {
+        "description": "6d3367f0-dee3-475a-989d-e62c97b8557e:string:1 Pallet",
+        "weight": "8e2ea698-df0d-4e6f-9a3c-a7e4472b86c9:string:1",
+        "measurement": "ed505681-9c14-4bb9-943d-455b4fa6d58c:string:KG"
+      }
+    ],
+    "$template": {
+      "type": "ac26f70e-2932-46f7-bd9a-1a758538289f:string:EMBEDDED_RENDERER",
+      "name": "0c05e656-2d52-4b38-945c-d9f085588dd3:string:BILL_OF_LADING",
+      "url": "55896d86-6099-4470-81c6-79091ee301f0:string:https://generic-templates.tradetrust.io"
+    },
+    "issuers": [
+      {
+        "id": "8c61d8e4-5ad3-40bc-975d-babf0a72db7e:string:did:ethr:0xB26B4941941C51a4885E5B7D3A1B861E54405f90",
+        "name": "912d9616-5f69-4296-9b88-1eca73b786df:string:DID_ISSUER",
+        "identityProof": {
+          "type": "f9ae9ee8-dcf0-407b-a53f-8f2e1eb3e1b1:string:DID",
+          "key": "07c2beca-d6e7-4920-9377-e3d100adbec1:string:did:ethr:0xB26B4941941C51a4885E5B7D3A1B861E54405f90#controller"
+        },
+        "revocation": {
+          "type": "0e7f7d52-83e3-4df7-9a82-ff9571b45310:string:NONE"
+        }
+      }
+    ],
+    "blNumber": "e905d5f9-1562-447a-acab-a747853180fe:string:BL123456",
+    "scac": "206cf8b4-48fa-4822-8db4-7c9c4c529500:string:OOLU"
+  },
+  "signature": {
+    "type": "SHA3MerkleProof",
+    "targetHash": "dabd017ef67a553e467806437473d1707a8079328e4fe9a9471be0be536cab9d",
+    "proof": [],
+    "merkleRoot": "dabd017ef67a553e467806437473d1707a8079328e4fe9a9471be0be536cab9d"
+  },
+  "proof": [
+    {
+      "type": "OpenAttestationSignature2018",
+      "created": "2024-11-08T09:47:52.546Z",
+      "proofPurpose": "assertionMethod",
+      "verificationMethod": "did:ethr:0xB26B4941941C51a4885E5B7D3A1B861E54405f90#controller",
+      "signature": "0x6706675e86e388962cc914dda6594850d995088e87f2bb4e6153cd345a3409503a111298efdcf95b9e55416008229e48eeb87f5f6ff3d4058c0681fa3f7d39de1b"
+    }
+  ]
+}

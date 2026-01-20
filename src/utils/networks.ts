@@ -29,13 +29,13 @@ export enum NetworkCmdName {
 
 const defaultInfuraProvider =
   (networkName: string): (() => Provider) =>
-  () =>
-    new InfuraProvider(networkName);
+    () =>
+      new InfuraProvider(networkName);
 
 const jsonRpcProvider =
   (url: string): (() => Provider) =>
-  () =>
-    new JsonRpcProvider(url);
+    () =>
+      new JsonRpcProvider(url);
 
 /**
  * Creates a provider that checks for an environment variable override
@@ -48,16 +48,16 @@ const getProviderWithEnvOverride =
     networkName: NetworkCmdName,
     defaultProvider: () => Provider,
   ): (() => Provider) =>
-  () => {
-    const envVarName = `${networkName.toUpperCase()}_RPC`;
-    const customRpcUrl = process.env[envVarName];
+    () => {
+      const envVarName = `${networkName.toUpperCase()}_RPC`;
+      const customRpcUrl = process.env[envVarName];
 
-    if (customRpcUrl) {
-      return new JsonRpcProvider(customRpcUrl);
-    }
+      if (customRpcUrl) {
+        return new JsonRpcProvider(customRpcUrl);
+      }
 
-    return defaultProvider();
-  };
+      return defaultProvider();
+    };
 
 export const supportedNetwork: {
   [key in NetworkCmdName]: SupportedNetwork;

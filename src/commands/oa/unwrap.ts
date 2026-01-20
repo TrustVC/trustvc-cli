@@ -69,7 +69,7 @@ export const unwrapOA = async ({
             const outFile = path.join(pathToOutputDirectory, path.basename(doc));
             writeFile(outFile, unwrappedDocument, true);
             signale.success(`Unwrapped OpenAttestation document: ${doc}`);
-        } catch (err: unknown) {
+        } catch (_: unknown) {
             signale.error(`Error while unwrapping OpenAttestation document: ${doc}`);
         }
     }

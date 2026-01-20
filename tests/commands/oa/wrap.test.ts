@@ -359,7 +359,6 @@ describe('oa-wrap', () => {
   });
 
   describe('testing with OA v3 fixtures', () => {
-    const RAW_OA_V3_DIRECTORY = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3';
     const RAW_OA_V3_DID_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json';
     const RAW_OA_V3_TXT_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-txt.json';
 

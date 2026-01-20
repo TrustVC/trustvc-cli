@@ -12,6 +12,8 @@ A command-line interface tool for working with Decentralized Identifiers (DIDs),
 - ✅ **Credential Status**: Create and update W3C credential status lists
 - ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
 - ✅ **Multi-Network Support**: Ethereum, Polygon, XDC, Stability, and Astron networks
+- ✅ **OA Wrap**: Wrap OpenAttestation documents
+- ✅ **OA Unwrap**: Unwrap OpenAttestation documents
 
 ## Powered By
 
@@ -32,6 +34,8 @@ This CLI leverages the TrustVC package:
   - [`trustvc credential-status-update`](#trustvc-credential-status-update)
   - [`trustvc mint`](#trustvc-mint)
   - [`trustvc token-registry mint`](#trustvc-token-registry-mint)
+  - [`trustvc oa-wrap`](#trustvc-oa-wrap)
+  - [`trustvc oa-unwrap`](#trustvc-oa-unwrap)
 - [Configuration](#configuration)
 - [Development](#development)
 
@@ -69,6 +73,12 @@ trustvc credential-status-update
 
 # Mint a token to a registry
 trustvc mint
+
+# Wrap an OpenAttestation document
+trustvc oa-wrap
+
+# Unwrap an OpenAttestation document
+trustvc oa-unwrap
 ```
 
 ## How It Works
@@ -82,6 +92,10 @@ trustvc mint
 - **Credential Status Management**: The CLI provides commands to create and update W3C credential status lists for managing the revocation status of verifiable credentials.
 
 - **Token Registry Minting**: The CLI uses the `mint` function from `@trustvc/trustvc` to mint document hashes to blockchain-based token registries, supporting multiple networks including Ethereum, Polygon, XDC, Stability, and Astron.
+
+- **OA Wrap**: The CLI uses the `wrapDocument` function from `@trustvc/trustvc` to wrap OpenAttestation documents.
+
+- **OA Unwrap**: The CLI uses the `getDocumentData` function from `@trustvc/trustvc` to unwrap OpenAttestation documents.
 
 ## Commands
 
@@ -214,6 +228,37 @@ Alternative command for minting tokens. Functionally identical to `trustvc mint`
 trustvc token-registry mint
 ```
 
+### `trustvc oa-wrap`
+
+Wraps an OpenAttestation Document or Directory either individually or as a batch
+
+**Interactive Prompts:**
+- Select option to wrap documents individually or as a batch
+- Path to raw document or directory containing raw document(s)
+- Output directory
+
+**Output:** Creates a directory with wrapped OpenAttestation document(s).
+
+**Example:**
+```sh
+trustvc oa-wrap
+```
+
+### `trustvc oa-unwrap`
+
+Unwraps an OpenAttestation Document or Directory
+
+**Interactive Prompts:**
+- Path to wrapped document or directory containing wrapped document(s)
+- Output directory
+
+**Output:** Creates a directory with unwrapped OpenAttestation document(s).
+
+**Example:**
+```sh
+trustvc oa-unwrap
+```
+
 ## Configuration
 
 ### Custom RPC Endpoints
@@ -283,6 +328,9 @@ npm test
 │   │       └── credentialStatus/
 │   │           ├── create.ts        # Create credential status
 │   │           └── update.ts        # Update credential status
+│   │   └── oa/
+│   │       ├── wrap.ts              # Wrap OpenAttestation document command
+│   │       └── unwrap.ts            # Unwrap OpenAttestation document command
 │   ├── utils/
 │   │   ├── wallet.ts                # Wallet and signer utilities
 │   │   ├── networks.ts              # Network configurations

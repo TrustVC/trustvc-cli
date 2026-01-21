@@ -1,6 +1,5 @@
 import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
 import {
-  GasOption,
   NetworkAndWalletSignerOption,
   NetworkOption,
   RpcUrlOption,
@@ -43,7 +42,7 @@ export type CredentialStatusQuestionType = {
 export type TokenRegistryMintCommand = NetworkOption &
   Partial<RpcUrlOption> &
   WalletOrSignerOption &
-  GasOption & {
+  GasPriceScale & {
     address: string;
     beneficiary: string;
     holder: string;
@@ -53,7 +52,7 @@ export type TokenRegistryMintCommand = NetworkOption &
   };
 
 export type BaseTitleEscrowCommand = NetworkAndWalletSignerOption &
-  GasOption & {
+  GasPriceScale & {
     tokenRegistryAddress: string;
     tokenId: string;
     remark?: string;

@@ -1,6 +1,5 @@
 import { Provider, JsonRpcProvider, InfuraProvider } from 'ethers';
 import type { GasStationFunction } from './gas-station';
-import { gasStation } from './gas-station';
 import { SUPPORTED_CHAINS, CHAIN_ID } from '@trustvc/trustvc';
 
 // Re-export for use in other modules
@@ -101,7 +100,7 @@ const buildSupportedNetwork = (): { [key in NetworkCmdName]: SupportedNetwork } 
       networks[networkName] = {
         explorer: chainConfig.explorerUrl,
         provider: createProvider(networkName),
-        networkId: Number(chainConfig.id),
+        networkId: Number(chainId),
         networkName: networkName,
         currency: chainConfig.currency as networkCurrency,
         gasStation: chainConfig.gasStation as ReturnType<GasStationFunction> | undefined,

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getSupportedNetwork, NetworkCmdName } from '../../src/utils/networks';
-import { JsonRpcProvider, InfuraProvider } from 'ethers';
+import { JsonRpcProvider } from 'ethers';
 
 describe('networks', () => {
   describe('environment variable RPC override', () => {

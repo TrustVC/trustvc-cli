@@ -1,13 +1,15 @@
 import { input, select, confirm } from '@inquirer/prompts';
 import { info, error } from 'signale';
 import { Argv } from 'yargs';
-import { NetworkCmdName, supportedNetwork, getSupportedNetwork, SUPPORTED_CHAINS, CHAIN_ID } from './networks';
-import { readDocumentFile } from './file-io';
 import {
-  getTokenRegistryAddress,
-  getTokenId,
-  getChainId,
-} from '@trustvc/trustvc';
+  NetworkCmdName,
+  supportedNetwork,
+  getSupportedNetwork,
+  SUPPORTED_CHAINS,
+  CHAIN_ID,
+} from './networks';
+import { readDocumentFile } from './file-io';
+import { getTokenRegistryAddress, getTokenId, getChainId } from '@trustvc/trustvc';
 import fs from 'fs';
 import { getTokenRegistryVersion } from '../commands/helpers';
 import { getErrorMessage } from './index';
@@ -71,8 +73,6 @@ export type WalletOrSignerOption =
 export interface GasPriceScale {
   maxPriorityFeePerGasScale: number;
 }
-export interface GasOption extends GasPriceScale {}
-
 export type NetworkAndWalletSignerOption = NetworkOption &
   (Partial<WalletOption> | Partial<PrivateKeyOption>);
 
@@ -435,12 +435,12 @@ export const promptRemark = async (registryVersion: string): Promise<string | un
       message: 'Enter a remark (optional, press Enter to skip):',
       required: false,
     });
-    
+
     // Show encryption info if remark was entered
     if (remarkInput && remarkInput.trim() !== '') {
       info('ℹ️  The remark will be encrypted with the document ID as the encryption key.');
     }
-    
+
     return remarkInput || undefined;
   } else {
     info('Remark is not supported for V4 token registries. Skipping remark input.');

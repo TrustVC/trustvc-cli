@@ -79,7 +79,12 @@ const createProvider = (networkName: NetworkCmdName): (() => Provider) => {
   const rpcUrl = rpcUrls[networkName];
 
   // Use Infura provider for mainnet and sepolia
-  if (networkName === NetworkCmdName.Mainnet || networkName === NetworkCmdName.Sepolia) {
+  if (
+    networkName === NetworkCmdName.Mainnet ||
+    networkName === NetworkCmdName.Sepolia ||
+    networkName === NetworkCmdName.Matic ||
+    networkName === NetworkCmdName.Amoy
+  ) {
     return getProviderWithEnvOverride(networkName, defaultInfuraProvider(rpcUrl));
   }
 

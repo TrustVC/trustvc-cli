@@ -1,7 +1,19 @@
-import { input, select } from '@inquirer/prompts';
-import { info } from 'signale';
+import { input, select, confirm } from '@inquirer/prompts';
+import { info, error } from 'signale';
 import { Argv } from 'yargs';
-import { NetworkCmdName, supportedNetwork } from './networks';
+import { NetworkCmdName, supportedNetwork, getSupportedNetwork } from './networks';
+import { readDocumentFile } from './file-io';
+import {
+  getTokenRegistryAddress,
+  getTokenId,
+  getChainId,
+  CHAIN_ID,
+  SUPPORTED_CHAINS,
+} from '@trustvc/trustvc';
+import fs from 'fs';
+import { getTokenRegistryVersion } from '../commands/helpers';
+import { getErrorMessage } from './index';
+import { dryRunMode } from './dryRun';
 
 export interface NetworkOption {
   network: string;
@@ -279,4 +291,254 @@ export const promptRemarkAndEncryptionKey = async (): Promise<{
     remark: remark || undefined,
     encryptionKey: encryptionKey || undefined,
   };
+};
+
+/**
+ * Maps a chainId to a network name
+ * @param chainId - The chain ID from the document
+ * @returns The network name
+ */
+export const getNetworkFromChainId = (chainId: number): string => {
+  const chainIdMap: Record<number, string> = {
+    1: 'mainnet',
+    11155111: 'sepolia',
+    137: 'matic',
+    80002: 'amoy',
+    101010: 'stability',
+    20180427: 'stabilitytestnet',
+    1338: 'astron',
+    21002: 'astrontestnet',
+    50: 'xdc',
+    51: 'xdcapothem',
+    1337: 'local',
+  };
+
+  const network = chainIdMap[chainId];
+  if (!network) {
+    throw new Error(
+      `Unsupported chainId: ${chainId}. Please add mapping or select network manually.`,
+    );
+  }
+
+  return network;
+};
+
+/**
+ * Prompts for document file path and reads the document.
+ * @returns The parsed document object
+ */
+export const promptAndReadDocument = async (): Promise<any> => {
+  // Document file path
+  const documentPath = await input({
+    message: 'Enter the path to the TT/JSON document file:',
+    required: true,
+    validate: (value: string) => {
+      if (!value || value.trim() === '') {
+        return 'Document file path is required';
+      }
+      if (!fs.existsSync(value)) {
+        return 'File does not exist';
+      }
+      if (!/\.(tt|json|jsonld)$/i.test(value)) {
+        return 'File must be a .tt, .json, or .jsonld file';
+      }
+      return true;
+    },
+  });
+
+  // Read and parse the document
+  let document: any;
+  try {
+    document = readDocumentFile(documentPath);
+  } catch (err) {
+    throw new Error(
+      `Failed to read document file: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  return document;
+};
+
+/**
+ * Prompts for document file path, extracts and displays document information.
+ * @returns An object containing the document, tokenRegistry, tokenId, network, documentId, and registryVersion
+ */
+export const extractDocumentInfo = async (
+  document: any,
+): Promise<{
+  document: any;
+  tokenRegistry: string;
+  tokenId: string;
+  network: string;
+  documentId: string;
+  registryVersion: string;
+}> => {
+  // Extract information using trustvc utility functions
+  let tokenRegistry: string | undefined;
+  let tokenId: string | undefined;
+  let chainId: CHAIN_ID | undefined;
+
+  try {
+    tokenRegistry = getTokenRegistryAddress(document);
+    tokenId = getTokenId(document);
+    chainId = getChainId(document);
+  } catch (err) {
+    throw new Error(
+      `Failed to extract document information: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  // Validate extracted values
+  if (!tokenRegistry) {
+    throw new Error('Document does not contain a valid token registry address');
+  }
+
+  if (!tokenId) {
+    throw new Error('Document does not contain a valid token ID');
+  }
+
+  if (!chainId) {
+    throw new Error('Document does not contain a valid chain ID');
+  }
+
+  // Map chainId to network name
+  const network = SUPPORTED_CHAINS[chainId].name;
+
+  // Get provider to check token registry version (no wallet needed)
+  const provider = getSupportedNetwork(network).provider();
+  const registryVersion = await getTokenRegistryVersion(tokenRegistry, provider);
+
+  // Extract document ID
+  const documentId = document.id || 'N/A';
+
+  info(`Extracted from document:`);
+  info(`  Network: ${network} (Chain ID: ${chainId})`);
+  info(`  Token Registry (Version ${registryVersion.toUpperCase()}): ${tokenRegistry}`);
+  info(`  Token ID: ${tokenId}`);
+  info(`  Document ID: ${documentId}`);
+
+  return {
+    document,
+    tokenRegistry,
+    tokenId,
+    network,
+    documentId,
+    registryVersion,
+  };
+};
+
+/**
+ * Prompts for an optional remark based on token registry version.
+ * Only prompts if the registry version is V5.
+ * @param registryVersion - The token registry version ('v4' or 'v5')
+ * @returns The remark string or undefined
+ */
+export const promptRemark = async (registryVersion: string): Promise<string | undefined> => {
+  if (registryVersion === 'v5') {
+    const remarkInput = await input({
+      message: 'Enter a remark (optional, press Enter to skip):',
+      required: false,
+    });
+    return remarkInput || undefined;
+  } else {
+    info('Remark is not supported for V4 token registries. Skipping remark input.');
+    return undefined;
+  }
+};
+
+/**
+ * Prompts for an Ethereum address with validation.
+ * @param role - The role of the address (e.g., 'beneficiary', 'holder', 'new holder')
+ * @param description - Optional additional description (e.g., 'initial recipient', 'initial holder')
+ * @returns The validated Ethereum address
+ */
+export const promptAddress = async (role: string, description?: string): Promise<string> => {
+  const roleCapitalized = role.charAt(0).toUpperCase() + role.slice(1);
+  const messageText = description
+    ? `Enter the address of the ${role} (${description}):`
+    : `Enter the address of the ${role}:`;
+
+  const address = await input({
+    message: messageText,
+    required: true,
+    validate: (value: string) => {
+      if (!value || value.trim() === '') {
+        return `${roleCapitalized} address is required`;
+      }
+      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
+        return 'Invalid Ethereum address format';
+      }
+      return true;
+    },
+  });
+
+  return address;
+};
+
+/**
+ * Checks if the network requires automatic dry run (Ethereum and Polygon networks)
+ */
+export const shouldRunDryRun = (network: string): boolean => {
+  const dryRunNetworks = [
+    NetworkCmdName.Mainnet,    // Ethereum Mainnet
+    NetworkCmdName.Sepolia,    // Ethereum Sepolia Testnet
+    NetworkCmdName.Matic,      // Polygon Mainnet
+    NetworkCmdName.Amoy,       // Polygon Amoy Testnet
+  ];
+  return dryRunNetworks.includes(network as NetworkCmdName);
+};
+
+/**
+ * Performs automatic dry run for specified networks with gas estimation and user confirmation
+ * Uses the existing dryRunMode function for comprehensive display
+ */
+export const performDryRunWithConfirmation = async ({
+  network,
+  getTransactionCallback,
+}: {
+  network: string;
+  getTransactionCallback: () => Promise<any>;
+}): Promise<boolean> => {
+  if (!shouldRunDryRun(network)) {
+    return true; // Proceed without dry run for other networks
+  }
+
+  try {
+    // Get the populated transaction - dryRunMode will estimate gas automatically
+    const transaction = await getTransactionCallback();
+
+    // Use the existing dryRunMode function for comprehensive display
+    // It will automatically estimate gas from the transaction
+    await dryRunMode({
+      network,
+      transaction,
+    });
+
+    // Ask user to proceed
+    const proceed = await confirm({
+      message: '\nDo you want to proceed with the actual transaction?',
+      default: true,
+    });
+
+    if (!proceed) {
+      info('Transaction cancelled by user.');
+      return false;
+    }
+
+    info('\n✅ Proceeding with transaction...');
+    return true;
+  } catch (estimateError) {
+    error(`Gas estimation failed: ${getErrorMessage(estimateError)}`);
+    const proceedAnyway = await confirm({
+      message: 'Gas estimation failed. Do you want to proceed anyway?',
+      default: false,
+    });
+
+    if (!proceedAnyway) {
+      info('Transaction cancelled by user.');
+      return false;
+    }
+    
+    return true;
+  }
 };

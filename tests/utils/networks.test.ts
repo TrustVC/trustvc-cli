@@ -34,8 +34,8 @@ describe('networks', () => {
       const network = getSupportedNetwork(NetworkCmdName.Sepolia);
       const provider = network.provider();
 
-      // The default Infura provider should be used
-      expect(provider).toBeInstanceOf(InfuraProvider);
+      // The default provider from SUPPORTED_CHAINS should be used (JsonRpcProvider)
+      expect(provider).toBeInstanceOf(JsonRpcProvider);
     });
 
     it('should use custom RPC for MAINNET_RPC', () => {
@@ -103,8 +103,8 @@ describe('networks', () => {
 
       expect(sepoliaProvider).toBeInstanceOf(JsonRpcProvider);
       expect((sepoliaProvider as any)._getConnection().url).toBe(customSepoliaRpc);
-      // Default Infura provider for mainnet
-      expect(mainnetProvider).toBeInstanceOf(InfuraProvider);
+      // Default provider from SUPPORTED_CHAINS for mainnet (JsonRpcProvider)
+      expect(mainnetProvider).toBeInstanceOf(JsonRpcProvider);
     });
   });
 });

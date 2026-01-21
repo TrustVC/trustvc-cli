@@ -1,4 +1,3 @@
-import { input } from '@inquirer/prompts';
 import { error, info, success, warn } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
@@ -9,15 +8,17 @@ import {
   getErrorMessage,
   getEtherscanAddress,
   NetworkCmdName,
-  promptRemarkAndEncryptionKey,
-  promptNetworkSelection,
+  promptRemark,
   promptWalletSelection,
   TransactionReceiptFees,
   getSupportedNetwork,
   getWalletOrSigner,
-  dryRunMode,
   canEstimateGasPrice,
   getGasFees,
+  extractDocumentInfo,
+  promptAndReadDocument,
+  promptAddress,
+  performDryRunWithConfirmation,
 } from '../../utils';
 import {
   connectToTitleEscrow,
@@ -43,56 +44,24 @@ export const handler = async (): Promise<string | undefined> => {
 
 // Prompt user for all required inputs
 export const promptForInputs = async (): Promise<TitleEscrowNominateBeneficiaryCommand> => {
-  // Network selection
-  const network = await promptNetworkSelection();
+  // Extract document information using utility function
+  const document = await promptAndReadDocument();
 
-  // Token Registry Address
-  const tokenRegistry = await input({
-    message: 'Enter the token registry contract address:',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Token registry address is required';
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-        return 'Invalid Ethereum address format';
-      }
-      return true;
-    },
-  });
-
-  // Token ID (Document Hash)
-  const tokenId = await input({
-    message: 'Enter the document hash (tokenId) of the transferable record:',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Token ID is required';
-      }
-      return true;
-    },
-  });
+  // Extract document information using utility function
+  const { tokenRegistry, tokenId, network, documentId, registryVersion } =
+    await extractDocumentInfo(document);
 
   // New Beneficiary Address
-  const newBeneficiary = await input({
-    message: 'Enter the address of the new beneficiary (owner):',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'New beneficiary address is required';
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-        return 'Invalid Ethereum address format';
-      }
-      return true;
-    },
-  });
+  const newBeneficiary = await promptAddress('new beneficiary', 'new owner');
 
   // Wallet selection
   const { encryptedWalletPath, key, keyFile } = await promptWalletSelection();
 
-  // Optional: Remark and Encryption Key
-  const { remark, encryptionKey } = await promptRemarkAndEncryptionKey();
+  // Optional: Remark (only for V5)
+  const remark = await promptRemark(registryVersion);
+
+  // Use document ID as encryption key
+  const encryptionKey = documentId;
 
   // Build the result object
   const baseResult = {
@@ -102,7 +71,6 @@ export const promptForInputs = async (): Promise<TitleEscrowNominateBeneficiaryC
     newBeneficiary,
     remark,
     encryptionKey,
-    dryRun: false,
     maxPriorityFeePerGasScale: 1,
   };
 
@@ -140,6 +108,7 @@ export const endorseTransferOwnerHandler = async (args: TitleEscrowNominateBenef
 
     const { transactionReceipt } = await endorseNominatedBeneficiary(args);
     const network = args.network as NetworkCmdName;
+
     displayTransactionPrice(transactionReceipt as unknown as TransactionReceiptFees, network);
     const { hash: transactionHash } = transactionReceipt;
 
@@ -166,10 +135,9 @@ export const endorseTransferOwnerHandler = async (args: TitleEscrowNominateBenef
  * @param encryptionKey - Optional encryption key for encrypting the remark
  * @param newBeneficiary - The address of the new beneficiary to endorse
  * @param network - The blockchain network to execute the transaction on
- * @param dryRun - If true, simulates the transaction without executing it
  * @param rest - Additional parameters (e.g., wallet configuration, gas settings)
  * @returns Promise resolving to an object containing the transaction receipt and nominated beneficiary address
- * @throws Error if provider is required but not available, or if transaction receipt is null
+ * @throws Error if provider is required but not available, or if transaction receipt is not found
  */
 export const endorseNominatedBeneficiary = async ({
   tokenRegistryAddress,
@@ -178,7 +146,6 @@ export const endorseNominatedBeneficiary = async ({
   encryptionKey,
   newBeneficiary,
   network,
-  dryRun,
   ...rest
 }: TitleEscrowNominateBeneficiaryCommand): Promise<{
   transactionReceipt: TransactionReceipt;
@@ -190,30 +157,43 @@ export const endorseNominatedBeneficiary = async ({
   // Get the network ID for the specified network
   const networkId = getSupportedNetwork(network).networkId;
 
-  // Connect to the title escrow contract for this token
-  const titleEscrow = await connectToTitleEscrow({
-    tokenId,
-    address: tokenRegistryAddress,
-    wallet,
-  });
-
-  // Set the nominated beneficiary and validate the nomination
+  // Set the nominated beneficiary
   const nominatedBeneficiary = newBeneficiary;
-  await validateNominateBeneficiary({ beneficiaryNominee: nominatedBeneficiary, titleEscrow });
 
-  // Validate and encrypt the remark if encryption key is provided
-  const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
-  // Dry run mode: estimate gas and exit without executing the transaction
-  if (dryRun) {
-    await dryRunMode({
-      estimatedGas: await titleEscrow.estimateGas.transferBeneficiary(
+  // Automatic dry run for Ethereum and Polygon networks
+  const shouldProceed = await performDryRunWithConfirmation({
+    network,
+    getTransactionCallback: async () => {
+      const titleEscrow = await connectToTitleEscrow({
+        tokenId,
+        address: tokenRegistryAddress,
+        wallet,
+      });
+      
+      // Validate the nomination
+      await validateNominateBeneficiary({ beneficiaryNominee: nominatedBeneficiary, titleEscrow });
+      
+      // Validate and encrypt the remark with document ID as encryption key
+      const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
+      
+      // Populate the transaction for gas estimation
+      const tx = await titleEscrow.transferBeneficiary.populateTransaction(
         nominatedBeneficiary,
         encryptedRemark,
-      ),
-      network,
-    });
+      );
+      
+      // Ensure the transaction has a 'from' address for proper gas estimation
+      return {
+        ...tx,
+        from: await wallet.getAddress(),
+      };
+    },
+  });
+
+  if (!shouldProceed) {
     process.exit(0);
   }
+
   let transaction;
 
   // Execute transaction with appropriate gas settings based on network capabilities
@@ -251,18 +231,13 @@ export const endorseNominatedBeneficiary = async ({
     );
   }
 
-  // Wait for transaction to be mined
   signale.await(`Waiting for transaction ${transaction.hash} to be mined`);
-  const transactionReceipt = await transaction.wait();
-
-  // Validate receipt exists
+  const transactionReceipt = (await transaction.wait()) as unknown as TransactionReceipt;
   if (!transactionReceipt) {
-    throw new Error('Transaction receipt is null');
+    throw new Error('Transaction receipt not found');
   }
-
-  // Return transaction receipt and the nominated beneficiary address
   return {
-    transactionReceipt: transactionReceipt as unknown as TransactionReceipt,
-    nominatedBeneficiary: nominatedBeneficiary,
+    transactionReceipt,
+    nominatedBeneficiary,
   };
 };

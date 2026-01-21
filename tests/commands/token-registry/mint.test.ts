@@ -517,7 +517,7 @@ describe('token-registry/mint', () => {
         if (!address) return '0x';
         return address.startsWith('0x') ? address : `0x${address}`;
       });
-      
+
       // Re-setup performDryRunWithConfirmation to always return true (proceed)
       (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });

@@ -169,19 +169,19 @@ export const endorseNominatedBeneficiary = async ({
         address: tokenRegistryAddress,
         wallet,
       });
-      
+
       // Validate the nomination
       await validateNominateBeneficiary({ beneficiaryNominee: nominatedBeneficiary, titleEscrow });
-      
+
       // Validate and encrypt the remark with document ID as encryption key
       const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
-      
+
       // Populate the transaction for gas estimation
       const tx = await titleEscrow.transferBeneficiary.populateTransaction(
         nominatedBeneficiary,
         encryptedRemark,
       );
-      
+
       // Ensure the transaction has a 'from' address for proper gas estimation
       return {
         ...tx,

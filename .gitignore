@@ -7,8 +7,6 @@ didKeyPairs.json
 wellknown.json
 credentialStatus.json
 signed_vc.json
-test.json
-testSepolia.json
 
 # Dependencies
 node_modules/

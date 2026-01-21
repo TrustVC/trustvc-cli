@@ -254,12 +254,15 @@ describe('title-escrow/endorse-change-owner', () => {
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect((result as any).key).toBe('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
+      expect((result as any).key).toBe(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      );
     });
 
     it('should return correct answers when using environment variable for private key', async () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
-      process.env.OA_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      process.env.OA_PRIVATE_KEY =
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
         network: NetworkCmdName.Sepolia,
@@ -646,14 +649,19 @@ describe('title-escrow/endorse-change-owner', () => {
       const connectToTitleEscrowMock = helpersModule.connectToTitleEscrow as MockedFunction<any>;
       connectToTitleEscrowMock.mockResolvedValue(mockTitleEscrow);
 
-      const validateEndorseChangeOwnerMock = helpersModule.validateEndorseChangeOwner as MockedFunction<any>;
-      validateEndorseChangeOwnerMock.mockImplementation(async ({ newOwner, newHolder, titleEscrow }: any) => {
-        const beneficiary = await titleEscrow.beneficiary();
-        const holder = await titleEscrow.holder();
-        if (newOwner === beneficiary && newHolder === holder) {
-          throw new Error('new owner and new holder addresses are the same as the current owner and holder addresses');
-        }
-      });
+      const validateEndorseChangeOwnerMock =
+        helpersModule.validateEndorseChangeOwner as MockedFunction<any>;
+      validateEndorseChangeOwnerMock.mockImplementation(
+        async ({ newOwner, newHolder, titleEscrow }: any) => {
+          const beneficiary = await titleEscrow.beneficiary();
+          const holder = await titleEscrow.holder();
+          if (newOwner === beneficiary && newHolder === holder) {
+            throw new Error(
+              'new owner and new holder addresses are the same as the current owner and holder addresses',
+            );
+          }
+        },
+      );
     });
 
     it('should pass in the correct params and call the following procedures to invoke an endorsement of change of owner of a transferable record', async () => {
@@ -668,14 +676,16 @@ describe('title-escrow/endorse-change-owner', () => {
 
     it('should throw an error if new owner and new holder addresses are the same as current owner and holder addresses', async () => {
       const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
-      
+
       // Mock performDryRunWithConfirmation to execute the callback so validation runs
       const utils = await import('../../../src/utils');
-      (utils.performDryRunWithConfirmation as any).mockImplementation(async ({ getTransactionCallback }: any) => {
-        await getTransactionCallback();
-        return true;
-      });
-      
+      (utils.performDryRunWithConfirmation as any).mockImplementation(
+        async ({ getTransactionCallback }: any) => {
+          await getTransactionCallback();
+          return true;
+        },
+      );
+
       await expect(
         transferOwners({
           ...endorseChangeOwnersParams,

@@ -140,18 +140,18 @@ const mintToTokenRegistry = async ({
     network,
     getTransactionCallback: async () => {
       const tokenRegistry = await connectToTokenRegistry({ address, wallet });
-      
+
       // Validate and encrypt the remark with document ID as encryption key
       const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
-      
+
       // Populate the transaction for gas estimation
       const tx = await tokenRegistry.mint.populateTransaction(
         beneficiary,
         holder,
         tokenId,
-        encryptedRemark
+        encryptedRemark,
       );
-      
+
       // Ensure the transaction has a 'from' address for proper gas estimation
       return {
         ...tx,

@@ -1,7 +1,12 @@
 // External dependencies
 import { BytesLike, Wallet, HDNodeWallet, ZeroAddress, Provider } from 'ethers';
 import signale from 'signale';
-import { v5Contracts, checkSupportsInterface, v4SupportInterfaceIds, v5SupportInterfaceIds } from '@trustvc/trustvc';
+import {
+  v5Contracts,
+  checkSupportsInterface,
+  v4SupportInterfaceIds,
+  v5SupportInterfaceIds,
+} from '@trustvc/trustvc';
 import { encrypt } from '@trustvc/trustvc';
 
 // Internal utilities
@@ -18,7 +23,7 @@ interface ConnectToTokenRegistryArgs {
 
 /**
  * Connects to a token registry contract instance.
- * 
+ *
  * @param address - The address of the token registry contract
  * @param wallet - The wallet or signer to use for the connection
  * @returns Promise resolving to the connected TradeTrustToken contract instance
@@ -310,6 +315,8 @@ export const getTokenRegistryVersion = async (
 
     return 'unknown';
   } catch (error) {
-    throw new Error(`Failed to determine token registry version: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to determine token registry version: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 };

@@ -170,20 +170,20 @@ export const transferOwners = async ({
         address: tokenRegistryAddress,
         wallet,
       });
-      
+
       // Validate that the new owner and holder are different from current ones
       await validateEndorseChangeOwner({ newHolder, newOwner, titleEscrow });
-      
+
       // Validate and encrypt the remark with document ID as encryption key
       const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
-      
+
       // Populate the transaction for gas estimation
       const tx = await titleEscrow.transferOwners.populateTransaction(
         newOwner,
         newHolder,
         encryptedRemark,
       );
-      
+
       // Ensure the transaction has a 'from' address for proper gas estimation
       return {
         ...tx,

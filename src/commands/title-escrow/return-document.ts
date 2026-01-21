@@ -19,10 +19,7 @@ import {
   canEstimateGasPrice,
   getGasFees,
 } from '../../utils';
-import {
-  connectToTitleEscrow,
-  validateAndEncryptRemark,
-} from '../helpers';
+import { connectToTitleEscrow, validateAndEncryptRemark } from '../helpers';
 
 export const command = 'return-to-issuer';
 

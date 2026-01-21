@@ -19,11 +19,7 @@ import {
   canEstimateGasPrice,
   getGasFees,
 } from '../../utils';
-import {
-  connectToTitleEscrow,
-  validatePreviousHolder,
-  validateAndEncryptRemark,
-} from '../helpers';
+import { connectToTitleEscrow, validatePreviousHolder, validateAndEncryptRemark } from '../helpers';
 
 export const command = 'reject-transfer-holder';
 

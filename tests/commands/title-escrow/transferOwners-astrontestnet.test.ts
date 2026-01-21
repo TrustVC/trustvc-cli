@@ -15,6 +15,9 @@ vi.mock('../../../src/commands/helpers', () => {
   const mockTitleEscrow = {
     beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
     holder: vi.fn().mockResolvedValue('0x4444444444444444444444444444444444444444'),
+    transferOwners: {
+      populateTransaction: vi.fn(),
+    },
   };
   
   return {
@@ -30,6 +33,18 @@ vi.mock('../../../src/commands/helpers', () => {
   };
 });
 
+vi.mock('../../../src/utils/wallet', () => ({
+  getWalletOrSigner: vi.fn(),
+}));
+
+vi.mock('../../../src/utils', async (importOriginal) => {
+  const originalUtils = await importOriginal<typeof import('../../../src/utils')>();
+  return {
+    ...originalUtils,
+    performDryRunWithConfirmation: vi.fn(async () => true),
+  };
+});
+
 const endorseChangeOwnersParams: TitleEscrowEndorseTransferOfOwnersCommand = {
   newHolder: "0x1111111111111111111111111111111111111111",
   newOwner: "0x2222222222222222222222222222222222222222",
@@ -37,7 +52,6 @@ const endorseChangeOwnersParams: TitleEscrowEndorseTransferOfOwnersCommand = {
   tokenRegistryAddress: "0x1234567890123456789012345678901234567890",
   network: "astrontestnet",
   maxPriorityFeePerGasScale: 1,
-  dryRun: false,
 };
 
 describe("title-escrow", () => {
@@ -58,12 +72,22 @@ describe("title-escrow", () => {
   );
 
   describe("endorse change of owners of transferable record", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       delete process.env.OA_PRIVATE_KEY;
       vi.mocked(transferOwnersImpl).mockResolvedValue({
         hash: "hash",
         wait: () => Promise.resolve({ transactionHash: "transactionHash" }),
       } as any);
+
+      const walletModule = await import('../../../src/utils/wallet');
+      const getWalletOrSignerMock = walletModule.getWalletOrSigner as any;
+      getWalletOrSignerMock.mockResolvedValue({
+        provider: {},
+        getAddress: vi.fn().mockResolvedValue('0xfrom'),
+      });
+
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
 
     it("should pass in the correct params and call the following procedures to invoke an endorsement of change of owner of a transferable record", async () => {
@@ -78,6 +102,14 @@ describe("title-escrow", () => {
 
     it("should throw an error if new owner and new holder addresses are the same as current owner and holder addressses", async () => {
       const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
+      
+      // Mock performDryRunWithConfirmation to execute the callback so validation runs
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockImplementation(async ({ getTransactionCallback }: any) => {
+        await getTransactionCallback();
+        return true;
+      });
+      
       await expect(
         transferOwners({
           ...endorseChangeOwnersParams,

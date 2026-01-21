@@ -1,22 +1,17 @@
-import { TransactionReceipt } from "@ethersproject/providers";
-import * as prompts from "@inquirer/prompts";
-import { v5Contracts, transferHolder as transferHolderImpl } from "@trustvc/trustvc";
-import { beforeEach, describe, expect, it, vi, Mock, MockedFunction } from "vitest";
-import { TitleEscrowTransferHolderCommand } from "../../../src/types";
+import { TransactionReceipt } from '@ethersproject/providers';
+import { transferHolder as transferHolderImpl } from '@trustvc/trustvc';
+import { beforeEach, describe, expect, it, vi, MockedFunction } from 'vitest';
+import { TitleEscrowTransferHolderCommand } from '../../../src/types';
 import {
   transferHolder,
   changeHolderHandler,
   handler,
   promptForInputs,
-} from "../../../src/commands/title-escrow/change-holder";
-import { NetworkCmdName } from "../../../src/utils";
+} from '../../../src/commands/title-escrow/change-holder';
+import { NetworkCmdName } from '../../../src/utils';
 
-const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
-
-vi.mock("@inquirer/prompts");
-
-vi.mock("signale", async (importOriginal) => {
-  const originalSignale = await importOriginal<typeof import("signale")>();
+vi.mock('signale', async (importOriginal) => {
+  const originalSignale = await importOriginal<typeof import('signale')>();
   return {
     ...originalSignale,
     Signale: class MockSignale {
@@ -41,49 +36,59 @@ vi.mock("signale", async (importOriginal) => {
   };
 });
 
-vi.mock("@trustvc/trustvc", async () => {
-  const actual = await vi.importActual<typeof import("@trustvc/trustvc")>("@trustvc/trustvc");
+vi.mock('@trustvc/trustvc', async () => {
+  const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
   return {
     ...actual,
     transferHolder: vi.fn(),
   };
 });
 
-vi.mock("../../../src/commands/helpers", () => ({
+vi.mock('../../../src/commands/helpers', () => ({
   connectToTitleEscrow: vi.fn().mockResolvedValue({
-    holder: vi.fn().mockResolvedValue("0x3333333333333333333333333333333333333333"),
+    holder: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
+    transferHolder: {
+      populateTransaction: vi.fn(),
+    },
   }),
-  validateAndEncryptRemark: vi.fn().mockReturnValue("encrypted-remark"),
+  validateAndEncryptRemark: vi.fn().mockReturnValue('encrypted-remark'),
 }));
 
-vi.mock("../../../src/utils/wallet", () => ({
+vi.mock('../../../src/utils/wallet', () => ({
   getWalletOrSigner: vi.fn(),
 }));
 
-vi.mock("../../../src/utils", async (importOriginal) => {
-  const originalUtils = await importOriginal<typeof import("../../../src/utils")>();
+vi.mock('../../../src/utils', async (importOriginal) => {
+  const originalUtils = await importOriginal<typeof import('../../../src/utils')>();
   return {
     ...originalUtils,
     getErrorMessage: vi.fn((e: any) => (e instanceof Error ? e.message : String(e))),
-    getEtherscanAddress: vi.fn(() => "https://etherscan.io"),
+    getEtherscanAddress: vi.fn(() => 'https://etherscan.io'),
     displayTransactionPrice: vi.fn(),
     canEstimateGasPrice: vi.fn(() => false),
     getGasFees: vi.fn(),
+    promptAndReadDocument: vi.fn(),
+    extractDocumentInfo: vi.fn(),
+    promptAddress: vi.fn(),
+    promptWalletSelection: vi.fn(),
+    promptRemark: vi.fn(),
+    performDryRunWithConfirmation: vi.fn(async () => true), // Mock to always proceed
   };
 });
 
 const transferHolderParams: TitleEscrowTransferHolderCommand = {
-  newHolder: "0xabcd",
-  tokenId: "0xzyxw",
-  tokenRegistryAddress: "0x1234",
-  network: "astron",
+  newHolder: '0x1111111111111111111111111111111111111111',
+  remark: '0xabcd',
+  encryptionKey: '1234',
+  tokenId: '0x12345',
+  tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+  network: 'astron',
   maxPriorityFeePerGasScale: 1,
-  dryRun: false,
 };
 
-describe("title-escrow/change-holder", () => {
+describe('title-escrow/change-holder', () => {
   vi.setConfig({ testTimeout: 30_000 });
-  vi.spyOn(global, "fetch").mockImplementation(
+  vi.spyOn(global, 'fetch').mockImplementation(
     vi.fn(() =>
       Promise.resolve({
         json: () =>
@@ -93,8 +98,8 @@ describe("title-escrow/change-holder", () => {
               maxFee: 0,
             },
           }),
-      })
-    ) as any
+      }),
+    ) as any,
   );
 
   beforeEach(() => {
@@ -102,33 +107,43 @@ describe("title-escrow/change-holder", () => {
     vi.resetAllMocks();
   });
 
-  describe("promptForInputs", () => {
+  describe('promptForInputs', () => {
     beforeEach(() => {
       vi.clearAllMocks();
       vi.resetAllMocks();
     });
 
-    it("should return correct answers for valid inputs with encrypted wallet", async () => {
+    it('should return correct answers for valid inputs with encrypted wallet', async () => {
       const mockInputs = {
         network: NetworkCmdName.Astron,
-        tokenRegistry: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
-        remark: "Test remark",
-        encryptionKey: "test-key",
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        remark: 'Test remark',
+        encryptionKey: 'test-key',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce("encryptedWallet");
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce("./wallet.json")
-        .mockResolvedValueOnce(mockInputs.remark)
-        .mockResolvedValueOnce(mockInputs.encryptionKey);
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        encryptedWalletPath: './wallet.json',
+      });
+      (utils.promptRemark as any).mockResolvedValue(mockInputs.remark);
 
       const result = await promptForInputs();
 
@@ -136,88 +151,116 @@ describe("title-escrow/change-holder", () => {
       expect(result.tokenRegistryAddress).toBe(mockInputs.tokenRegistry);
       expect(result.tokenId).toBe(mockInputs.tokenId);
       expect(result.newHolder).toBe(mockInputs.newHolder);
-      expect((result as any).encryptedWalletPath).toBe("./wallet.json");
+      expect((result as any).encryptedWalletPath).toBe('./wallet.json');
       expect(result.remark).toBe(mockInputs.remark);
-      expect(result.encryptionKey).toBe(mockInputs.encryptionKey);
-      expect(result.dryRun).toBe(false);
+      expect(result.encryptionKey).toBe(mockInputs.documentId);
       expect(result.maxPriorityFeePerGasScale).toBe(1);
     });
 
-    it("should return correct answers for valid inputs with private key file", async () => {
+    it('should return correct answers for valid inputs with private key file', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Sepolia,
-        tokenRegistry: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
+        network: NetworkCmdName.Astron,
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce("keyFile");
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce("./private-key.txt")
-        .mockResolvedValueOnce("");
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v4',
+      });
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        keyFile: './private-key.txt',
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect((result as any).keyFile).toBe("./private-key.txt");
+      expect((result as any).keyFile).toBe('./private-key.txt');
       expect(result.remark).toBeUndefined();
-      expect(result.encryptionKey).toBeUndefined();
+      expect(result.encryptionKey).toBe(mockInputs.documentId);
     });
 
-    it("should return correct answers for valid inputs with direct private key", async () => {
+    it('should return correct answers for valid inputs with direct private key', async () => {
       const mockInputs = {
         network: NetworkCmdName.Astron,
-        tokenRegistry: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce("keyDirect");
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
-        .mockResolvedValueOnce("");
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        key: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect((result as any).key).toBe(
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
-      );
+      expect((result as any).key).toBe('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
     });
 
-    it("should return correct answers when using environment variable for private key", async () => {
+    it('should return correct answers when using environment variable for private key', async () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
-      process.env.OA_PRIVATE_KEY =
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+      process.env.OA_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
         network: NetworkCmdName.Astron,
-        tokenRegistry: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce("envVariable");
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce("");
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({});
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
@@ -233,21 +276,42 @@ describe("title-escrow/change-holder", () => {
       }
     });
 
-    it("should throw error when OA_PRIVATE_KEY environment variable is not set", async () => {
+    it('should throw error when OA_PRIVATE_KEY environment variable is not set', async () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
       delete process.env.OA_PRIVATE_KEY;
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(NetworkCmdName.Astron)
-        .mockResolvedValueOnce("envVariable");
+      const mockInputs = {
+        network: NetworkCmdName.Astron,
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce("0x1234567890123456789012345678901234567890")
-        .mockResolvedValueOnce("0xabcdef1234567890")
-        .mockResolvedValueOnce("0x0987654321098765432109876543210987654321");
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
+
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockRejectedValue(
+        new Error(
+          'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
+        ),
+      );
 
       await expect(promptForInputs()).rejects.toThrowError(
-        "OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option."
+        'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
       );
 
       if (originalEnv) {
@@ -256,41 +320,45 @@ describe("title-escrow/change-holder", () => {
     });
   });
 
-  describe("changeHolderHandler", () => {
+  describe('changeHolderHandler', () => {
     let transferHolderMock: MockedFunction<any>;
     let getWalletOrSignerMock: MockedFunction<any>;
 
     beforeEach(async () => {
       vi.clearAllMocks();
 
-      const trustvcModule = await import("@trustvc/trustvc");
+      const trustvcModule = await import('@trustvc/trustvc');
       transferHolderMock = trustvcModule.transferHolder as MockedFunction<any>;
 
-      const walletModule = await import("../../../src/utils/wallet");
+      const walletModule = await import('../../../src/utils/wallet');
       getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
 
       getWalletOrSignerMock.mockResolvedValue({
         provider: {},
+        getAddress: vi.fn().mockResolvedValue('0xfrom'),
       });
+
+      // Ensure performDryRunWithConfirmation returns true
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
 
-    it("should successfully change holder and display transaction details", async () => {
+    it('should successfully change holder and display transaction details', async () => {
       const mockArgs: any = {
         network: NetworkCmdName.Astron,
-        tokenRegistryAddress: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
-        encryptedWalletPath: "./wallet.json",
-        dryRun: false,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        encryptedWalletPath: './wallet.json',
         maxPriorityFeePerGasScale: 1,
       };
 
       const mockTransaction: TransactionReceipt = {
-        transactionHash: "0xtxhash123",
+        transactionHash: '0xtxhash123',
         blockNumber: 12345,
-        blockHash: "0xblockhash",
+        blockHash: '0xblockhash',
         confirmations: 1,
-        from: "0xfrom",
+        from: '0xfrom',
         to: mockArgs.tokenRegistryAddress,
         gasUsed: { toNumber: () => 100000 } as any,
         cumulativeGasUsed: { toNumber: () => 100000 } as any,
@@ -298,10 +366,10 @@ describe("title-escrow/change-holder", () => {
         byzantium: true,
         type: 2,
         status: 1,
-        contractAddress: "",
+        contractAddress: '',
         transactionIndex: 0,
         logs: [],
-        logsBloom: "0x",
+        logsBloom: '0x',
       };
 
       transferHolderMock.mockResolvedValue({
@@ -317,30 +385,29 @@ describe("title-escrow/change-holder", () => {
         expect.objectContaining({
           holderAddress: mockArgs.newHolder,
         }),
-        expect.anything()
+        expect.anything(),
       );
       expect(result).toBe(mockArgs.tokenRegistryAddress);
     });
 
-    it("should handle change holder with remark and encryption key", async () => {
+    it('should handle change holder with remark and encryption key', async () => {
       const mockArgs: any = {
         network: NetworkCmdName.Astron,
-        tokenRegistryAddress: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
-        remark: "Important transfer",
-        encryptionKey: "secret-key-123",
-        key: "0xprivatekey",
-        dryRun: false,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        remark: 'Important transfer',
+        encryptionKey: 'secret-key-123',
+        key: '0xprivatekey',
         maxPriorityFeePerGasScale: 1,
       };
 
       const mockTransaction: TransactionReceipt = {
-        transactionHash: "0xtxhash456",
+        transactionHash: '0xtxhash456',
         blockNumber: 12346,
-        blockHash: "0xblockhash2",
+        blockHash: '0xblockhash2',
         confirmations: 1,
-        from: "0xfrom",
+        from: '0xfrom',
         to: mockArgs.tokenRegistryAddress,
         gasUsed: { toNumber: () => 120000 } as any,
         cumulativeGasUsed: { toNumber: () => 120000 } as any,
@@ -348,10 +415,10 @@ describe("title-escrow/change-holder", () => {
         byzantium: true,
         type: 2,
         status: 1,
-        contractAddress: "",
+        contractAddress: '',
         transactionIndex: 0,
         logs: [],
-        logsBloom: "0x",
+        logsBloom: '0x',
       };
 
       transferHolderMock.mockResolvedValue({
@@ -370,23 +437,22 @@ describe("title-escrow/change-holder", () => {
         }),
         expect.objectContaining({
           id: mockArgs.encryptionKey,
-        })
+        }),
       );
       expect(result).toBe(mockArgs.tokenRegistryAddress);
     });
 
-    it("should handle errors during change holder", async () => {
+    it('should handle errors during change holder', async () => {
       const mockArgs: any = {
         network: NetworkCmdName.Astron,
-        tokenRegistryAddress: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
-        encryptedWalletPath: "./wallet.json",
-        dryRun: false,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        encryptedWalletPath: './wallet.json',
         maxPriorityFeePerGasScale: 1,
       };
 
-      const errorMessage = "Transaction failed: insufficient funds";
+      const errorMessage = 'Transaction failed: insufficient funds';
       transferHolderMock.mockRejectedValue(new Error(errorMessage));
 
       const result = await changeHolderHandler(mockArgs);
@@ -395,18 +461,17 @@ describe("title-escrow/change-holder", () => {
       expect(transferHolderMock).toHaveBeenCalled();
     });
 
-    it("should handle non-Error exceptions during change holder", async () => {
+    it('should handle non-Error exceptions during change holder', async () => {
       const mockArgs: any = {
         network: NetworkCmdName.Astron,
-        tokenRegistryAddress: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
-        encryptedWalletPath: "./wallet.json",
-        dryRun: false,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        encryptedWalletPath: './wallet.json',
         maxPriorityFeePerGasScale: 1,
       };
 
-      transferHolderMock.mockRejectedValue("String error message");
+      transferHolderMock.mockRejectedValue('String error message');
 
       const result = await changeHolderHandler(mockArgs);
 
@@ -414,29 +479,34 @@ describe("title-escrow/change-holder", () => {
     });
   });
 
-  describe("handler", () => {
+  describe('handler', () => {
     beforeEach(() => {
       vi.clearAllMocks();
       vi.resetAllMocks();
     });
 
-    it("should successfully execute the complete change holder flow", async () => {
+    it('should successfully execute the complete change holder flow', async () => {
       const mockInputs: any = {
         network: NetworkCmdName.Astron,
-        tokenRegistryAddress: "0x1234567890123456789012345678901234567890",
-        tokenId: "0xabcdef1234567890",
-        newHolder: "0x0987654321098765432109876543210987654321",
-        encryptedWalletPath: "./wallet.json",
-        dryRun: false,
+        tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newHolder: '0x0987654321098765432109876543210987654321',
+        encryptedWalletPath: './wallet.json',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
         maxPriorityFeePerGasScale: 1,
       };
 
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistryAddress,
+      };
+
       const mockTransaction: TransactionReceipt = {
-        transactionHash: "0xtxhash",
+        transactionHash: '0xtxhash',
         blockNumber: 12345,
-        blockHash: "0xblockhash",
+        blockHash: '0xblockhash',
         confirmations: 1,
-        from: "0xfrom",
+        from: '0xfrom',
         to: mockInputs.tokenRegistryAddress,
         gasUsed: { toNumber: () => 100000 } as any,
         cumulativeGasUsed: { toNumber: () => 100000 } as any,
@@ -444,31 +514,36 @@ describe("title-escrow/change-holder", () => {
         byzantium: true,
         type: 2,
         status: 1,
-        contractAddress: "",
+        contractAddress: '',
         transactionIndex: 0,
         logs: [],
-        logsBloom: "0x",
+        logsBloom: '0x',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce("encryptedWallet");
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistryAddress,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        encryptedWalletPath: mockInputs.encryptedWalletPath,
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistryAddress)
-        .mockResolvedValueOnce(mockInputs.tokenId)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce(mockInputs.encryptedWalletPath)
-        .mockResolvedValueOnce("");
-
-      const trustvcModule = await import("@trustvc/trustvc");
+      const trustvcModule = await import('@trustvc/trustvc');
       const transferHolderMock = trustvcModule.transferHolder as MockedFunction<any>;
       transferHolderMock.mockResolvedValue({
         hash: mockTransaction.transactionHash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
 
-      const walletModule = await import("../../../src/utils/wallet");
+      const walletModule = await import('../../../src/utils/wallet');
       const getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
       getWalletOrSignerMock.mockResolvedValue({
         provider: {},
@@ -479,53 +554,52 @@ describe("title-escrow/change-holder", () => {
       expect(result).toBeUndefined();
     });
 
-    it("should handle errors in handler", async () => {
-      const errorMessage = "Prompt error";
-      (prompts.select as any).mockRejectedValue(new Error(errorMessage));
+    it('should handle errors in handler', async () => {
+      const errorMessage = 'Prompt error';
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockRejectedValue(new Error(errorMessage));
 
       await handler();
 
-      const signaleModule = await import("signale");
+      const signaleModule = await import('signale');
       expect(signaleModule.error).toHaveBeenCalledWith(errorMessage);
     });
 
-    it("should handle non-Error exceptions in handler", async () => {
-      const errorMessage = "String error";
-      (prompts.select as any).mockRejectedValue(errorMessage);
+    it('should handle non-Error exceptions in handler', async () => {
+      const errorMessage = 'String error';
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockRejectedValue(errorMessage);
 
       await handler();
 
-      const signaleModule = await import("signale");
+      const signaleModule = await import('signale');
       expect(signaleModule.error).toHaveBeenCalledWith(errorMessage);
     });
   });
 
-  describe("transferHolder", () => {
-    const mockedTradeTrustTokenFactory: Mock<typeof TradeTrustToken__factory> =
-      TradeTrustToken__factory as any;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore mock static method
-    const _mockedConnectERC721: Mock = mockedTradeTrustTokenFactory.connect;
-
-    const mockedTokenFactory: Mock<typeof TitleEscrow__factory> = TitleEscrow__factory as any;
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore mock static method
-    const _mockedConnectTokenFactory: Mock = mockedTokenFactory.connect;
-    const _mockedOwnerOf = vi.fn();
-    const _mockTransferHolder = vi.fn();
-    const _mockCallStaticTransferHolder = vi.fn().mockResolvedValue(undefined);
-    const _mockedTitleEscrowAddress = "0x2133";
-
-    beforeEach(() => {
+  describe('transferHolder', () => {
+    beforeEach(async () => {
       delete process.env.OA_PRIVATE_KEY;
       vi.mocked(transferHolderImpl).mockResolvedValue({
-        hash: "hash",
-        wait: () => Promise.resolve({ transactionHash: "transactionHash" }),
+        hash: 'hash',
+        wait: () => Promise.resolve({ transactionHash: 'transactionHash' }),
       } as any);
+
+      // Setup wallet mock with getAddress
+      const walletModule = await import('../../../src/utils/wallet');
+      const getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
+      getWalletOrSignerMock.mockResolvedValue({
+        provider: {},
+        getAddress: vi.fn().mockResolvedValue('0xfrom'),
+      });
+
+      // Ensure performDryRunWithConfirmation returns true
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
 
-    it("should pass in the correct params and call the following procedures to invoke a change in holder of a transferable record", async () => {
-      const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
+    it('should pass in the correct params and call the following procedures to invoke a change in holder of a transferable record', async () => {
+      const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
       await transferHolder({
         ...transferHolderParams,
         key: privateKey,

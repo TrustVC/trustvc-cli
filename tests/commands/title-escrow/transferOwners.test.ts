@@ -1,5 +1,4 @@
 import { TransactionReceipt } from '@ethersproject/providers';
-import * as prompts from '@inquirer/prompts';
 import { transferOwners as transferOwnersImpl } from '@trustvc/trustvc';
 import { beforeEach, describe, expect, it, vi, MockedFunction } from 'vitest';
 import { TitleEscrowEndorseTransferOfOwnersCommand } from '../../../src/types';
@@ -10,8 +9,6 @@ import {
   promptForInputs,
 } from '../../../src/commands/title-escrow/endorse-change-of-owner';
 import { NetworkCmdName } from '../../../src/utils';
-
-vi.mock('@inquirer/prompts');
 
 vi.mock('signale', async (importOriginal) => {
   const originalSignale = await importOriginal<typeof import('signale')>();
@@ -51,6 +48,9 @@ vi.mock('../../../src/commands/helpers', () => {
   const mockTitleEscrow = {
     beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
     holder: vi.fn().mockResolvedValue('0x4444444444444444444444444444444444444444'),
+    transferOwners: {
+      populateTransaction: vi.fn(),
+    },
   };
 
   return {
@@ -83,6 +83,12 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     displayTransactionPrice: vi.fn(),
     canEstimateGasPrice: vi.fn(() => false),
     getGasFees: vi.fn(),
+    promptAndReadDocument: vi.fn(),
+    extractDocumentInfo: vi.fn(),
+    promptAddress: vi.fn(),
+    promptWalletSelection: vi.fn(),
+    promptRemark: vi.fn(),
+    performDryRunWithConfirmation: vi.fn(async () => true),
   };
 });
 
@@ -95,7 +101,6 @@ const endorseChangeOwnersParams: TitleEscrowEndorseTransferOfOwnersCommand = {
   tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
   network: 'sepolia',
   maxPriorityFeePerGasScale: 1,
-  dryRun: false,
 };
 
 describe('title-escrow/endorse-change-owner', () => {
@@ -133,21 +138,31 @@ describe('title-escrow/endorse-change-owner', () => {
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
         remark: 'Test remark',
-        encryptionKey: 'test-key',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('encryptedWallet');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce('./wallet.json')
-        .mockResolvedValueOnce(mockInputs.remark)
-        .mockResolvedValueOnce(mockInputs.encryptionKey);
+        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        encryptedWalletPath: './wallet.json',
+      });
+      (utils.promptRemark as any).mockResolvedValue(mockInputs.remark);
 
       const result = await promptForInputs();
 
@@ -158,8 +173,7 @@ describe('title-escrow/endorse-change-owner', () => {
       expect(result.newHolder).toBe(mockInputs.newHolder);
       expect((result as any).encryptedWalletPath).toBe('./wallet.json');
       expect(result.remark).toBe(mockInputs.remark);
-      expect(result.encryptionKey).toBe(mockInputs.encryptionKey);
-      expect(result.dryRun).toBe(false);
+      expect(result.encryptionKey).toBe(mockInputs.documentId);
       expect(result.maxPriorityFeePerGasScale).toBe(1);
     });
 
@@ -170,24 +184,38 @@ describe('title-escrow/endorse-change-owner', () => {
         tokenId: '0xabcdef1234567890',
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('keyFile');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v4',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce('./private-key.txt')
-        .mockResolvedValueOnce('');
+        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        keyFile: './private-key.txt',
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
       expect((result as any).keyFile).toBe('./private-key.txt');
       expect(result.remark).toBeUndefined();
-      expect(result.encryptionKey).toBeUndefined();
+      expect(result.encryptionKey).toBe(mockInputs.documentId);
     });
 
     it('should return correct answers for valid inputs with direct private key', async () => {
@@ -197,17 +225,31 @@ describe('title-escrow/endorse-change-owner', () => {
         tokenId: '0xabcdef1234567890',
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('keyDirect');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80')
-        .mockResolvedValueOnce('');
+        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        key: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
@@ -225,16 +267,29 @@ describe('title-escrow/endorse-change-owner', () => {
         tokenId: '0xabcdef1234567890',
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('envVariable');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistry)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce('');
+        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({});
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const result = await promptForInputs();
 
@@ -254,13 +309,38 @@ describe('title-escrow/endorse-change-owner', () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
       delete process.env.OA_PRIVATE_KEY;
 
-      (prompts.select as any).mockResolvedValueOnce(NetworkCmdName.Sepolia).mockResolvedValueOnce('envVariable');
+      const mockInputs = {
+        network: NetworkCmdName.Sepolia,
+        tokenRegistry: '0x1234567890123456789012345678901234567890',
+        tokenId: '0xabcdef1234567890',
+        newOwner: '0x0987654321098765432109876543210987654321',
+        newHolder: '0x1111111111111111111111111111111111111111',
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
+      };
 
-      (prompts.input as any)
-        .mockResolvedValueOnce('0x1234567890123456789012345678901234567890')
-        .mockResolvedValueOnce('0xabcdef1234567890')
-        .mockResolvedValueOnce('0x0987654321098765432109876543210987654321')
-        .mockResolvedValueOnce('0x1111111111111111111111111111111111111111');
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistry,
+      };
+
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistry,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
+        .mockResolvedValueOnce(mockInputs.newOwner)
+        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockRejectedValue(
+        new Error(
+          'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
+        ),
+      );
 
       await expect(promptForInputs()).rejects.toThrowError(
         'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
@@ -287,7 +367,11 @@ describe('title-escrow/endorse-change-owner', () => {
 
       getWalletOrSignerMock.mockResolvedValue({
         provider: {},
+        getAddress: vi.fn().mockResolvedValue('0xfrom'),
       });
+
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
 
     it('should successfully endorse change of owner and display transaction details', async () => {
@@ -298,7 +382,6 @@ describe('title-escrow/endorse-change-owner', () => {
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -350,7 +433,6 @@ describe('title-escrow/endorse-change-owner', () => {
         remark: 'Important transfer',
         encryptionKey: 'secret-key-123',
         key: '0xprivatekey',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -403,7 +485,6 @@ describe('title-escrow/endorse-change-owner', () => {
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -424,7 +505,6 @@ describe('title-escrow/endorse-change-owner', () => {
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
         maxPriorityFeePerGasScale: 1,
       };
 
@@ -450,8 +530,13 @@ describe('title-escrow/endorse-change-owner', () => {
         newOwner: '0x0987654321098765432109876543210987654321',
         newHolder: '0x1111111111111111111111111111111111111111',
         encryptedWalletPath: './wallet.json',
-        dryRun: false,
+        documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
         maxPriorityFeePerGasScale: 1,
+      };
+
+      const mockDocument = {
+        id: mockInputs.documentId,
+        tokenRegistry: mockInputs.tokenRegistryAddress,
       };
 
       const mockTransaction: TransactionReceipt = {
@@ -473,17 +558,23 @@ describe('title-escrow/endorse-change-owner', () => {
         logsBloom: '0x',
       };
 
-      (prompts.select as any)
-        .mockResolvedValueOnce(mockInputs.network)
-        .mockResolvedValueOnce('encryptedWallet');
-
-      (prompts.input as any)
-        .mockResolvedValueOnce(mockInputs.tokenRegistryAddress)
-        .mockResolvedValueOnce(mockInputs.tokenId)
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
+      (utils.extractDocumentInfo as any).mockResolvedValue({
+        document: mockDocument,
+        tokenRegistry: mockInputs.tokenRegistryAddress,
+        tokenId: mockInputs.tokenId,
+        network: mockInputs.network,
+        documentId: mockInputs.documentId,
+        registryVersion: 'v5',
+      });
+      (utils.promptAddress as any)
         .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder)
-        .mockResolvedValueOnce(mockInputs.encryptedWalletPath)
-        .mockResolvedValueOnce('');
+        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptWalletSelection as any).mockResolvedValue({
+        encryptedWalletPath: mockInputs.encryptedWalletPath,
+      });
+      (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const trustvcModule = await import('@trustvc/trustvc');
       const transferOwnersMock = trustvcModule.transferOwners as MockedFunction<any>;
@@ -496,6 +587,7 @@ describe('title-escrow/endorse-change-owner', () => {
       const getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
       getWalletOrSignerMock.mockResolvedValue({
         provider: {},
+        getAddress: vi.fn().mockResolvedValue('0xfrom'),
       });
 
       const result = await handler();
@@ -505,7 +597,8 @@ describe('title-escrow/endorse-change-owner', () => {
 
     it('should handle errors in handler', async () => {
       const errorMessage = 'Prompt error';
-      (prompts.select as any).mockRejectedValue(new Error(errorMessage));
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockRejectedValue(new Error(errorMessage));
 
       await handler();
 
@@ -515,7 +608,8 @@ describe('title-escrow/endorse-change-owner', () => {
 
     it('should handle non-Error exceptions in handler', async () => {
       const errorMessage = 'String error';
-      (prompts.select as any).mockRejectedValue(errorMessage);
+      const utils = await import('../../../src/utils');
+      (utils.promptAndReadDocument as any).mockRejectedValue(errorMessage);
 
       await handler();
 
@@ -536,7 +630,11 @@ describe('title-escrow/endorse-change-owner', () => {
       const getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
       getWalletOrSignerMock.mockResolvedValue({
         provider: {},
+        getAddress: vi.fn().mockResolvedValue('0xfrom'),
       });
+
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
 
       // Re-setup the helpers mocks
       const helpersModule = await import('../../../src/commands/helpers');
@@ -570,6 +668,14 @@ describe('title-escrow/endorse-change-owner', () => {
 
     it('should throw an error if new owner and new holder addresses are the same as current owner and holder addresses', async () => {
       const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
+      
+      // Mock performDryRunWithConfirmation to execute the callback so validation runs
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockImplementation(async ({ getTransactionCallback }: any) => {
+        await getTransactionCallback();
+        return true;
+      });
+      
       await expect(
         transferOwners({
           ...endorseChangeOwnersParams,

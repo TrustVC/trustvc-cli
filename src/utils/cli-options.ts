@@ -1,15 +1,15 @@
 import { input, select, confirm } from '@inquirer/prompts';
 import { info, error } from 'signale';
 import { Argv } from 'yargs';
-import { NetworkCmdName, supportedNetwork, getSupportedNetwork } from './networks';
-import { readDocumentFile } from './file-io';
 import {
-  getTokenRegistryAddress,
-  getTokenId,
-  getChainId,
-  CHAIN_ID,
+  NetworkCmdName,
+  supportedNetwork,
+  getSupportedNetwork,
   SUPPORTED_CHAINS,
-} from '@trustvc/trustvc';
+  CHAIN_ID,
+} from './networks';
+import { readDocumentFile } from './file-io';
+import { getTokenRegistryAddress, getTokenId, getChainId } from '@trustvc/trustvc';
 import fs from 'fs';
 import { getTokenRegistryVersion } from '../commands/helpers';
 import { getErrorMessage } from './index';
@@ -73,10 +73,6 @@ export type WalletOrSignerOption =
 export interface GasPriceScale {
   maxPriorityFeePerGasScale: number;
 }
-export interface GasOption extends GasPriceScale {
-  dryRun: boolean;
-}
-
 export type NetworkAndWalletSignerOption = NetworkOption &
   (Partial<WalletOption> | Partial<PrivateKeyOption>);
 
@@ -439,6 +435,12 @@ export const promptRemark = async (registryVersion: string): Promise<string | un
       message: 'Enter a remark (optional, press Enter to skip):',
       required: false,
     });
+
+    // Show encryption info if remark was entered
+    if (remarkInput && remarkInput.trim() !== '') {
+      info('ℹ️  The remark will be encrypted with the document ID as the encryption key.');
+    }
+
     return remarkInput || undefined;
   } else {
     info('Remark is not supported for V4 token registries. Skipping remark input.');
@@ -480,10 +482,10 @@ export const promptAddress = async (role: string, description?: string): Promise
  */
 export const shouldRunDryRun = (network: string): boolean => {
   const dryRunNetworks = [
-    NetworkCmdName.Mainnet,    // Ethereum Mainnet
-    NetworkCmdName.Sepolia,    // Ethereum Sepolia Testnet
-    NetworkCmdName.Matic,      // Polygon Mainnet
-    NetworkCmdName.Amoy,       // Polygon Amoy Testnet
+    NetworkCmdName.Mainnet, // Ethereum Mainnet
+    NetworkCmdName.Sepolia, // Ethereum Sepolia Testnet
+    NetworkCmdName.Matic, // Polygon Mainnet
+    NetworkCmdName.Amoy, // Polygon Amoy Testnet
   ];
   return dryRunNetworks.includes(network as NetworkCmdName);
 };
@@ -538,7 +540,7 @@ export const performDryRunWithConfirmation = async ({
       info('Transaction cancelled by user.');
       return false;
     }
-    
+
     return true;
   }
 };

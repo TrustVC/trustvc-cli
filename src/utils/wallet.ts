@@ -29,10 +29,10 @@ export type ConnectedSigner = Signer & {
 export const getPrivateKey = ({ keyFile, key }: PrivateKeyOption): string | undefined => {
   if (key) {
     signale.warn(
-      "Be aware that by using the `key` parameter, the private key may be stored in your machine's sh history",
+      'Be aware that entering the `key` value at the prompt may leave it in your shell history',
     );
     signale.warn(
-      'Other options are available: using a file with `key-file` option or using `OA_PRIVATE_KEY` environment variable',
+      'Other options are available: use a key file or the OA_PRIVATE_KEY environment variable instead',
     );
   }
   return key || getKeyFromFile(keyFile) || process.env['OA_PRIVATE_KEY'];

@@ -20,10 +20,7 @@ import {
   promptAddress,
   performDryRunWithConfirmation,
 } from '../../utils';
-import {
-  connectToTitleEscrow,
-  validateAndEncryptRemark,
-} from '../helpers';
+import { connectToTitleEscrow, validateAndEncryptRemark } from '../helpers';
 
 export const command = 'change-holder';
 
@@ -161,13 +158,13 @@ export const transferHolder = async ({
         address: tokenRegistryAddress,
         wallet,
       });
-      
+
       // Validate and encrypt the remark with document ID as encryption key
       const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
-      
+
       // Populate the transaction for gas estimation
       const tx = await titleEscrow.transferHolder.populateTransaction(to, encryptedRemark);
-      
+
       // Ensure the transaction has a 'from' address for proper gas estimation
       return {
         ...tx,

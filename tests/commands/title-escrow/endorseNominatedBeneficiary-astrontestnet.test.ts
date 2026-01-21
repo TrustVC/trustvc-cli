@@ -1,13 +1,13 @@
 import { TransactionReceipt } from '@ethersproject/providers';
-import { transferBeneficiary as transferBeneficiaryImpl } from "@trustvc/trustvc";
-import { beforeEach, describe, expect, it, vi, MockedFunction } from "vitest";
-import { TitleEscrowNominateBeneficiaryCommand } from "../../../src/types";
+import { transferBeneficiary as transferBeneficiaryImpl } from '@trustvc/trustvc';
+import { beforeEach, describe, expect, it, vi, MockedFunction } from 'vitest';
+import { TitleEscrowNominateBeneficiaryCommand } from '../../../src/types';
 import {
   endorseNominatedBeneficiary,
   endorseTransferOwnerHandler,
   handler,
   promptForInputs,
-} from "../../../src/commands/title-escrow/endorse-transfer-of-owner";
+} from '../../../src/commands/title-escrow/endorse-transfer-of-owner';
 import { NetworkCmdName } from '../../../src/utils';
 
 vi.mock('signale', async (importOriginal) => {
@@ -36,27 +36,27 @@ vi.mock('signale', async (importOriginal) => {
   };
 });
 
-vi.mock("@trustvc/trustvc", async () => {
-  const actual = await vi.importActual<typeof import("@trustvc/trustvc")>("@trustvc/trustvc");
+vi.mock('@trustvc/trustvc', async () => {
+  const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
   return {
     ...actual,
     transferBeneficiary: vi.fn(),
   };
 });
 
-vi.mock("../../../src/commands/helpers", () => ({
+vi.mock('../../../src/commands/helpers', () => ({
   connectToTitleEscrow: vi.fn().mockResolvedValue({
-    beneficiary: vi.fn().mockResolvedValue("0x3333333333333333333333333333333333333333"),
+    beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
     transferBeneficiary: {
       populateTransaction: vi.fn(),
     },
   }),
   validateNominateBeneficiary: vi.fn().mockImplementation(async ({ beneficiaryNominee }) => {
-    if (beneficiaryNominee === "0x2222222222222222222222222222222222222222") {
-      throw new Error("new beneficiary address is the same as the current beneficiary address");
+    if (beneficiaryNominee === '0x2222222222222222222222222222222222222222') {
+      throw new Error('new beneficiary address is the same as the current beneficiary address');
     }
   }),
-  validateAndEncryptRemark: vi.fn().mockReturnValue("encrypted-remark"),
+  validateAndEncryptRemark: vi.fn().mockReturnValue('encrypted-remark'),
 }));
 
 vi.mock('../../../src/utils/wallet', () => ({
@@ -82,12 +82,12 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 const endorseNominatedBeneficiaryParams: TitleEscrowNominateBeneficiaryCommand = {
-  tokenId: "0x12345",
-  remark: "remark",
-  encryptionKey: "1234",
-  tokenRegistryAddress: "0x1234567890123456789012345678901234567890",
-  newBeneficiary: "0x1111111111111111111111111111111111111111",
-  network: "sepolia",
+  tokenId: '0x12345',
+  remark: 'remark',
+  encryptionKey: '1234',
+  tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
+  newBeneficiary: '0x1111111111111111111111111111111111111111',
+  network: 'sepolia',
   maxPriorityFeePerGasScale: 1,
 };
 
@@ -232,12 +232,15 @@ describe('title-escrow/endorse-transfer-owner', () => {
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect((result as any).key).toBe('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
+      expect((result as any).key).toBe(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      );
     });
 
     it('should return correct answers when using environment variable for private key', async () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
-      process.env.OA_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      process.env.OA_PRIVATE_KEY =
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
         network: NetworkCmdName.AstronTestnet,
@@ -568,8 +571,8 @@ describe('title-escrow/endorse-transfer-owner', () => {
     beforeEach(async () => {
       delete process.env.OA_PRIVATE_KEY;
       vi.mocked(transferBeneficiaryImpl).mockResolvedValue({
-        hash: "hash",
-        wait: () => Promise.resolve({ transactionHash: "transactionHash" }),
+        hash: 'hash',
+        wait: () => Promise.resolve({ transactionHash: 'transactionHash' }),
       } as any);
 
       const walletModule = await import('../../../src/utils/wallet');
@@ -591,7 +594,8 @@ describe('title-escrow/endorse-transfer-owner', () => {
       const connectToTitleEscrowMock = helpersModule.connectToTitleEscrow as MockedFunction<any>;
       connectToTitleEscrowMock.mockResolvedValue(mockTitleEscrow);
 
-      const validateNominateBeneficiaryMock = helpersModule.validateNominateBeneficiary as MockedFunction<any>;
+      const validateNominateBeneficiaryMock =
+        helpersModule.validateNominateBeneficiary as MockedFunction<any>;
       validateNominateBeneficiaryMock.mockImplementation(async ({ beneficiaryNominee }: any) => {
         if (beneficiaryNominee === '0x2222222222222222222222222222222222222222') {
           throw new Error('new beneficiary address is the same as the current beneficiary address');
@@ -599,8 +603,8 @@ describe('title-escrow/endorse-transfer-owner', () => {
       });
     });
 
-    it("should pass in the correct params and call the following procedures to invoke an endorsement of transfer of owner of a transferable record", async () => {
-      const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
+    it('should pass in the correct params and call the following procedures to invoke an endorsement of transfer of owner of a transferable record', async () => {
+      const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
       await endorseNominatedBeneficiary({
         ...endorseNominatedBeneficiaryParams,
         key: privateKey,
@@ -609,22 +613,24 @@ describe('title-escrow/endorse-transfer-owner', () => {
       expect(transferBeneficiaryImpl).toHaveBeenCalledTimes(1);
     });
 
-    it("should throw an error if nominee is the owner address", async () => {
-      const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
-      
+    it('should throw an error if nominee is the owner address', async () => {
+      const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
+
       // Mock performDryRunWithConfirmation to execute the callback so validation runs
       const utils = await import('../../../src/utils');
-      (utils.performDryRunWithConfirmation as any).mockImplementation(async ({ getTransactionCallback }: any) => {
-        await getTransactionCallback();
-        return true;
-      });
-      
+      (utils.performDryRunWithConfirmation as any).mockImplementation(
+        async ({ getTransactionCallback }: any) => {
+          await getTransactionCallback();
+          return true;
+        },
+      );
+
       await expect(
         endorseNominatedBeneficiary({
           ...endorseNominatedBeneficiaryParams,
-          newBeneficiary: "0x2222222222222222222222222222222222222222",
+          newBeneficiary: '0x2222222222222222222222222222222222222222',
           key: privateKey,
-        })
+        }),
       ).rejects.toThrow(`new beneficiary address is the same as the current beneficiary address`);
     });
   });

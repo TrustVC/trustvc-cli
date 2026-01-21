@@ -1,5 +1,7 @@
 import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
 import {
+  PrivateKeyOption,
+  GasPriceScale,
   NetworkAndWalletSignerOption,
   NetworkOption,
   RpcUrlOption,
@@ -12,6 +14,13 @@ export type SignInput = {
   encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
   pathToSignedVC: string;
 };
+
+export type OASignInput = PrivateKeyOption & {
+  rawDocumentsPath: string;
+  outputDir: string;
+  publicKey: string;
+};
+
 export type DidInput = {
   keyPairPath: string;
   domainName: string;

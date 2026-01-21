@@ -2,10 +2,7 @@ import { rejectTransferOwners as rejectTransferOwnersImpl } from '@trustvc/trust
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseTitleEscrowCommand } from '../../../src/types';
 import { rejectTransferOwnerHolder } from '../../../src/commands/title-escrow/reject-transfer-owner-holder';
-import {
-  validatePreviousBeneficiary,
-  validatePreviousHolder,
-} from '../../../src/commands/helpers';
+import { validatePreviousBeneficiary, validatePreviousHolder } from '../../../src/commands/helpers';
 
 vi.mock('@trustvc/trustvc', async () => {
   const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');

@@ -21,14 +21,9 @@ export interface NetworkOption {
 
 // it should be a union, because we expect one or the other key. However I couldn't find a clean way to handle this, with the rest of the code
 export type PrivateKeyOption =
-  | {
-      key?: string;
-      keyFile?: never;
-    }
-  | {
-      key?: never;
-      keyFile?: string;
-    };
+  | { key: string; keyFile?: never }
+  | { key?: never; keyFile: string }
+  | { key?: undefined; keyFile?: undefined };
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const isPrivateKeyOption = (option: any): option is PrivateKeyOption => {

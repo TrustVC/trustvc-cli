@@ -149,7 +149,9 @@ describe('title-escrow/return-document', () => {
         tokenId: '0xabcdef1234567890',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('keyFile');
+      (prompts.select as any)
+        .mockResolvedValueOnce(mockInputs.network)
+        .mockResolvedValueOnce('keyFile');
 
       (prompts.input as any)
         .mockResolvedValueOnce(mockInputs.tokenRegistry)
@@ -172,7 +174,9 @@ describe('title-escrow/return-document', () => {
         tokenId: '0xabcdef1234567890',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('keyDirect');
+      (prompts.select as any)
+        .mockResolvedValueOnce(mockInputs.network)
+        .mockResolvedValueOnce('keyDirect');
 
       (prompts.input as any)
         .mockResolvedValueOnce(mockInputs.tokenRegistry)
@@ -183,12 +187,15 @@ describe('title-escrow/return-document', () => {
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect((result as any).key).toBe('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
+      expect((result as any).key).toBe(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      );
     });
 
     it('should return correct answers when using environment variable for private key', async () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
-      process.env.OA_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      process.env.OA_PRIVATE_KEY =
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
         network: NetworkCmdName.Sepolia,
@@ -196,7 +203,9 @@ describe('title-escrow/return-document', () => {
         tokenId: '0xabcdef1234567890',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('envVariable');
+      (prompts.select as any)
+        .mockResolvedValueOnce(mockInputs.network)
+        .mockResolvedValueOnce('envVariable');
 
       (prompts.input as any)
         .mockResolvedValueOnce(mockInputs.tokenRegistry)
@@ -221,7 +230,9 @@ describe('title-escrow/return-document', () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
       delete process.env.OA_PRIVATE_KEY;
 
-      (prompts.select as any).mockResolvedValueOnce(NetworkCmdName.Sepolia).mockResolvedValueOnce('envVariable');
+      (prompts.select as any)
+        .mockResolvedValueOnce(NetworkCmdName.Sepolia)
+        .mockResolvedValueOnce('envVariable');
 
       (prompts.input as any)
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890')

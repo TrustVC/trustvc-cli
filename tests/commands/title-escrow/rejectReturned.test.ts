@@ -1,14 +1,14 @@
 import { TransactionReceipt } from '@ethersproject/providers';
 import * as prompts from '@inquirer/prompts';
-import { rejectReturned as rejectReturnedImpl } from "@trustvc/trustvc";
-import { beforeEach, describe, expect, it, vi, MockedFunction } from "vitest";
-import { BaseTitleEscrowCommand as TitleEscrowReturnDocumentCommand } from "../../../src/types";
+import { rejectReturned as rejectReturnedImpl } from '@trustvc/trustvc';
+import { beforeEach, describe, expect, it, vi, MockedFunction } from 'vitest';
+import { BaseTitleEscrowCommand as TitleEscrowReturnDocumentCommand } from '../../../src/types';
 import {
   rejectReturned,
   rejectReturnedDocumentHandler,
   handler,
   promptForInputs,
-} from "../../../src/commands/title-escrow/reject-returned";
+} from '../../../src/commands/title-escrow/reject-returned';
 import { NetworkCmdName } from '../../../src/utils';
 
 vi.mock('@inquirer/prompts');
@@ -39,8 +39,8 @@ vi.mock('signale', async (importOriginal) => {
   };
 });
 
-vi.mock("@trustvc/trustvc", async () => {
-  const actual = await vi.importActual<typeof import("@trustvc/trustvc")>("@trustvc/trustvc");
+vi.mock('@trustvc/trustvc', async () => {
+  const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
   return {
     ...actual,
     rejectReturned: vi.fn(),
@@ -68,11 +68,11 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 const rejectReturnedDocumentParams: TitleEscrowReturnDocumentCommand = {
-  tokenRegistryAddress: "0x1122",
-  tokenId: "0x12345",
-  remark: "0xabcd",
-  encryptionKey: "1234",
-  network: "sepolia",
+  tokenRegistryAddress: '0x1122',
+  tokenId: '0x12345',
+  remark: '0xabcd',
+  encryptionKey: '1234',
+  network: 'sepolia',
   maxPriorityFeePerGasScale: 1,
   dryRun: false,
 };
@@ -143,7 +143,9 @@ describe('title-escrow/reject-returned', () => {
         tokenId: '0xabcdef1234567890',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('keyFile');
+      (prompts.select as any)
+        .mockResolvedValueOnce(mockInputs.network)
+        .mockResolvedValueOnce('keyFile');
 
       (prompts.input as any)
         .mockResolvedValueOnce(mockInputs.tokenRegistry)
@@ -166,7 +168,9 @@ describe('title-escrow/reject-returned', () => {
         tokenId: '0xabcdef1234567890',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('keyDirect');
+      (prompts.select as any)
+        .mockResolvedValueOnce(mockInputs.network)
+        .mockResolvedValueOnce('keyDirect');
 
       (prompts.input as any)
         .mockResolvedValueOnce(mockInputs.tokenRegistry)
@@ -177,12 +181,15 @@ describe('title-escrow/reject-returned', () => {
       const result = await promptForInputs();
 
       expect(result.network).toBe(mockInputs.network);
-      expect((result as any).key).toBe('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
+      expect((result as any).key).toBe(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      );
     });
 
     it('should return correct answers when using environment variable for private key', async () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
-      process.env.OA_PRIVATE_KEY = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      process.env.OA_PRIVATE_KEY =
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
         network: NetworkCmdName.Sepolia,
@@ -190,7 +197,9 @@ describe('title-escrow/reject-returned', () => {
         tokenId: '0xabcdef1234567890',
       };
 
-      (prompts.select as any).mockResolvedValueOnce(mockInputs.network).mockResolvedValueOnce('envVariable');
+      (prompts.select as any)
+        .mockResolvedValueOnce(mockInputs.network)
+        .mockResolvedValueOnce('envVariable');
 
       (prompts.input as any)
         .mockResolvedValueOnce(mockInputs.tokenRegistry)
@@ -215,7 +224,9 @@ describe('title-escrow/reject-returned', () => {
       const originalEnv = process.env.OA_PRIVATE_KEY;
       delete process.env.OA_PRIVATE_KEY;
 
-      (prompts.select as any).mockResolvedValueOnce(NetworkCmdName.Sepolia).mockResolvedValueOnce('envVariable');
+      (prompts.select as any)
+        .mockResolvedValueOnce(NetworkCmdName.Sepolia)
+        .mockResolvedValueOnce('envVariable');
 
       (prompts.input as any)
         .mockResolvedValueOnce('0x1234567890123456789012345678901234567890')
@@ -456,13 +467,13 @@ describe('title-escrow/reject-returned', () => {
     beforeEach(() => {
       delete process.env.OA_PRIVATE_KEY;
       vi.mocked(rejectReturnedImpl).mockResolvedValue({
-        hash: "hash",
-        wait: () => Promise.resolve({ transactionHash: "transactionHash" }),
+        hash: 'hash',
+        wait: () => Promise.resolve({ transactionHash: 'transactionHash' }),
       } as any);
     });
 
-    it("should pass in the correct params and successfully rejects a returned transferable record", async () => {
-      const privateKey = "0000000000000000000000000000000000000000000000000000000000000001";
+    it('should pass in the correct params and successfully rejects a returned transferable record', async () => {
+      const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
       await rejectReturned({
         ...rejectReturnedDocumentParams,
         key: privateKey,

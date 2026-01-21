@@ -1,7 +1,7 @@
 import { input } from "@inquirer/prompts";
 import { getDocumentData } from "@trustvc/trustvc";
 import { UnwrapOAInput } from "../../types";
-import { documentsInDirectory, isDir, isDirectoryValid, isFile, readOpenAttestationFile, writeFile } from "../../utils";
+import { documentsInDirectory, isDir, isDirectoryValid, isFile, readDocumentFile, writeFile } from "../../utils";
 import signale from "signale";
 import path from "path";
 
@@ -62,7 +62,7 @@ export const unwrapOA = async ({
     pathToOutputDirectory,
 }: UnwrapOAInput) => {
     for (const doc of docPaths) {
-        const wrappedOADocument = readOpenAttestationFile(doc);
+        const wrappedOADocument = readDocumentFile(doc);
         try {
             const unwrappedDocument = getDocumentData(wrappedOADocument);
             if (!unwrappedDocument) throw new Error('Invalid wrapped OpenAttestation document');

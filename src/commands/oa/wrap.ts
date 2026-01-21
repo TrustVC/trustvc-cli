@@ -1,5 +1,5 @@
 import { input, select } from "@inquirer/prompts";
-import { documentsInDirectory , isDir, isDirectoryValid, isFile, readOpenAttestationFile, writeFile } from "../../utils";
+import { documentsInDirectory , isDir, isDirectoryValid, isFile, readDocumentFile, writeFile } from "../../utils";
 import { wrapOADocument, wrapOADocuments } from "@trustvc/trustvc";
 import signale from "signale";
 import path from "path";
@@ -91,7 +91,7 @@ export const wrapOA = async ({
     const docData = docPaths.map((docPath) => ({
         path: docPath,
         fileName: path.basename(docPath),
-        document: readOpenAttestationFile(docPath),
+        document: readDocumentFile(docPath),
     }));
 
     if (mode === WrapMode.Batch) {

@@ -26,7 +26,7 @@ vi.mock('../../../src/utils', async () => {
     isDir: vi.fn(),
     isDirectoryValid: vi.fn(),
     isFile: vi.fn(),
-    readOpenAttestationFile: vi.fn(),
+    readDocumentFile: vi.fn(),
     writeFile: vi.fn(),
   };
 });
@@ -216,7 +216,7 @@ describe('oa-wrap', () => {
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
 
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
       const wrapOADocumentMock = trustvc.wrapOADocument as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
@@ -259,16 +259,16 @@ describe('oa-wrap', () => {
       );
       const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
       const wrapOADocumentsMock = trustvc.wrapOADocuments as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
 
-      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
       wrapOADocumentsMock.mockImplementation(actualTrustvc.wrapOADocuments as unknown as any);
 
-      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V2_DID_FILE);
-      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V2_TXT_FILE);
+      const originalDidData = actualUtils.readDocumentFile(RAW_OA_V2_DID_FILE);
+      const originalTxtData = actualUtils.readDocumentFile(RAW_OA_V2_TXT_FILE);
 
       await wrapOA({
         mode: WrapMode.Batch,
@@ -314,16 +314,16 @@ describe('oa-wrap', () => {
       );
       const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
       const wrapOADocumentMock = trustvc.wrapOADocument as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
 
-      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
       wrapOADocumentMock.mockImplementation(actualTrustvc.wrapOADocument as unknown as any);
 
-      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V2_DID_FILE);
-      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V2_TXT_FILE);
+      const originalDidData = actualUtils.readDocumentFile(RAW_OA_V2_DID_FILE);
+      const originalTxtData = actualUtils.readDocumentFile(RAW_OA_V2_TXT_FILE);
 
       await wrapOA({
         mode: WrapMode.Individual,
@@ -372,16 +372,16 @@ describe('oa-wrap', () => {
       );
       const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
       const wrapOADocumentsMock = trustvc.wrapOADocuments as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
 
-      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
       wrapOADocumentsMock.mockImplementation(actualTrustvc.wrapOADocuments as unknown as any);
 
-      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V3_DID_FILE);
-      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V3_TXT_FILE);
+      const originalDidData = actualUtils.readDocumentFile(RAW_OA_V3_DID_FILE);
+      const originalTxtData = actualUtils.readDocumentFile(RAW_OA_V3_TXT_FILE);
 
       await wrapOA({
         mode: WrapMode.Batch,
@@ -428,16 +428,16 @@ describe('oa-wrap', () => {
       );
       const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
-      const readMock = utils.readOpenAttestationFile as MockedFunction<any>;
+      const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
       const wrapOADocumentMock = trustvc.wrapOADocument as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
 
-      readMock.mockImplementation(actualUtils.readOpenAttestationFile as unknown as any);
+      readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
       wrapOADocumentMock.mockImplementation(actualTrustvc.wrapOADocument as unknown as any);
 
-      const originalDidData = actualUtils.readOpenAttestationFile(RAW_OA_V3_DID_FILE);
-      const originalTxtData = actualUtils.readOpenAttestationFile(RAW_OA_V3_TXT_FILE);
+      const originalDidData = actualUtils.readDocumentFile(RAW_OA_V3_DID_FILE);
+      const originalTxtData = actualUtils.readDocumentFile(RAW_OA_V3_TXT_FILE);
 
       await wrapOA({
         mode: WrapMode.Individual,

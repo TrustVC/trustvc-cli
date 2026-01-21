@@ -2,7 +2,6 @@ import { rejectTransferOwners as rejectTransferOwnersImpl } from '@trustvc/trust
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseTitleEscrowCommand } from '../../../src/types';
 import { rejectTransferOwnerHolder } from '../../../src/commands/title-escrow/reject-transfer-owner-holder';
-import { validatePreviousBeneficiary, validatePreviousHolder } from '../../../src/commands/helpers';
 
 vi.mock('@trustvc/trustvc', async () => {
   const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
@@ -16,18 +15,26 @@ vi.mock('../../../src/commands/helpers', () => ({
   connectToTitleEscrow: vi.fn().mockResolvedValue({
     prevBeneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
     prevHolder: vi.fn().mockResolvedValue('0x4444444444444444444444444444444444444444'),
-    rejectTransferOwners: vi.fn().mockResolvedValue({
-      hash: 'hash',
-      wait: () => Promise.resolve({ transactionHash: 'transactionHash' }),
-    }),
-    estimateGas: {
-      rejectTransferOwners: vi.fn().mockResolvedValue(100000n),
+    rejectTransferOwners: {
+      populateTransaction: vi.fn(),
     },
   }),
   validateAndEncryptRemark: vi.fn().mockReturnValue('encrypted-remark'),
   validatePreviousBeneficiary: vi.fn(),
   validatePreviousHolder: vi.fn(),
 }));
+
+vi.mock('../../../src/utils/wallet', () => ({
+  getWalletOrSigner: vi.fn(),
+}));
+
+vi.mock('../../../src/utils', async (importOriginal) => {
+  const originalUtils = await importOriginal<typeof import('../../../src/utils')>();
+  return {
+    ...originalUtils,
+    performDryRunWithConfirmation: vi.fn(async () => true),
+  };
+});
 
 const transferOwnerHolderParams: BaseTitleEscrowCommand = {
   remark: '0xabcd',
@@ -36,17 +43,34 @@ const transferOwnerHolderParams: BaseTitleEscrowCommand = {
   tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
   network: 'sepolia',
   maxPriorityFeePerGasScale: 1,
-  dryRun: false,
 };
 
 describe('title-escrow', () => {
   describe('reject Owner and Holder of transferable record', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       delete process.env.OA_PRIVATE_KEY;
       vi.mocked(rejectTransferOwnersImpl).mockResolvedValue({
         hash: 'hash',
         wait: () => Promise.resolve({ transactionHash: 'transactionHash' }),
       } as any);
+
+      // Setup wallet mock with getAddress and provider
+      const walletModule = await import('../../../src/utils/wallet');
+      const getWalletOrSignerMock = walletModule.getWalletOrSigner as any;
+      getWalletOrSignerMock.mockResolvedValue({
+        provider: {
+          getNetwork: vi.fn().mockResolvedValue({ chainId: 11155111, name: 'sepolia' }),
+          getFeeData: vi.fn().mockResolvedValue({
+            maxFeePerGas: 1000000000n,
+            maxPriorityFeePerGas: 1000000000n,
+          }),
+        },
+        getAddress: vi.fn().mockResolvedValue('0xfrom'),
+      });
+
+      // Ensure performDryRunWithConfirmation returns true
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
 
     it('should pass in the correct params and call the following procedures to invoke a reject OwnerHolder of a transferable record', async () => {
@@ -60,7 +84,10 @@ describe('title-escrow', () => {
     });
     it('should throw error if previous owner is not available', async () => {
       const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
-      vi.mocked(validatePreviousBeneficiary).mockRejectedValueOnce(
+
+      // Mock performDryRunWithConfirmation to throw the validation error
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockRejectedValueOnce(
         new Error('invalid rejection as previous beneficiary is not set'),
       );
 
@@ -76,7 +103,10 @@ describe('title-escrow', () => {
     });
     it('should throw error if previous holder is not available', async () => {
       const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
-      vi.mocked(validatePreviousHolder).mockRejectedValueOnce(
+
+      // Mock performDryRunWithConfirmation to throw the validation error
+      const utils = await import('../../../src/utils');
+      (utils.performDryRunWithConfirmation as any).mockRejectedValueOnce(
         new Error('invalid rejection as previous holder is not set'),
       );
 

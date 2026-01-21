@@ -1,7 +1,7 @@
 import { rejectReturned as rejectReturnedImpl } from '@trustvc/trustvc';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BaseTitleEscrowCommand as TitleEscrowReturnDocumentCommand } from '../../../src/types';
-import { rejectReturned } from '../../../src/commands/title-escrow/reject-returned';
+import { rejectReturned } from '../../../src/commands/title-escrow/reject-return-to-issuer';
 
 vi.mock('@trustvc/trustvc', async () => {
   const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
@@ -18,7 +18,6 @@ const rejectReturnedDocumentParams: TitleEscrowReturnDocumentCommand = {
   encryptionKey: '1234',
   network: 'astron',
   maxPriorityFeePerGasScale: 1,
-  dryRun: false,
 };
 
 describe('title-escrow', () => {

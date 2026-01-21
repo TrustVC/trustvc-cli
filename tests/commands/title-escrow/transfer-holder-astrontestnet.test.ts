@@ -1,7 +1,7 @@
 import { v5Contracts, transferHolder as transferHolderImpl } from '@trustvc/trustvc';
 import { beforeEach, describe, expect, it, vi, Mock } from 'vitest';
 import { TitleEscrowTransferHolderCommand } from '../../../src/types';
-import { transferHolder } from '../../../src/commands/title-escrow/change-holder';
+import { transferHolder } from '../../../src/commands/title-escrow/transfer-holder';
 
 const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
 vi.mock('@trustvc/trustvc', async () => {

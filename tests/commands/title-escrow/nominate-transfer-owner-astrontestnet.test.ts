@@ -1,13 +1,13 @@
 import { TransactionReceipt } from '@ethersproject/providers';
-import { transferOwners as transferOwnersImpl } from '@trustvc/trustvc';
+import { nominate as nominateBeneficiaryImpl } from '@trustvc/trustvc';
 import { beforeEach, describe, expect, it, vi, MockedFunction } from 'vitest';
-import { TitleEscrowEndorseTransferOfOwnersCommand } from '../../../src/types';
+import { TitleEscrowNominateBeneficiaryCommand } from '../../../src/types';
 import {
-  transferOwners,
-  endorseChangeOwnerHandler,
+  nominateBeneficiary,
+  nominateChangeOwnerHandler,
   handler,
   promptForInputs,
-} from '../../../src/commands/title-escrow/endorse-change-of-owner';
+} from '../../../src/commands/title-escrow/nominate-transfer-owner';
 import { NetworkCmdName } from '../../../src/utils';
 
 vi.mock('signale', async (importOriginal) => {
@@ -40,35 +40,19 @@ vi.mock('@trustvc/trustvc', async () => {
   const actual = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
   return {
     ...actual,
-    transferOwners: vi.fn(),
+    nominate: vi.fn(),
   };
 });
 
-vi.mock('../../../src/commands/helpers', () => {
-  const mockTitleEscrow = {
-    beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
-    holder: vi.fn().mockResolvedValue('0x4444444444444444444444444444444444444444'),
-    transferOwners: {
+vi.mock('../../../src/commands/helpers', () => ({
+  connectToTitleEscrow: vi.fn().mockResolvedValue({
+    holder: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
+    nominateBeneficiary: {
       populateTransaction: vi.fn(),
     },
-  };
-
-  return {
-    connectToTitleEscrow: vi.fn().mockResolvedValue(mockTitleEscrow),
-    validateEndorseChangeOwner: vi
-      .fn()
-      .mockImplementation(async ({ newOwner, newHolder, titleEscrow }) => {
-        const beneficiary = await titleEscrow.beneficiary();
-        const holder = await titleEscrow.holder();
-        if (newOwner === beneficiary && newHolder === holder) {
-          throw new Error(
-            'new owner and new holder addresses are the same as the current owner and holder addresses',
-          );
-        }
-      }),
-    validateAndEncryptRemark: vi.fn().mockReturnValue('encrypted-remark'),
-  };
-});
+  }),
+  validateAndEncryptRemark: vi.fn().mockReturnValue('encrypted-remark'),
+}));
 
 vi.mock('../../../src/utils/wallet', () => ({
   getWalletOrSigner: vi.fn(),
@@ -88,21 +72,21 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     promptAddress: vi.fn(),
     promptWalletSelection: vi.fn(),
     promptRemark: vi.fn(),
-    performDryRunWithConfirmation: vi.fn(async () => true),
+    performDryRunWithConfirmation: vi.fn(async () => true), // Mock to always proceed
   };
 });
 
-const endorseChangeOwnersParams: TitleEscrowEndorseTransferOfOwnersCommand = {
-  newHolder: '0x1111111111111111111111111111111111111111',
-  newOwner: '0x2222222222222222222222222222222222222222',
+const nominateBeneficiaryParams: TitleEscrowNominateBeneficiaryCommand = {
+  newBeneficiary: '0x1111111111111111111111111111111111111111',
+  remark: '0xabcd',
+  encryptionKey: '1234',
   tokenId: '0x12345',
   tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
-  network: 'astron',
+  network: 'astrontestnet',
   maxPriorityFeePerGasScale: 1,
 };
 
-describe('title-escrow/endorse-change-owner', () => {
-  // increase timeout because ethers is throttling
+describe('title-escrow/nominate-change-of-owner', () => {
   vi.setConfig({ testTimeout: 30_000 });
   vi.spyOn(global, 'fetch').mockImplementation(
     vi.fn(() =>
@@ -131,12 +115,12 @@ describe('title-escrow/endorse-change-owner', () => {
 
     it('should return correct answers for valid inputs with encrypted wallet', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         remark: 'Test remark',
+        encryptionKey: 'test-key',
         documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
@@ -155,9 +139,7 @@ describe('title-escrow/endorse-change-owner', () => {
         documentId: mockInputs.documentId,
         registryVersion: 'v5',
       });
-      (utils.promptAddress as any)
-        .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newBeneficiary);
       (utils.promptWalletSelection as any).mockResolvedValue({
         encryptedWalletPath: './wallet.json',
       });
@@ -168,8 +150,7 @@ describe('title-escrow/endorse-change-owner', () => {
       expect(result.network).toBe(mockInputs.network);
       expect(result.tokenRegistryAddress).toBe(mockInputs.tokenRegistry);
       expect(result.tokenId).toBe(mockInputs.tokenId);
-      expect(result.newOwner).toBe(mockInputs.newOwner);
-      expect(result.newHolder).toBe(mockInputs.newHolder);
+      expect(result.newBeneficiary).toBe(mockInputs.newBeneficiary);
       expect((result as any).encryptedWalletPath).toBe('./wallet.json');
       expect(result.remark).toBe(mockInputs.remark);
       expect(result.encryptionKey).toBe(mockInputs.documentId);
@@ -178,11 +159,10 @@ describe('title-escrow/endorse-change-owner', () => {
 
     it('should return correct answers for valid inputs with private key file', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Sepolia,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
@@ -201,9 +181,7 @@ describe('title-escrow/endorse-change-owner', () => {
         documentId: mockInputs.documentId,
         registryVersion: 'v4',
       });
-      (utils.promptAddress as any)
-        .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newBeneficiary);
       (utils.promptWalletSelection as any).mockResolvedValue({
         keyFile: './private-key.txt',
       });
@@ -219,11 +197,10 @@ describe('title-escrow/endorse-change-owner', () => {
 
     it('should return correct answers for valid inputs with direct private key', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
@@ -242,9 +219,7 @@ describe('title-escrow/endorse-change-owner', () => {
         documentId: mockInputs.documentId,
         registryVersion: 'v5',
       });
-      (utils.promptAddress as any)
-        .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newBeneficiary);
       (utils.promptWalletSelection as any).mockResolvedValue({
         key: '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
       });
@@ -264,11 +239,10 @@ describe('title-escrow/endorse-change-owner', () => {
         '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
 
       const mockInputs = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
@@ -287,9 +261,7 @@ describe('title-escrow/endorse-change-owner', () => {
         documentId: mockInputs.documentId,
         registryVersion: 'v5',
       });
-      (utils.promptAddress as any)
-        .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newBeneficiary);
       (utils.promptWalletSelection as any).mockResolvedValue({});
       (utils.promptRemark as any).mockResolvedValue(undefined);
 
@@ -312,11 +284,10 @@ describe('title-escrow/endorse-change-owner', () => {
       delete process.env.OA_PRIVATE_KEY;
 
       const mockInputs = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistry: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
       };
 
@@ -335,9 +306,7 @@ describe('title-escrow/endorse-change-owner', () => {
         documentId: mockInputs.documentId,
         registryVersion: 'v5',
       });
-      (utils.promptAddress as any)
-        .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newBeneficiary);
       (utils.promptWalletSelection as any).mockRejectedValue(
         new Error(
           'OA_PRIVATE_KEY environment variable is not set. Please set it or choose another option.',
@@ -354,15 +323,15 @@ describe('title-escrow/endorse-change-owner', () => {
     });
   });
 
-  describe('endorseChangeOwnerHandler', () => {
-    let transferOwnersMock: MockedFunction<any>;
+  describe('nominateChangeOwnerHandler', () => {
+    let nominateBeneficiaryMock: MockedFunction<any>;
     let getWalletOrSignerMock: MockedFunction<any>;
 
     beforeEach(async () => {
       vi.clearAllMocks();
 
       const trustvcModule = await import('@trustvc/trustvc');
-      transferOwnersMock = trustvcModule.transferOwners as MockedFunction<any>;
+      nominateBeneficiaryMock = trustvcModule.nominate as MockedFunction<any>;
 
       const walletModule = await import('../../../src/utils/wallet');
       getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
@@ -372,17 +341,17 @@ describe('title-escrow/endorse-change-owner', () => {
         getAddress: vi.fn().mockResolvedValue('0xfrom'),
       });
 
+      // Ensure performDryRunWithConfirmation returns true
       const utils = await import('../../../src/utils');
       (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
 
-    it('should successfully endorse change of owner and display transaction details', async () => {
+    it('should successfully nominate beneficiary and display transaction details', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         maxPriorityFeePerGasScale: 1,
       };
@@ -406,32 +375,30 @@ describe('title-escrow/endorse-change-owner', () => {
         logsBloom: '0x',
       };
 
-      transferOwnersMock.mockResolvedValue({
+      nominateBeneficiaryMock.mockResolvedValue({
         hash: mockTransaction.transactionHash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
 
-      const result = await endorseChangeOwnerHandler(mockArgs);
+      const result = await nominateChangeOwnerHandler(mockArgs);
 
-      expect(transferOwnersMock).toHaveBeenCalledWith(
+      expect(nominateBeneficiaryMock).toHaveBeenCalledWith(
         { tokenRegistryAddress: mockArgs.tokenRegistryAddress, tokenId: mockArgs.tokenId },
         expect.anything(),
         expect.objectContaining({
-          newBeneficiaryAddress: mockArgs.newOwner,
-          newHolderAddress: mockArgs.newHolder,
+          newBeneficiaryAddress: mockArgs.newBeneficiary,
         }),
         expect.anything(),
       );
       expect(result).toBe(mockArgs.tokenRegistryAddress);
     });
 
-    it('should handle endorse change of owner with remark and encryption key', async () => {
+    it('should handle nominate beneficiary with remark and encryption key', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         remark: 'Important transfer',
         encryptionKey: 'secret-key-123',
         key: '0xprivatekey',
@@ -457,19 +424,18 @@ describe('title-escrow/endorse-change-owner', () => {
         logsBloom: '0x',
       };
 
-      transferOwnersMock.mockResolvedValue({
+      nominateBeneficiaryMock.mockResolvedValue({
         hash: mockTransaction.transactionHash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
 
-      const result = await endorseChangeOwnerHandler(mockArgs);
+      const result = await nominateChangeOwnerHandler(mockArgs);
 
-      expect(transferOwnersMock).toHaveBeenCalledWith(
+      expect(nominateBeneficiaryMock).toHaveBeenCalledWith(
         { tokenRegistryAddress: mockArgs.tokenRegistryAddress, tokenId: mockArgs.tokenId },
         expect.anything(),
         expect.objectContaining({
-          newBeneficiaryAddress: mockArgs.newOwner,
-          newHolderAddress: mockArgs.newHolder,
+          newBeneficiaryAddress: mockArgs.newBeneficiary,
           remarks: mockArgs.remark,
         }),
         expect.objectContaining({
@@ -479,40 +445,38 @@ describe('title-escrow/endorse-change-owner', () => {
       expect(result).toBe(mockArgs.tokenRegistryAddress);
     });
 
-    it('should handle errors during endorse change of owner', async () => {
+    it('should handle errors during nominate beneficiary', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         maxPriorityFeePerGasScale: 1,
       };
 
       const errorMessage = 'Transaction failed: insufficient funds';
-      transferOwnersMock.mockRejectedValue(new Error(errorMessage));
+      nominateBeneficiaryMock.mockRejectedValue(new Error(errorMessage));
 
-      const result = await endorseChangeOwnerHandler(mockArgs);
+      const result = await nominateChangeOwnerHandler(mockArgs);
 
       expect(result).toBeUndefined();
-      expect(transferOwnersMock).toHaveBeenCalled();
+      expect(nominateBeneficiaryMock).toHaveBeenCalled();
     });
 
-    it('should handle non-Error exceptions during endorse change of owner', async () => {
+    it('should handle non-Error exceptions during nominate beneficiary', async () => {
       const mockArgs: any = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         maxPriorityFeePerGasScale: 1,
       };
 
-      transferOwnersMock.mockRejectedValue('String error message');
+      nominateBeneficiaryMock.mockRejectedValue('String error message');
 
-      const result = await endorseChangeOwnerHandler(mockArgs);
+      const result = await nominateChangeOwnerHandler(mockArgs);
 
       expect(result).toBeUndefined();
     });
@@ -524,13 +488,12 @@ describe('title-escrow/endorse-change-owner', () => {
       vi.resetAllMocks();
     });
 
-    it('should successfully execute the complete endorse change owner flow', async () => {
+    it('should successfully execute the complete nominate beneficiary flow', async () => {
       const mockInputs: any = {
-        network: NetworkCmdName.Astron,
+        network: NetworkCmdName.AstronTestnet,
         tokenRegistryAddress: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
-        newOwner: '0x0987654321098765432109876543210987654321',
-        newHolder: '0x1111111111111111111111111111111111111111',
+        newBeneficiary: '0x0987654321098765432109876543210987654321',
         encryptedWalletPath: './wallet.json',
         documentId: 'urn:uuid:019b9ce6-5048-7669-b1bf-e15d1f085692',
         maxPriorityFeePerGasScale: 1,
@@ -570,17 +533,15 @@ describe('title-escrow/endorse-change-owner', () => {
         documentId: mockInputs.documentId,
         registryVersion: 'v5',
       });
-      (utils.promptAddress as any)
-        .mockResolvedValueOnce(mockInputs.newOwner)
-        .mockResolvedValueOnce(mockInputs.newHolder);
+      (utils.promptAddress as any).mockResolvedValue(mockInputs.newBeneficiary);
       (utils.promptWalletSelection as any).mockResolvedValue({
         encryptedWalletPath: mockInputs.encryptedWalletPath,
       });
       (utils.promptRemark as any).mockResolvedValue(undefined);
 
       const trustvcModule = await import('@trustvc/trustvc');
-      const transferOwnersMock = trustvcModule.transferOwners as MockedFunction<any>;
-      transferOwnersMock.mockResolvedValue({
+      const nominateBeneficiaryMock = trustvcModule.nominate as MockedFunction<any>;
+      nominateBeneficiaryMock.mockResolvedValue({
         hash: mockTransaction.transactionHash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
@@ -589,7 +550,6 @@ describe('title-escrow/endorse-change-owner', () => {
       const getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
       getWalletOrSignerMock.mockResolvedValue({
         provider: {},
-        getAddress: vi.fn().mockResolvedValue('0xfrom'),
       });
 
       const result = await handler();
@@ -620,14 +580,15 @@ describe('title-escrow/endorse-change-owner', () => {
     });
   });
 
-  describe('transferOwners', () => {
+  describe('nominateBeneficiary', () => {
     beforeEach(async () => {
       delete process.env.OA_PRIVATE_KEY;
-      vi.mocked(transferOwnersImpl).mockResolvedValue({
+      vi.mocked(nominateBeneficiaryImpl).mockResolvedValue({
         hash: 'hash',
         wait: () => Promise.resolve({ transactionHash: 'transactionHash' }),
       } as any);
 
+      // Setup wallet mock with getAddress
       const walletModule = await import('../../../src/utils/wallet');
       const getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
       getWalletOrSignerMock.mockResolvedValue({
@@ -635,66 +596,19 @@ describe('title-escrow/endorse-change-owner', () => {
         getAddress: vi.fn().mockResolvedValue('0xfrom'),
       });
 
+      // Ensure performDryRunWithConfirmation returns true
       const utils = await import('../../../src/utils');
       (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
-
-      // Re-setup the helpers mocks
-      const helpersModule = await import('../../../src/commands/helpers');
-      const mockTitleEscrow = {
-        beneficiary: vi.fn().mockResolvedValue('0x3333333333333333333333333333333333333333'),
-        holder: vi.fn().mockResolvedValue('0x4444444444444444444444444444444444444444'),
-      };
-
-      const connectToTitleEscrowMock = helpersModule.connectToTitleEscrow as MockedFunction<any>;
-      connectToTitleEscrowMock.mockResolvedValue(mockTitleEscrow);
-
-      const validateEndorseChangeOwnerMock =
-        helpersModule.validateEndorseChangeOwner as MockedFunction<any>;
-      validateEndorseChangeOwnerMock.mockImplementation(
-        async ({ newOwner, newHolder, titleEscrow }: any) => {
-          const beneficiary = await titleEscrow.beneficiary();
-          const holder = await titleEscrow.holder();
-          if (newOwner === beneficiary && newHolder === holder) {
-            throw new Error(
-              'new owner and new holder addresses are the same as the current owner and holder addresses',
-            );
-          }
-        },
-      );
     });
 
-    it('should pass in the correct params and call the following procedures to invoke an endorsement of change of owner of a transferable record', async () => {
+    it('should pass in the correct params and call the following procedures to invoke a change in holder of a transferable record', async () => {
       const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
-      await transferOwners({
-        ...endorseChangeOwnersParams,
+      await nominateBeneficiary({
+        ...nominateBeneficiaryParams,
         key: privateKey,
       });
 
-      expect(transferOwnersImpl).toHaveBeenCalledTimes(1);
-    });
-
-    it('should throw an error if new owner and new holder addresses are the same as current owner and holder addressses', async () => {
-      const privateKey = '0000000000000000000000000000000000000000000000000000000000000001';
-
-      // Mock performDryRunWithConfirmation to execute the callback so validation runs
-      const utils = await import('../../../src/utils');
-      (utils.performDryRunWithConfirmation as any).mockImplementation(
-        async ({ getTransactionCallback }: any) => {
-          await getTransactionCallback();
-          return true;
-        },
-      );
-
-      await expect(
-        transferOwners({
-          ...endorseChangeOwnersParams,
-          newOwner: '0x3333333333333333333333333333333333333333',
-          newHolder: '0x4444444444444444444444444444444444444444',
-          key: privateKey,
-        }),
-      ).rejects.toThrow(
-        'new owner and new holder addresses are the same as the current owner and holder addresses',
-      );
+      expect(nominateBeneficiaryImpl).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -7,7 +7,7 @@ import {
   endorseTransferOwnerHandler,
   handler,
   promptForInputs,
-} from '../../../src/commands/title-escrow/endorse-transfer-of-owner';
+} from '../../../src/commands/title-escrow/endorse-transfer-owner';
 import { NetworkCmdName } from '../../../src/utils';
 
 vi.mock('signale', async (importOriginal) => {

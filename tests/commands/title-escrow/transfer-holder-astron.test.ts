@@ -7,7 +7,7 @@ import {
   changeHolderHandler,
   handler,
   promptForInputs,
-} from '../../../src/commands/title-escrow/change-holder';
+} from '../../../src/commands/title-escrow/transfer-holder';
 import { NetworkCmdName } from '../../../src/utils';
 
 vi.mock('signale', async (importOriginal) => {

@@ -40,7 +40,26 @@ export const getErrorMessage = function (error: unknown): string {
   }
 };
 
-// Captures console.warn for an async function to handle expected console.warn. Restores original console.warn functionality after the function is executed.
+// Captures console.warn for a function to handle expected console.warn. 
+// Restores original console.warn functionality after the function is executed.
+export const CaptureConsoleWarn= <T>(fn: () => T): { result: T; warnings: unknown[][] } =>  {
+  const originalWarn = console.warn;
+  const warnings: unknown[][] = [];
+
+  console.warn = (...args) => {
+    warnings.push(args);
+  };
+
+  try {
+    const result = fn();
+    return { result, warnings };
+  } finally {
+    console.warn = originalWarn;
+  }
+}
+
+// Async captures console.warn for an async function to handle expected console.warn. 
+// Restores original console.warn functionality after the function is executed.
 export const CaptureConsoleWarnAsync = async <T>(fn: () => Promise<T>): Promise<{ result: T; warnings: unknown[][] }> =>  {
   const originalWarn = console.warn;
   const warnings: unknown[][] = [];

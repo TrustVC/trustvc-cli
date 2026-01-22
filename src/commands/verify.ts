@@ -4,6 +4,7 @@ import {
     getSupportedNetworkNameFromId,
     readJsonFile,
     CaptureConsoleWarnAsync,
+    CaptureConsoleWarn,
 } from '../utils';
 import {
     getChainId,
@@ -76,8 +77,10 @@ const verifyW3CDocument = async (
 ): Promise<{ result: VerificationFragment[]; warnings: unknown[][] }> => {
     signale.info('Verifying W3C document...');
 
+    const { result: isTransferable } = CaptureConsoleWarn(() => isTransferableRecord(signedVC));
+
     // Non-transferable record: verify directly
-    if (!isTransferableRecord(signedVC)) {
+    if (!isTransferable) {
         return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC));
     }
 

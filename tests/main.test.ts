@@ -537,6 +537,7 @@ describe('trustvc-cli', () => {
     let signaleSuccessSpy: MockedFunction<typeof signale.success>;
     let readJsonFileMock: MockedFunction<typeof utils.readJsonFile>;
     let CaptureConsoleWarnAsyncMock: MockedFunction<typeof utils.CaptureConsoleWarnAsync>;
+    let CaptureConsoleWarnMock: MockedFunction<typeof utils.CaptureConsoleWarn>;
     let getSupportedNetworkMock: MockedFunction<typeof utils.getSupportedNetwork>;
     let getSupportedNetworkNameFromIdMock: MockedFunction<typeof utils.getSupportedNetworkNameFromId>;
 
@@ -544,6 +545,7 @@ describe('trustvc-cli', () => {
     const W3C_REVOKED_DNS_DID_FIXTURE = './tests/fixtures/verify/w3c/revoked_ecdsa_w3c_verifiable_document_v2_0.json';
 
     beforeEach(async () => {
+      vi.clearAllMocks();
       vi.resetAllMocks();
 
       signalWarnSpy = signale.warn as MockedFunction<typeof signale.warn>;
@@ -562,6 +564,9 @@ describe('trustvc-cli', () => {
 
       CaptureConsoleWarnAsyncMock = utils.CaptureConsoleWarnAsync as MockedFunction<typeof utils.CaptureConsoleWarnAsync>;
       CaptureConsoleWarnAsyncMock.mockImplementation((fn: any) => actualUtils.CaptureConsoleWarnAsync(fn));
+
+      CaptureConsoleWarnMock = utils.CaptureConsoleWarn as MockedFunction<typeof utils.CaptureConsoleWarn>;
+      CaptureConsoleWarnMock.mockImplementation((fn: any) => actualUtils.CaptureConsoleWarn(fn));
     });
 
     it(
@@ -582,7 +587,6 @@ describe('trustvc-cli', () => {
         (prompts.input as any).mockResolvedValueOnce(W3C_REVOKED_DNS_DID_FIXTURE);
 
         await verifyHandler();
-
         expect(signaleSuccessSpy).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
         expect(signaleSuccessSpy).toHaveBeenCalledWith('ISSUER_IDENTITY: VALID');
         expect(signalWarnSpy).toHaveBeenCalledWith(expect.stringContaining('DOCUMENT_STATUS: INVALID [Document has been revoked.]'));

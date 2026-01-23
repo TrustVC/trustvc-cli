@@ -158,7 +158,9 @@ describe('oa-wrap', () => {
       (utils.isDir as MockedFunction<any>).mockReturnValue(true);
       (utils.documentsInDirectory as MockedFunction<any>).mockResolvedValue([]);
 
-      await expect(promptForInputs()).rejects.toThrow('No OpenAttestation documents found in directory');
+      await expect(promptForInputs()).rejects.toThrow(
+        'No OpenAttestation documents found in directory',
+      );
     });
 
     it('should abide by validation rules for raw document path input', async () => {
@@ -237,7 +239,9 @@ describe('oa-wrap', () => {
       expect(writeMock).toHaveBeenCalledTimes(1);
       expect(writeMock).toHaveBeenCalledWith('out/a.json', { wrapped: 1 }, true);
 
-      expect(errorMock).toHaveBeenCalledWith('Error while wrapping OpenAttestation document: ./docs/b.json');
+      expect(errorMock).toHaveBeenCalledWith(
+        'Error while wrapping OpenAttestation document: ./docs/b.json',
+      );
       expect(errorMock).toHaveBeenCalledWith('wrap failed');
 
       expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/a.json');
@@ -254,10 +258,10 @@ describe('oa-wrap', () => {
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
 
-      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
-        '../../../src/utils',
-      );
-      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+      const actualUtils =
+        await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
+      const actualTrustvc =
+        await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
@@ -299,8 +303,12 @@ describe('oa-wrap', () => {
       expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
       expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
 
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-did.json');
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-txt.json');
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-did.json',
+      );
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-txt.json',
+      );
       expect(successMock).toHaveBeenCalledWith('All documents wrapped in batch mode');
     });
 
@@ -309,10 +317,10 @@ describe('oa-wrap', () => {
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
 
-      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
-        '../../../src/utils',
-      );
-      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+      const actualUtils =
+        await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
+      const actualTrustvc =
+        await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
@@ -352,8 +360,12 @@ describe('oa-wrap', () => {
       expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
       expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
 
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-did.json');
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-txt.json');
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-did.json',
+      );
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-txt.json',
+      );
       expect(successMock).toHaveBeenCalledWith('All documents wrapped in individual mode');
     });
   });
@@ -367,10 +379,10 @@ describe('oa-wrap', () => {
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
 
-      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
-        '../../../src/utils',
-      );
-      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+      const actualUtils =
+        await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
+      const actualTrustvc =
+        await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
@@ -413,8 +425,12 @@ describe('oa-wrap', () => {
       expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
       expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
 
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-did.json');
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-txt.json');
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-dns-did.json',
+      );
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-dns-txt.json',
+      );
       expect(successMock).toHaveBeenCalledWith('All documents wrapped in batch mode');
     });
 
@@ -423,10 +439,10 @@ describe('oa-wrap', () => {
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
 
-      const actualUtils = await vi.importActual<typeof import('../../../src/utils')>(
-        '../../../src/utils',
-      );
-      const actualTrustvc = await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
+      const actualUtils =
+        await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
+      const actualTrustvc =
+        await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
@@ -466,8 +482,12 @@ describe('oa-wrap', () => {
       expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
       expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
 
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-did.json');
-      expect(successMock).toHaveBeenCalledWith('Wrapped OpenAttestation document: out/raw-dns-txt.json');
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-dns-did.json',
+      );
+      expect(successMock).toHaveBeenCalledWith(
+        'Wrapped OpenAttestation document: out/raw-dns-txt.json',
+      );
       expect(successMock).toHaveBeenCalledWith('All documents wrapped in individual mode');
     });
   });

@@ -41,5 +41,7 @@
       "identifier": "example.tradetrust.io"
     }
   },
-  "attachments": [{ "fileName": "sample.pdf", "mimeType": "application/pdf", "data": "BASE64_ENCODED_FILE" }]
+  "attachments": [
+    { "fileName": "sample.pdf", "mimeType": "application/pdf", "data": "BASE64_ENCODED_FILE" }
+  ]
 }

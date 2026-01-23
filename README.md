@@ -8,7 +8,7 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
 - ✅ **W3C Verifiable Credentials**: Sign and manage W3C verifiable credentials
-- ✅ **OpenAttestation**: Sign OpenAttestation v2/v3 documents
+- ✅ **OpenAttestation**: Sign and wrap/unwrap OpenAttestation v2/v3 documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
 - ✅ **Credential Status**: Create and update W3C credential status lists
@@ -77,6 +77,12 @@ trustvc credential-status-update
 ```sh
 # Sign OpenAttestation documents
 trustvc oa-sign
+
+# Wrap an OpenAttestation document
+trustvc oa-wrap
+
+# Unwrap an OpenAttestation document
+trustvc oa-unwrap
 ```
 
 ### Token Registry & Title Escrow
@@ -126,6 +132,10 @@ trustvc title-escrow reject-transfer-owner-holder
 
 - **Document Signing**: Uses `signOA` to cryptographically sign OpenAttestation v2 and v3 documents with private keys.
 
+- **Document Wrapping**: Uses `wrapOA` to wrap OpenAttestation documents.
+
+- **Document Unwrapping**: Uses `unwrapOA` to unwrap OpenAttestation documents.
+
 ### Blockchain Operations
 
 - **Token Registry**: Uses `mint` to mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
@@ -144,6 +154,8 @@ trustvc title-escrow reject-transfer-owner-holder
 |                     | [`credential-status-create`](#credential-status-create)                      | Create credential status lists                             |
 |                     | [`credential-status-update`](#credential-status-update)                      | Update credential status (revoke/suspend)                  |
 | **OpenAttestation** | [`oa-sign`](#oa-sign)                                                        | Sign OpenAttestation v2/v3 documents                       |
+|                     | [`oa-wrap`](#oa-wrap)                                                        | Wrap OpenAttestation documents                             |
+|                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
 | **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
 |                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
 | **Title Escrow**    | [`transfer-holder`](#title-escrow-transfer-holder)                           | Transfer document holder                                   |
@@ -328,6 +340,59 @@ trustvc oa-sign
 
 **Output:**
 Signed OpenAttestation documents in the specified directory.
+
+**Supported Formats:**
+
+- OpenAttestation v2
+- OpenAttestation v3
+
+</details>
+
+<details>
+<summary><h4 id="oa-wrap">oa-wrap</h4></summary>
+
+Wraps OpenAttestation v2 or v3 documents
+
+**Usage:**
+
+```sh
+trustvc oa-wrap
+```
+
+**Interactive Prompts:**
+
+- Select wrapping in Individual or Batch mode
+- Path to raw OA document or directory (multiple documents)
+- Output directory for wrapped documents
+
+**Output:**
+Wrapped OpenAttestation document(s) in the specified directory.
+
+**Supported Formats:**
+
+- OpenAttestation v2
+- OpenAttestation v3
+
+</details>
+
+<details>
+<summary><h4 id="oa-unwrap">oa-unwrap</h4></summary>
+
+Unwraps OpenAttestation v2 or v3 documents
+
+**Usage:**
+
+```sh
+trustvc oa-unwrap
+```
+
+**Interactive Prompts:**
+
+- Path to wrapped OA document or directory
+- Output directory for unwrapped documents
+
+**Output:**
+Unwrapped OpenAttestation document(s) in the specified directory.
 
 **Supported Formats:**
 
@@ -752,6 +817,8 @@ npm test
 src/commands/
 ├── oa/
 │   └── sign.ts                      # Sign OpenAttestation documents
+│   └── wrap.ts                      # Wrap OpenAttestation documents
+│   └── unwrap.ts                    # Unwrap OpenAttestation documents
 ├── token-registry/
 │   └── mint.ts                      # Mint tokens to registry
 ├── title-escrow/

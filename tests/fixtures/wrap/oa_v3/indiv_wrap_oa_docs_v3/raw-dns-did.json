@@ -15,11 +15,7 @@
     "name": "DEMO STORE",
     "type": "OpenAttestationIssuer"
   },
-  "type": [
-    "VerifiableCredential",
-    "DrivingLicenceCredential",
-    "OpenAttestationCredential"
-  ],
+  "type": ["VerifiableCredential", "DrivingLicenceCredential", "OpenAttestationCredential"],
   "credentialSubject": {
     "id": "did:example:JOHN_DOE_DID",
     "licenseNumber": "S1234567a",

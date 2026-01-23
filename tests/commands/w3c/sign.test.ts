@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import { promptForInputs, sign } from '../../../src/commands/w3c/sign';
 import { SignInput } from '../../../src/types';
 
-
 vi.mock('@inquirer/prompts');
 
 vi.mock('signale', () => ({
@@ -21,9 +20,7 @@ vi.mock('signale', () => ({
 }));
 
 vi.mock('../../../src/utils', async () => {
-  const actual = await vi.importActual<typeof import('../../../src/utils')>(
-    '../../../src/utils',
-  );
+  const actual = await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
   return {
     ...actual,
     readJsonFile: vi.fn(),
@@ -108,12 +105,15 @@ describe('w3c-sign', () => {
 
       await promptForInputs();
 
-      const [credentialArgs, keypairArgs, signedVcArgs] =
-        (prompts.input as any).mock.calls.map((c: any[]) => c[0]);
+      const [credentialArgs, keypairArgs, signedVcArgs] = (prompts.input as any).mock.calls.map(
+        (c: any[]) => c[0],
+      );
 
       expect(credentialArgs.required).toBe(true);
       expect(credentialArgs.validate('')).toBe('Verifiable Credential JSON file path is required');
-      expect(credentialArgs.validate('   ')).toBe('Verifiable Credential JSON file path is required');
+      expect(credentialArgs.validate('   ')).toBe(
+        'Verifiable Credential JSON file path is required',
+      );
       expect(credentialArgs.validate('./credential.json')).toBe(true);
 
       expect(keypairArgs.required).toBe(true);
@@ -198,7 +198,6 @@ describe('w3c-sign', () => {
     });
   });
 
-
   describe('sign', () => {
     let writeFileMock: MockedFunction<any>;
     let signW3CMock: MockedFunction<any>;
@@ -251,11 +250,7 @@ describe('w3c-sign', () => {
         pathToSignedVC: './out',
       });
 
-      expect(signW3CMock).toHaveBeenCalledWith(
-        input.credential,
-        input.keyPairData,
-        'bbs-2023',
-      );
+      expect(signW3CMock).toHaveBeenCalledWith(input.credential, input.keyPairData, 'bbs-2023');
       expect(writeFileMock).toHaveBeenCalledWith('./out/signed_vc.json', { proof: 'ok' }, true);
       expect(signaleSuccessMock).toHaveBeenCalledWith('Verifiable Credential signed successfully');
       expect(signaleSuccessMock).toHaveBeenCalledWith(

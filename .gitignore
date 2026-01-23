@@ -5,8 +5,6 @@ wellknown.json
 credentialStatus.json
 signed_vc.json
 raw_vc.json
-test.json
-testSepolia.json
 
 # Dependencies
 node_modules/

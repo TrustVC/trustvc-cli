@@ -1,11 +1,8 @@
-import { error, info, success, warn } from 'signale';
+import { error, success, info } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
-import {
-  CHAIN_ID,
-  rejectTransferBeneficiary as rejectTransferBeneficiaryImpl,
-} from '@trustvc/trustvc';
-import { BaseTitleEscrowCommand as TitleEscrowRejectTransferCommand } from '../../types';
+import { CHAIN_ID, returnToIssuer as returnToIssuerImpl } from '@trustvc/trustvc';
+import { BaseTitleEscrowCommand as TitleEscrowReturnDocumentCommand } from '../../types';
 import {
   displayTransactionPrice,
   getErrorMessage,
@@ -22,29 +19,25 @@ import {
   promptRemark,
   performDryRunWithConfirmation,
 } from '../../utils';
-import {
-  connectToTitleEscrow,
-  validateAndEncryptRemark,
-  validatePreviousBeneficiary,
-} from '../helpers';
+import { connectToTitleEscrow, validateAndEncryptRemark } from '../helpers';
 
-export const command = 'reject-transfer-owner';
+export const command = 'return-to-issuer';
 
-export const describe = 'Reject the transfer of the owner of a transferable record';
+export const describe = 'Returns a document on the blockchain';
 
 export const handler = async (): Promise<string | undefined> => {
   try {
     const answers = await promptForInputs();
     if (!answers) return;
 
-    await rejectTransferOwnerHandler(answers);
+    await returnDocumentToIssuerHandler(answers);
   } catch (err: unknown) {
     error(err instanceof Error ? err.message : String(err));
   }
 };
 
 // Prompt user for all required inputs
-export const promptForInputs = async (): Promise<TitleEscrowRejectTransferCommand> => {
+export const promptForInputs = async (): Promise<TitleEscrowReturnDocumentCommand> => {
   // Extract document information using utility function
   const document = await promptAndReadDocument();
 
@@ -76,42 +69,35 @@ export const promptForInputs = async (): Promise<TitleEscrowRejectTransferComman
     return {
       ...baseResult,
       encryptedWalletPath,
-    } as TitleEscrowRejectTransferCommand;
+    } as TitleEscrowReturnDocumentCommand;
   } else if (keyFile) {
     return {
       ...baseResult,
       keyFile,
-    } as TitleEscrowRejectTransferCommand;
+    } as TitleEscrowReturnDocumentCommand;
   } else if (key) {
     return {
       ...baseResult,
       key,
-    } as TitleEscrowRejectTransferCommand;
+    } as TitleEscrowReturnDocumentCommand;
   }
 
   // For environment variable case (when all wallet options are undefined)
-  return baseResult as TitleEscrowRejectTransferCommand;
+  return baseResult as TitleEscrowReturnDocumentCommand;
 };
 
-// Reject the transfer of owner with the provided inputs
-export const rejectTransferOwnerHandler = async (args: TitleEscrowRejectTransferCommand) => {
+// Return the document with the provided inputs
+export const returnDocumentToIssuerHandler = async (args: TitleEscrowReturnDocumentCommand) => {
   try {
-    info(
-      `Connecting to the registry ${args.tokenRegistryAddress} and attempting to reject the change of owner of the transferable record ${args.tokenId} to previous owner`,
-    );
-    warn(
-      `Please note that if you do not have the correct privileges to the transferable record, then this command will fail.`,
-    );
+    info(`Returning document with hash ${args.tokenId}`);
 
-    const transaction = await rejectTransferOwner(args);
+    const transaction = await returnDocument(args);
 
     const network = args.network as NetworkCmdName;
     displayTransactionPrice(transaction as unknown as TransactionReceiptFees, network);
     const { hash: transactionHash } = transaction;
 
-    success(
-      `Transferable record with hash ${args.tokenId}'s owner has been successfully rejected to previous owner`,
-    );
+    success(`Transferable record with hash ${args.tokenId} has been returned.`);
     info(
       `Find more details at ${getEtherscanAddress({ network: args.network })}/tx/${transactionHash}`,
     );
@@ -123,26 +109,26 @@ export const rejectTransferOwnerHandler = async (args: TitleEscrowRejectTransfer
 };
 
 /**
- * Rejects a beneficiary (owner) transfer and reverts to the previous beneficiary.
- * This operation cancels a pending beneficiary transfer.
+ * Returns a transferable record to the issuer.
+ * This operation surrenders the document back to the issuer for acceptance or rejection.
  *
  * @param remark - Optional remark/comment to attach to the transaction
  * @param encryptionKey - Optional encryption key for encrypting the remark
  * @param tokenRegistryAddress - The address of the token registry contract
- * @param tokenId - The unique identifier of the token
+ * @param tokenId - The unique identifier of the token to return
  * @param network - The blockchain network to execute the transaction on
  * @param rest - Additional parameters (e.g., wallet configuration, gas settings)
  * @returns Promise resolving to the transaction receipt
  * @throws Error if provider is required but not available, or if transaction receipt is null
  */
-export const rejectTransferOwner = async ({
+export const returnDocument = async ({
   remark,
   encryptionKey,
   tokenRegistryAddress,
   tokenId,
   network,
   ...rest
-}: TitleEscrowRejectTransferCommand): Promise<TransactionReceipt> => {
+}: TitleEscrowReturnDocumentCommand): Promise<TransactionReceipt> => {
   // Initialize wallet/signer for the transaction
   const wallet = await getWalletOrSigner({ network, ...rest });
 
@@ -160,14 +146,11 @@ export const rejectTransferOwner = async ({
         wallet,
       });
 
-      // Validate that a previous beneficiary exists for rejection
-      await validatePreviousBeneficiary(titleEscrow);
-
       // Validate and encrypt the remark if encryption key is provided
       const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
 
       // Populate the transaction for gas estimation
-      const tx = await titleEscrow.rejectTransferBeneficiary.populateTransaction(encryptedRemark);
+      const tx = await titleEscrow.returnToIssuer.populateTransaction(encryptedRemark);
 
       // Ensure the transaction has a 'from' address for proper gas estimation
       return {
@@ -192,8 +175,8 @@ export const rejectTransferOwner = async ({
     // Get current gas fees from the network
     const gasFees = await getGasFees({ provider: wallet.provider, ...rest });
 
-    // Execute reject transfer beneficiary with EIP-1559 gas parameters
-    transaction = await rejectTransferBeneficiaryImpl(
+    // Execute return to issuer with EIP-1559 gas parameters
+    transaction = await returnToIssuerImpl(
       { tokenRegistryAddress, tokenId },
       wallet,
       { remarks: remark },
@@ -205,8 +188,8 @@ export const rejectTransferOwner = async ({
       },
     );
   } else {
-    // Execute reject transfer beneficiary without gas estimation (for networks that don't support it)
-    transaction = await rejectTransferBeneficiaryImpl(
+    // Execute return to issuer without gas estimation (for networks that don't support it)
+    transaction = await returnToIssuerImpl(
       { tokenRegistryAddress, tokenId },
       wallet,
       { remarks: remark },

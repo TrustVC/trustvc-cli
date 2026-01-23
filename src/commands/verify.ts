@@ -5,11 +5,12 @@ import {
     readJsonFile,
     CaptureConsoleWarnAsync,
     CaptureConsoleWarn,
+    promptNetworkSelection,
 } from '../utils';
 import {
     getChainId,
     getDocumentData,
-    getTransferableRecordsCredentialStatus,
+    isDocumentRevokable,
     isTransferableRecord,
     isWrappedV2Document,
     isWrappedV3Document,
@@ -77,22 +78,17 @@ const verifyW3CDocument = async (
 ): Promise<{ result: VerificationFragment[]; warnings: unknown[][] }> => {
     signale.info('Verifying W3C document...');
 
+    // To capture the console.warn from trustvc function
     const { result: isTransferable } = CaptureConsoleWarn(() => isTransferableRecord(signedVC));
+    const isRevokable = isDocumentRevokable(signedVC);
+    const requiresNetwork = isTransferable || isRevokable;
 
-    // Non-transferable record: verify directly
-    if (!isTransferable) {
-        return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC));
-    }
-
-    const credentialStatus = getTransferableRecordsCredentialStatus(signedVC);
-    const chainId = credentialStatus.tokenNetwork.chainId;
-
-    if (chainId == null) {
-        signale.error('Could not find blockchain information');
-        throw new Error('Could not find blockchain information');
-    }
+    // If the document is not transferable or revokable, verify directly
+    // To capture the console.warn from trustvc function
+    if (!requiresNetwork) return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC));
 
     try {
+        const chainId = getChainId(signedVC);
         const chainName = getSupportedNetworkNameFromId(Number(chainId));
         const network = getSupportedNetwork(chainName);
         const provider = network.provider() as unknown as V5Provider;
@@ -102,6 +98,7 @@ const verifyW3CDocument = async (
     } catch (err: unknown) {
         signale.warn(`${err instanceof Error ? err.message : String(err)}`);
     }
+
     // Fallback: Verify without provider
     return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC));
 };
@@ -110,19 +107,30 @@ const verifyOpenAttestationDocument = async (
     signedVC: WrappedOrSignedOpenAttestationDocument
 ): Promise<VerificationFragment[]> => {
     signale.info('Verifying OpenAttestation document...');
-    // if chainId is defined, it is a TXT document, else DID document.
+
     checkExpiration(signedVC);
+    const requiresNetwork = isTransferableRecord(signedVC) || isDocumentRevokable(signedVC);
+    const chainId = getChainId(signedVC);
+
+    // If the document is not transferable or revokable, verify directly
+    if (!requiresNetwork) return await verifyDocument(signedVC);
+
+    // If chainId is not found, prompt for network selection
+    if (requiresNetwork && !chainId) {
+        const networkName = await promptNetworkSelection();
+        const provider = getSupportedNetwork(networkName).provider() as unknown as V5Provider;
+        if (provider) return await verifyDocument(signedVC, { provider });
+    }
+
     try {
-        const chainId = getChainId(signedVC);
         const chainName = getSupportedNetworkNameFromId(Number(chainId));
         const network = getSupportedNetwork(chainName);
         const provider = network.provider() as unknown as V5Provider;
-        if (provider) {
-            return await verifyDocument(signedVC, { provider });
-        }
+        if (provider) return await verifyDocument(signedVC, { provider });
     } catch (err: unknown) {
         signale.warn(`${err instanceof Error ? err.message : String(err)}`);
     }
+
     // Fallback: Verify without provider
     return await verifyDocument(signedVC);
 };

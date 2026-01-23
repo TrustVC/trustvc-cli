@@ -32,13 +32,13 @@ export enum NetworkCmdName {
 
 const defaultInfuraProvider =
   (networkName: string): (() => Provider) =>
-    () =>
-      new InfuraProvider(networkName);
+  () =>
+    new InfuraProvider(networkName);
 
 const jsonRpcProvider =
   (url: string): (() => Provider) =>
-    () =>
-      new JsonRpcProvider(url);
+  () =>
+    new JsonRpcProvider(url);
 
 /**
  * Creates a provider that checks for an environment variable override
@@ -47,20 +47,17 @@ const jsonRpcProvider =
  * Example: SEPOLIA_RPC=https://sepolia.infura.io/v3/your-key
  */
 const getProviderWithEnvOverride =
-  (
-    networkName: NetworkCmdName,
-    defaultProvider: () => Provider,
-  ): (() => Provider) =>
-    () => {
-      const envVarName = `${networkName.toUpperCase()}_RPC`;
-      const customRpcUrl = process.env[envVarName];
+  (networkName: NetworkCmdName, defaultProvider: () => Provider): (() => Provider) =>
+  () => {
+    const envVarName = `${networkName.toUpperCase()}_RPC`;
+    const customRpcUrl = process.env[envVarName];
 
-      if (customRpcUrl) {
-        return new JsonRpcProvider(customRpcUrl);
-      }
+    if (customRpcUrl) {
+      return new JsonRpcProvider(customRpcUrl);
+    }
 
-      return defaultProvider();
-    };
+    return defaultProvider();
+  };
 
 // RPC URL mapping for each network (used for provider creation)
 const rpcUrls: { [key in NetworkCmdName]: string } = {

@@ -1,0 +1,43 @@
+{
+  "version": "https://schema.openattestation.com/2.0/schema.json",
+  "data": {
+    "$template": {
+      "name": "d0956e0d-f827-49fd-a56f-eb5752842e29:string:main",
+      "type": "da898d3b-7607-4421-b812-aac5735932c9:string:EMBEDDED_RENDERER",
+      "url": "233bcc50-61e4-4d46-9a89-0db3642dc183:string:https://tutorial-renderer.openattestation.com"
+    },
+    "recipient": {
+      "name": "df920f3f-dd84-4fcf-8af9-62a507b228b6:string:John Doe"
+    },
+    "issuers": [
+      {
+        "name": "f2510828-69f0-4803-a08e-a02006e0226f:string:Demo Issuer",
+        "documentStore": "bc3ea9ab-ec7e-49cf-8db5-98e966d76a13:string:0xBBb55Bd1D709955241CAaCb327A765e2b6D69c8b",
+        "identityProof": {
+          "type": "2019d6c9-7d6c-497b-927b-7454365a741e:string:DNS-TXT",
+          "location": "41bcf410-a642-4aec-8470-b7265853dcc9:string:few-green-cat.sandbox.openattestation.com"
+        }
+      }
+    ],
+    "id": "0aa90cbd-35c8-47f8-8915-31e725711e3a:string:did:example:JOHN_DOE_DID",
+    "licenseNumber": "028014fa-02a1-4823-a188-a52f6e387299:string:S1234567a",
+    "birthDate": "41c75ae5-ae91-4e76-800b-eb8bcc3af897:string:1977-02-22",
+    "name": "276435e6-f55f-4962-8508-aa9fec8f22d8:string:John Doe",
+    "class": [
+      {
+        "type": "5f78fb76-c80c-4c40-9efb-d5eb5895913b:string:3",
+        "effectiveDate": "c729ae3b-17d3-4e3f-91d9-64ae13990b1d:string:2010-01-01T19:23:24Z"
+      },
+      {
+        "type": "a5c375d5-10b5-4ac6-a372-4df8a86fd737:string:3A",
+        "effectiveDate": "ea03e751-b24f-4bc9-96cd-10712fe98447:string:2010-01-01T19:23:24Z"
+      }
+    ]
+  },
+  "signature": {
+    "type": "SHA3MerkleProof",
+    "targetHash": "d8f4a746989033087e2cfccd74a1daed7640892f4e62ea863222e551ee0a1984",
+    "proof": [],
+    "merkleRoot": "d8f4a746989033087e2cfccd74a1daed7640892f4e62ea863222e551ee0a1984"
+  }
+}

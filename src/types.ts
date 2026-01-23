@@ -15,6 +15,22 @@ export type SignInput = {
   pathToSignedVC: string;
 };
 
+export enum WrapMode {
+  Individual = 'individual',
+  Batch = 'batch',
+}
+
+export type WrapOAInput = {
+  mode: WrapMode;
+  docPaths: string[];
+  pathToOutputDirectory: string;
+};
+
+export type UnwrapOAInput = {
+  docPaths: string[];
+  pathToOutputDirectory: string;
+};
+
 export type OASignInput = PrivateKeyOption & {
   rawDocumentsPath: string;
   outputDir: string;

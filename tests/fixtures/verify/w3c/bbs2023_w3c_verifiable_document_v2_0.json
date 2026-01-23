@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://w3id.org/security/data-integrity/v2",
+    "https://w3c-ccg.github.io/citizenship-vocab/contexts/citizenship-v2.jsonld"
+  ],
+  "credentialStatus": {
+    "id": "https://trustvc.github.io/did/credentials/statuslist/1#1",
+    "type": "BitstringStatusListEntry",
+    "statusPurpose": "revocation",
+    "statusListIndex": "10",
+    "statusListCredential": "https://trustvc.github.io/did/credentials/statuslist/1"
+  },
+  "credentialSubject": {
+    "name": "TrustVC",
+    "birthDate": "2024-04-01T12:19:52Z",
+    "type": ["PermanentResident", "Person"]
+  },
+  "validUntil": "2029-12-03T12:19:52Z",
+  "issuer": "did:web:trustvc.github.io:did:1",
+  "type": ["VerifiableCredential"],
+  "validFrom": "2024-04-01T12:19:52Z",
+  "id": "urn:uuid:019bdac4-15af-7ddf-a904-e29e770cb8d0",
+  "proof": {
+    "type": "DataIntegrityProof",
+    "verificationMethod": "did:web:trustvc.github.io:did:1#multikey-2",
+    "cryptosuite": "bbs-2023",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "u2V0ChVhQl3FQf1iCsd8UOYKoOtE05EwyADb2pFKw3CXYhmAAKstq1lX4o69u58Z67M_2i6RIRZZv-KITPWVH00hkQKuNH3GWNpw9JO1RMQ_iKJm4u-xYQD9WZttHrlLy5Yt4KX5JlbD4AqxyPhcyoKk-Wo6FkAtpZhBXKsdUqNY4_vn1ieMbuZLxuIijh5S1vR5UbeeBlupYYLDx2EM7LXGzSqyTOC8ZKJ9hgD0GHrf59LhRlLV3-pK34L5ohGo8I-g81SD6xVKofBMNiXxFLrp7w56sQlEOkcpISekB2jtn0DeTWzNHrnVwuejhZPM1PPtOuxtkbzj6J1ggQDXmZWDv7Gc0fHBKsyn_bGwKW8HLyTRJZZ-2ielvfxqCZy9pc3N1ZXJqL3ZhbGlkRnJvbQ"
+  }
+}

@@ -1,4 +1,4 @@
-import { Provider, JsonRpcProvider, InfuraProvider } from 'ethers';
+import { InfuraProvider, JsonRpcProvider, Provider } from 'ethers';
 import type { GasStationFunction } from './gas-station';
 import { SUPPORTED_CHAINS, CHAIN_ID } from '@trustvc/trustvc';
 

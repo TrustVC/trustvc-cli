@@ -1,0 +1,56 @@
+{
+  "version": "https://schema.openattestation.com/2.0/schema.json",
+  "data": {
+    "name": "6c6ff1b0-1f76-44f6-acb4-1f4480adb40d:string:TradeTrust Bill of Lading v2",
+    "shipper": {
+      "address": {
+        "street": "c9f4a183-0607-409b-ab2b-ec4247d45a74:string:One North",
+        "country": "636102b0-b894-4315-a7e8-b51415348a94:string:Singapore"
+      },
+      "name": "a9f78f2e-c6a8-4e5b-bae3-5482bd21b456:string:Demo Shipper"
+    },
+    "consignee": {
+      "name": "2cede8d9-9c02-483b-b504-bf8618a99bc4:string:Demo Consignee"
+    },
+    "notifyParty": {
+      "name": "0304dc0c-96d4-4d7a-b981-148132e290fb:string:Demo Notify"
+    },
+    "$template": {
+      "type": "ae7232e7-fd0c-4f9a-8f42-52980d469656:string:EMBEDDED_RENDERER",
+      "name": "c25a962c-557b-42cf-9ca1-d44ec85cca25:string:BILL_OF_LADING",
+      "url": "f8aec37c-331b-4025-a9b8-11ef2f60a8e5:string:https://generic-templates.tradetrust.io"
+    },
+    "issuers": [
+      {
+        "identityProof": {
+          "type": "a8b5bfdf-0e2c-4790-9148-232f50b04d1e:string:DNS-TXT",
+          "location": "fbd510ad-698c-4c5e-9864-ef6738b80201:string:example.tradetrust.io"
+        },
+        "name": "06940f1d-9c4b-42e9-8d75-92b504a74487:string:Demo token registry",
+        "tokenRegistry": "01a0a2c3-b521-41c0-90e8-522e593f3913:string:0x71D28767662cB233F887aD2Bb65d048d760bA694"
+      }
+    ],
+    "blNumber": "10a9e9c4-fb9c-402c-b51f-2391a71f64db:string:123",
+    "vessel": "98545c1c-f5fb-4fcb-90b7-e6590cf6ccf3:string:1",
+    "voyageNo": "a6821d2a-6ebf-4cd2-9708-78b41bfebe75:string:100",
+    "portOfLoading": "8d8b6c03-53dd-4409-8bde-4cacc1fb614c:string:Singapore Port",
+    "portOfDischarge": "ad8027a1-f4db-46ad-9f59-513f1f17a95f:string:China Port",
+    "placeOfReceipt": "a7222399-b500-4bf9-9ab8-51cb6f89a422:string:Beijing",
+    "placeOfDelivery": "46a36db7-9485-4c0c-8c23-42b3a3e627eb:string:Singapore",
+    "links": {
+      "self": {
+        "href": "4aab0503-088d-49ca-a2e6-917c910c9ca3:string:https://actions.tradetrust.io?q=%7B%22type%22%3A%22DOCUMENT%22%2C%22payload%22%3A%7B%22uri%22%3A%22https%3A%2F%2Fgallery.openattestation.com%2Fstatic%2Fdocuments%2Ftradetrust%2Fv2%2Febl-stability.json%22%2C%22permittedActions%22%3A%5B%22VIEW%22%5D%2C%22redirect%22%3A%22https%3A%2F%2Fref.tradetrust.io%22%2C%22chainId%22%3A%20%22101010%22%7D%7D"
+      }
+    },
+    "network": {
+      "chain": "6b1ed020-7e1f-4969-9d9d-3360aaed3e9c:string:FREE",
+      "chainId": "30e1af7c-40f0-4921-8702-bae3154977f8:string:101010"
+    }
+  },
+  "signature": {
+    "type": "SHA3MerkleProof",
+    "targetHash": "45c4f4dde4e8da7b0b3eb2ac99fc05a1226b513773a4ef1e0c6389bf30de7a3f",
+    "proof": [],
+    "merkleRoot": "45c4f4dde4e8da7b0b3eb2ac99fc05a1226b513773a4ef1e0c6389bf30de7a3f"
+  }
+}

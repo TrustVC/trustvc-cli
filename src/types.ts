@@ -43,6 +43,12 @@ export type DidInput = {
   outputPath: string;
 };
 
+export enum FragmentType {
+  DOCUMENT_INTEGRITY = 'DOCUMENT_INTEGRITY',
+  DOCUMENT_STATUS = 'DOCUMENT_STATUS',
+  ISSUER_IDENTITY = 'ISSUER_IDENTITY',
+}
+
 export type KeyPairGenerateInput = {
   encAlgo: typeof issuer.VerificationType;
   seedBase58: string;

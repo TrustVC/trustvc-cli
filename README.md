@@ -7,8 +7,8 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **Modern Cryptosuites**: Full support for ECDSA-SD-2023 and BBS-2023
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
-- ✅ **W3C Verifiable Credentials**: Sign and manage W3C verifiable credentials
-- ✅ **OpenAttestation**: Sign and wrap/unwrap OpenAttestation v2/v3 documents
+- ✅ **W3C Verifiable Credentials**: Sign, verify and manage W3C verifiable credentials
+- ✅ **OpenAttestation**: Sign, verify and wrap/unwrap OpenAttestation v2/v3 documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
 - ✅ **Credential Status**: Create and update W3C credential status lists
@@ -62,8 +62,11 @@ trustvc key-pair-generation
 # Create a DID from the key pair
 trustvc did-web
 
-# Sign a verifiable credential
+# Sign a W3C verifiable credential
 trustvc w3c-sign
+
+# Verify a W3C document
+trustvc verify
 
 # Create a credential status list
 trustvc credential-status-create
@@ -77,6 +80,9 @@ trustvc credential-status-update
 ```sh
 # Sign OpenAttestation documents
 trustvc oa-sign
+
+# Verify OpenAttestation documents
+trustvc verify
 
 # Wrap an OpenAttestation document
 trustvc oa-wrap
@@ -126,11 +132,15 @@ trustvc title-escrow reject-transfer-owner-holder
 
 - **Credential Signing**: Uses `signW3C` to sign verifiable credentials with did:web identifiers and modern cryptosuites.
 
+- **Credential Verification**: Uses `verifyDocument` to verify W3C verifiable credentials.
+
 - **Credential Status**: Provides commands to create and update W3C credential status lists for managing credential revocation and suspension.
 
 ### OpenAttestation
 
 - **Document Signing**: Uses `signOA` to cryptographically sign OpenAttestation v2 and v3 documents with private keys.
+
+- **Document Verification**: Uses `verifyDocument` to verify OpenAttestation documents.
 
 - **Document Wrapping**: Uses `wrapOA` to wrap OpenAttestation documents.
 
@@ -151,9 +161,11 @@ trustvc title-escrow reject-transfer-owner-holder
 | **W3C Credentials** | [`key-pair-generation`](#key-pair-generation)                                | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
 |                     | [`did-web`](#did-web)                                                        | Create did:web identifiers from key pairs                  |
 |                     | [`w3c-sign`](#w3c-sign)                                                      | Sign W3C verifiable credentials                            |
+|                     | [`verify`](#verify)                                                          | Verify W3C verifiable credentials                          |
 |                     | [`credential-status-create`](#credential-status-create)                      | Create credential status lists                             |
 |                     | [`credential-status-update`](#credential-status-update)                      | Update credential status (revoke/suspend)                  |
 | **OpenAttestation** | [`oa-sign`](#oa-sign)                                                        | Sign OpenAttestation v2/v3 documents                       |
+|                     | [`verify`](#verify)                                                          | Verify OpenAttestation documents                           |
 |                     | [`oa-wrap`](#oa-wrap)                                                        | Wrap OpenAttestation documents                             |
 |                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
 | **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
@@ -267,6 +279,33 @@ trustvc w3c-sign
 
 **Output:**
 Creates `signed_vc.json` with cryptographic proof.
+
+</details>
+
+<details>
+<summary><h4 id="verify">verify</h4></summary>
+
+Verifies a W3C or OA document using respective verification methods.
+
+**Usage:**
+
+```sh
+trustvc verify
+```
+
+**Interactive Prompts:**
+
+- Path to document JSON file
+- [If network required but no network detected]: Select network
+
+**Output:**
+Verifies the document integrity, status, and issuer identity.
+
+**Supported Formats:**
+
+- W3C Verifiable Credential
+- OpenAttestation v2
+- OpenAttestation v3
 
 </details>
 
@@ -839,6 +878,7 @@ src/commands/
     └── credentialStatus/
         ├── create.ts                # Create credential status list
         └── update.ts                # Update credential status list
+    └── verify.ts                    # Verify W3C or OA document
 ```
 
 ## License

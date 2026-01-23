@@ -1,6 +1,7 @@
 import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
 import {
-  GasOption,
+  PrivateKeyOption,
+  GasPriceScale,
   NetworkAndWalletSignerOption,
   NetworkOption,
   RpcUrlOption,
@@ -13,6 +14,29 @@ export type SignInput = {
   encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
   pathToSignedVC: string;
 };
+
+export enum WrapMode {
+  Individual = 'individual',
+  Batch = 'batch',
+}
+
+export type WrapOAInput = {
+  mode: WrapMode;
+  docPaths: string[];
+  pathToOutputDirectory: string;
+};
+
+export type UnwrapOAInput = {
+  docPaths: string[];
+  pathToOutputDirectory: string;
+};
+
+export type OASignInput = PrivateKeyOption & {
+  rawDocumentsPath: string;
+  outputDir: string;
+  publicKey: string;
+};
+
 export type DidInput = {
   keyPairPath: string;
   domainName: string;
@@ -49,7 +73,7 @@ export type CredentialStatusQuestionType = {
 export type TokenRegistryMintCommand = NetworkOption &
   Partial<RpcUrlOption> &
   WalletOrSignerOption &
-  GasOption & {
+  GasPriceScale & {
     address: string;
     beneficiary: string;
     holder: string;
@@ -59,7 +83,7 @@ export type TokenRegistryMintCommand = NetworkOption &
   };
 
 export type BaseTitleEscrowCommand = NetworkAndWalletSignerOption &
-  GasOption & {
+  GasPriceScale & {
     tokenRegistryAddress: string;
     tokenId: string;
     remark?: string;

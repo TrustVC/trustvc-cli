@@ -1,4 +1,3 @@
-import { input } from '@inquirer/prompts';
 import { error, info, success, warn } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
@@ -12,15 +11,16 @@ import {
   getErrorMessage,
   getEtherscanAddress,
   NetworkCmdName,
-  promptRemarkAndEncryptionKey,
-  promptNetworkSelection,
   promptWalletSelection,
   TransactionReceiptFees,
   getSupportedNetwork,
   getWalletOrSigner,
-  dryRunMode,
   canEstimateGasPrice,
   getGasFees,
+  extractDocumentInfo,
+  promptAndReadDocument,
+  promptRemark,
+  performDryRunWithConfirmation,
 } from '../../utils';
 import {
   connectToTitleEscrow,
@@ -45,41 +45,21 @@ export const handler = async (): Promise<string | undefined> => {
 
 // Prompt user for all required inputs
 export const promptForInputs = async (): Promise<TitleEscrowRejectTransferCommand> => {
-  // Network selection
-  const network = await promptNetworkSelection();
+  // Extract document information using utility function
+  const document = await promptAndReadDocument();
 
-  // Token Registry Address
-  const tokenRegistry = await input({
-    message: 'Enter the token registry contract address:',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Token registry address is required';
-      }
-      if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
-        return 'Invalid Ethereum address format';
-      }
-      return true;
-    },
-  });
-
-  // Token ID (Document Hash)
-  const tokenId = await input({
-    message: 'Enter the document hash (tokenId) of the transferable record:',
-    required: true,
-    validate: (value: string) => {
-      if (!value || value.trim() === '') {
-        return 'Token ID is required';
-      }
-      return true;
-    },
-  });
+  // Extract document information using utility function
+  const { tokenRegistry, tokenId, network, documentId, registryVersion } =
+    await extractDocumentInfo(document);
 
   // Wallet selection
   const { encryptedWalletPath, key, keyFile } = await promptWalletSelection();
 
-  // Optional: Remark and Encryption Key
-  const { remark, encryptionKey } = await promptRemarkAndEncryptionKey();
+  // Optional: Remark (only for V5)
+  const remark = await promptRemark(registryVersion);
+
+  // Use document ID as encryption key
+  const encryptionKey = documentId;
 
   // Build the result object
   const baseResult = {
@@ -88,7 +68,6 @@ export const promptForInputs = async (): Promise<TitleEscrowRejectTransferComman
     tokenId,
     remark,
     encryptionKey,
-    dryRun: false,
     maxPriorityFeePerGasScale: 1,
   };
 
@@ -152,7 +131,6 @@ export const rejectTransferOwnerHandler = async (args: TitleEscrowRejectTransfer
  * @param tokenRegistryAddress - The address of the token registry contract
  * @param tokenId - The unique identifier of the token
  * @param network - The blockchain network to execute the transaction on
- * @param dryRun - If true, simulates the transaction without executing it
  * @param rest - Additional parameters (e.g., wallet configuration, gas settings)
  * @returns Promise resolving to the transaction receipt
  * @throws Error if provider is required but not available, or if transaction receipt is null
@@ -163,7 +141,6 @@ export const rejectTransferOwner = async ({
   tokenRegistryAddress,
   tokenId,
   network,
-  dryRun,
   ...rest
 }: TitleEscrowRejectTransferCommand): Promise<TransactionReceipt> => {
   // Initialize wallet/signer for the transaction
@@ -172,25 +149,35 @@ export const rejectTransferOwner = async ({
   // Get the network ID for the specified network
   const networkId = getSupportedNetwork(network).networkId;
 
-  // Connect to the title escrow contract for this token
-  const titleEscrow = await connectToTitleEscrow({
-    tokenId,
-    address: tokenRegistryAddress,
-    wallet,
+  // Automatic dry run for Ethereum and Polygon networks
+  const shouldProceed = await performDryRunWithConfirmation({
+    network,
+    getTransactionCallback: async () => {
+      // Connect to the title escrow contract for this token
+      const titleEscrow = await connectToTitleEscrow({
+        tokenId,
+        address: tokenRegistryAddress,
+        wallet,
+      });
+
+      // Validate that a previous beneficiary exists for rejection
+      await validatePreviousBeneficiary(titleEscrow);
+
+      // Validate and encrypt the remark if encryption key is provided
+      const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
+
+      // Populate the transaction for gas estimation
+      const tx = await titleEscrow.rejectTransferBeneficiary.populateTransaction(encryptedRemark);
+
+      // Ensure the transaction has a 'from' address for proper gas estimation
+      return {
+        ...tx,
+        from: await wallet.getAddress(),
+      };
+    },
   });
 
-  // Validate and encrypt the remark if encryption key is provided
-  const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);
-
-  // Validate that a previous beneficiary exists for rejection
-  await validatePreviousBeneficiary(titleEscrow);
-  // Dry run mode: estimate gas and exit without executing the transaction
-  if (dryRun) {
-    await validatePreviousBeneficiary(titleEscrow);
-    await dryRunMode({
-      estimatedGas: await titleEscrow.estimateGas.rejectTransferBeneficiary(encryptedRemark),
-      network,
-    });
+  if (!shouldProceed) {
     process.exit(0);
   }
   let transaction;

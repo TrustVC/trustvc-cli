@@ -1,6 +1,9 @@
 import { InfuraProvider, JsonRpcProvider, Provider } from 'ethers';
 import type { GasStationFunction } from './gas-station';
-import { gasStation } from './gas-station';
+import { SUPPORTED_CHAINS, CHAIN_ID } from '@trustvc/trustvc';
+
+// Re-export for use in other modules
+export { SUPPORTED_CHAINS, CHAIN_ID };
 
 export type networkCurrency = 'ETH' | 'MATIC' | 'XDC' | 'FREE' | 'ASTRON';
 
@@ -59,123 +62,66 @@ const getProviderWithEnvOverride =
       return defaultProvider();
     };
 
+// RPC URL mapping for each network (used for provider creation)
+const rpcUrls: { [key in NetworkCmdName]: string } = {
+  [NetworkCmdName.Local]: 'http://127.0.0.1:8545',
+  [NetworkCmdName.Mainnet]: 'homestead', // Special case for Infura
+  [NetworkCmdName.Sepolia]: 'sepolia', // Special case for Infura
+  [NetworkCmdName.Matic]: 'matic',
+  [NetworkCmdName.Amoy]: 'matic-amoy',
+  [NetworkCmdName.XDC]: 'https://rpc.ankr.com/xdc',
+  [NetworkCmdName.XDCApothem]: 'https://rpc.apothem.network',
+  [NetworkCmdName.Stability]: 'https://rpc.stabilityprotocol.com/zgt/tradeTrust',
+  [NetworkCmdName.StabilityTestnet]: 'https://rpc.testnet.stabilityprotocol.com/zgt/tradeTrust',
+  [NetworkCmdName.Astron]: 'https://astronlayer2.bitfactory.cn/rpc/',
+  [NetworkCmdName.AstronTestnet]: 'https://dev-astronlayer2.bitfactory.cn/query/',
+};
+
+// Create provider based on network type
+const createProvider = (networkName: NetworkCmdName): (() => Provider) => {
+  const rpcUrl = rpcUrls[networkName];
+
+  // Use Infura provider for mainnet and sepolia
+  if (
+    networkName === NetworkCmdName.Mainnet ||
+    networkName === NetworkCmdName.Sepolia ||
+    networkName === NetworkCmdName.Matic ||
+    networkName === NetworkCmdName.Amoy
+  ) {
+    return getProviderWithEnvOverride(networkName, defaultInfuraProvider(rpcUrl));
+  }
+
+  // Use JSON RPC provider for all other networks
+  return getProviderWithEnvOverride(networkName, jsonRpcProvider(rpcUrl));
+};
+
+// Build supportedNetwork from SUPPORTED_CHAINS and add providers
+const buildSupportedNetwork = (): { [key in NetworkCmdName]: SupportedNetwork } => {
+  const networks: Partial<{ [key in NetworkCmdName]: SupportedNetwork }> = {};
+
+  // Map SUPPORTED_CHAINS to our network structure
+  Object.entries(SUPPORTED_CHAINS).forEach(([chainId, chainConfig]) => {
+    const networkName = chainConfig.name as NetworkCmdName;
+
+    // Only process networks that are in our NetworkCmdName enum
+    if (Object.values(NetworkCmdName).includes(networkName)) {
+      networks[networkName] = {
+        explorer: chainConfig.explorerUrl,
+        provider: createProvider(networkName),
+        networkId: Number(chainId),
+        networkName: networkName,
+        currency: chainConfig.currency as networkCurrency,
+        gasStation: chainConfig.gasStation as ReturnType<GasStationFunction> | undefined,
+      };
+    }
+  });
+
+  return networks as { [key in NetworkCmdName]: SupportedNetwork };
+};
+
 export const supportedNetwork: {
   [key in NetworkCmdName]: SupportedNetwork;
-} = {
-  [NetworkCmdName.Local]: {
-    explorer: 'https://localhost/explorer',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.Local,
-      jsonRpcProvider('http://127.0.0.1:8545'),
-    ),
-    networkId: 1337,
-    networkName: NetworkCmdName.Local,
-    currency: 'ETH',
-  },
-  [NetworkCmdName.Mainnet]: {
-    explorer: 'https://etherscan.io',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.Mainnet,
-      defaultInfuraProvider('homestead'),
-    ),
-    networkId: 1,
-    networkName: NetworkCmdName.Mainnet,
-    currency: 'ETH',
-  },
-  [NetworkCmdName.Sepolia]: {
-    explorer: 'https://sepolia.etherscan.io',
-    provider: getProviderWithEnvOverride(NetworkCmdName.Sepolia, defaultInfuraProvider('sepolia')),
-    networkId: 11155111,
-    networkName: NetworkCmdName.Sepolia,
-    currency: 'ETH',
-  },
-  [NetworkCmdName.Matic]: {
-    explorer: 'https://polygonscan.com',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.Matic,
-      jsonRpcProvider('https://sepolia.infura.io/v3/bb46da3f80e040e8ab73c0a9ff365d18'),
-    ),
-    networkId: 137,
-    networkName: NetworkCmdName.Matic,
-    currency: 'MATIC',
-    gasStation: gasStation('https://gasstation.polygon.technology/v2'),
-  },
-  [NetworkCmdName.Amoy]: {
-    explorer: 'https://www.oklink.com/amoy',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.Amoy,
-      jsonRpcProvider('https://rpc-amoy.polygon.technology'),
-    ),
-    networkId: 80002,
-    networkName: NetworkCmdName.Amoy,
-    currency: 'MATIC',
-    gasStation: gasStation('https://gasstation.polygon.technology/v2'),
-  },
-  [NetworkCmdName.XDC]: {
-    explorer: 'https://xdcscan.io',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.XDC,
-      jsonRpcProvider('https://rpc.ankr.com/xdc'),
-    ),
-    networkId: 50,
-    networkName: NetworkCmdName.XDC,
-    currency: 'XDC',
-  },
-  [NetworkCmdName.XDCApothem]: {
-    explorer: 'https://apothem.xdcscan.io',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.XDCApothem,
-      jsonRpcProvider('https://rpc.apothem.network'),
-    ),
-    networkId: 51,
-    networkName: NetworkCmdName.XDCApothem,
-    currency: 'XDC',
-  },
-  [NetworkCmdName.Stability]: {
-    explorer: 'https://stability.blockscout.com',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.Stability,
-      jsonRpcProvider(`https://rpc.stabilityprotocol.com/zgt/tradeTrust`),
-    ),
-    networkId: 101010,
-    networkName: NetworkCmdName.Stability,
-    currency: 'FREE',
-    gasStation: gasStation('https://rpc.stabilityprotocol.com/gas-station'),
-  },
-  [NetworkCmdName.StabilityTestnet]: {
-    explorer: 'https://stability-testnet.blockscout.com/',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.StabilityTestnet,
-      jsonRpcProvider('https://rpc.testnet.stabilityprotocol.com/zgt/tradeTrust'),
-    ),
-    networkId: 20180427,
-    networkName: NetworkCmdName.StabilityTestnet,
-    currency: 'FREE',
-    gasStation: gasStation('https://rpc.testnet.stabilityprotocol.com/gas-station'),
-  },
-  [NetworkCmdName.Astron]: {
-    explorer: 'https://astronscanl2.bitfactory.cn/',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.Astron,
-      jsonRpcProvider('https://astronlayer2.bitfactory.cn/query/'),
-    ),
-    networkId: 1338,
-    networkName: NetworkCmdName.Astron,
-    currency: 'ASTRON',
-    gasStation: gasStation('https://astronscanl2.bitfactory.cn/gas-station'),
-  },
-  [NetworkCmdName.AstronTestnet]: {
-    explorer: 'https://dev-astronscanl2.bitfactory.cn/',
-    provider: getProviderWithEnvOverride(
-      NetworkCmdName.AstronTestnet,
-      jsonRpcProvider('https://dev-astronlayer2.bitfactory.cn/query/'),
-    ),
-    networkId: 21002,
-    networkName: NetworkCmdName.AstronTestnet,
-    currency: 'ASTRON',
-    gasStation: gasStation('https://dev-astronscanl2.bitfactory.cn/gas-station'),
-  },
-};
+} = buildSupportedNetwork();
 
 export const getSupportedNetwork = (networkCmdName: string): SupportedNetwork => {
   return supportedNetwork[networkCmdName as NetworkCmdName];

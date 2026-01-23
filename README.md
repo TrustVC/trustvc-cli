@@ -1,41 +1,41 @@
 # TrustVC CLI
 
-A command-line interface tool for working with Decentralized Identifiers (DIDs), cryptographic key pairs, token registries, and credential status management using modern cryptosuites.
+A comprehensive command-line interface for managing W3C Verifiable Credentials, OpenAttestation documents, blockchain-based token registries, and transferable records. Built with modern cryptographic standards and multi-network blockchain support.
 
 ## Features
 
 - ✅ **Modern Cryptosuites**: Full support for ECDSA-SD-2023 and BBS-2023
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
-- ✅ **Sign Verifiable Credentials**: Sign verifiable credentials
-- ✅ **Verify Documents**: Verify documents
+- ✅ **W3C Verifiable Credentials**: Sign and manage W3C verifiable credentials
+- ✅ **OpenAttestation**: Sign and wrap/unwrap OpenAttestation v2/v3 documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
+- ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
 - ✅ **Credential Status**: Create and update W3C credential status lists
 - ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
 - ✅ **Multi-Network Support**: Ethereum, Polygon, XDC, Stability, and Astron networks
+- ✅ **Interactive CLI**: User-friendly prompts for all operations
 
 ## Powered By
 
 This CLI leverages the TrustVC package:
 
-- [`@trustvc/trustvc`](https://github.com/TrustVC/trustvc) - Key pair and DID generation
+- [`@trustvc/trustvc`](https://github.com/TrustVC/trustvc) - Core library for W3C credentials, OpenAttestation, token registries, and blockchain operations
 
 ## Table of Contents
 
+- [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [How It Works](#how-it-works)
 - [Commands](#commands)
-  - [`trustvc key-pair-generation`](#trustvc-key-pair-generation)
-  - [`trustvc did-web`](#trustvc-did-web)
-  - [`trustvc w3c-sign`](#trustvc-w3c-sign)
-  - [`trustvc verify`](#trustvc-verify)
-  - [`trustvc credential-status-create`](#trustvc-credential-status-create)
-  - [`trustvc credential-status-update`](#trustvc-credential-status-update)
-  - [`trustvc mint`](#trustvc-mint)
-  - [`trustvc token-registry mint`](#trustvc-token-registry-mint)
+  - [Available Commands](#available-commands)
+  - [Detailed Command Reference](#detailed-command-reference)
 - [Configuration](#configuration)
 - [Development](#development)
+  - [Setup](#setup)
+  - [Project Structure](#project-structure)
+- [License](#license)
 
 ## Installation
 
@@ -52,6 +52,8 @@ npx @trustvc/trustvc-cli <command>
 ```
 
 ## Quick Start
+
+### W3C Verifiable Credentials
 
 ```sh
 # Generate a key pair
@@ -71,177 +73,691 @@ trustvc credential-status-create
 
 # Update a credential status list
 trustvc credential-status-update
+```
 
+### OpenAttestation Documents
+
+```sh
+# Sign OpenAttestation documents
+trustvc oa-sign
+
+# Wrap an OpenAttestation document
+trustvc oa-wrap
+
+# Unwrap an OpenAttestation document
+trustvc oa-unwrap
+```
+
+### Token Registry & Title Escrow
+
+```sh
 # Mint a token to a registry
 trustvc mint
+
+# Transfer document holder
+trustvc title-escrow transfer-holder
+
+# Nominate new beneficiary
+trustvc title-escrow nominate-transfer-owner
+
+# Endorse beneficiary change
+trustvc title-escrow endorse-transfer-owner
+
+# Endorse full ownership transfer
+trustvc title-escrow transfer-owner-holder
+
+# Return document to issuer
+trustvc title-escrow return-to-issuer
+
+# Accept/reject returned documents
+trustvc title-escrow accept-return-to-issuer
+trustvc title-escrow reject-return-to-issuer
+
+# Reject transfer requests
+trustvc title-escrow reject-transfer-holder
+trustvc title-escrow reject-transfer-owner
+trustvc title-escrow reject-transfer-owner-holder
 ```
 
 ## How It Works
 
-- **Generating Key Pairs**: The CLI uses the `generateKeyPair` function from `@trustvc/trustvc` to generate cryptographic key pairs. These key pairs support modern cryptosuites (ECDSA-SD-2023, BBS-2023) and use the Multikey format for compatibility with W3C standards.
+### W3C Credentials
 
-- **Generating Well-Known DID**: The CLI uses the `issueDID` function from `@trustvc/trustvc` to generate a did:web identifier. This allows users to self-host their DID as a unique identifier in decentralized systems.
+- **Key Pair Generation**: Uses `generateKeyPair` from `@trustvc/trustvc` to create cryptographic key pairs supporting ECDSA-SD-2023 and BBS-2023 cryptosuites in Multikey format.
 
-- **Sign Verifiable Credentials**: The CLI uses the `w3cSign` function from `@trustvc/trustvc` to sign verifiable credentials with the provided did:web identifier.
+- **DID Creation**: Uses `issueDID` to generate did:web identifiers, allowing self-hosted DIDs as unique identifiers in decentralized systems.
 
-- **Verify Documents**: The CLI uses the `verifyDocument` function from `@trustvc/trustvc` to verify documents. This supports both W3C and OA standards. For W3C documents, both transferable and non-transferable documents are also supported.
+- **Credential Signing**: Uses `signW3C` to sign verifiable credentials with did:web identifiers and modern cryptosuites.
 
-- **Credential Status Management**: The CLI provides commands to create and update W3C credential status lists for managing the revocation status of verifiable credentials.
+- **Credential Status**: Provides commands to create and update W3C credential status lists for managing credential revocation and suspension.
 
-- **Token Registry Minting**: The CLI uses the `mint` function from `@trustvc/trustvc` to mint document hashes to blockchain-based token registries, supporting multiple networks including Ethereum, Polygon, XDC, Stability, and Astron.
+### OpenAttestation
+
+- **Document Signing**: Uses `signOA` to cryptographically sign OpenAttestation v2 and v3 documents with private keys.
+
+- **Document Wrapping**: Uses `wrapOA` to wrap OpenAttestation documents.
+
+- **Document Unwrapping**: Uses `unwrapOA` to unwrap OpenAttestation documents.
+
+### Blockchain Operations
+
+- **Token Registry**: Uses `mint` to mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
+
+- **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
 
 ## Commands
 
-### `trustvc key-pair-generation`
+### Available Commands
 
-Generates cryptographic key pairs for modern cryptosuites (ECDSA-SD-2023, BBS-2023). These key pairs are used to create DIDs.
+| Category            | Command                                                                      | Description                                                |
+| ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **W3C Credentials** | [`key-pair-generation`](#key-pair-generation)                                | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
+|                     | [`did-web`](#did-web)                                                        | Create did:web identifiers from key pairs                  |
+|                     | [`w3c-sign`](#w3c-sign)                                                      | Sign W3C verifiable credentials                            |
+|                     | [`credential-status-create`](#credential-status-create)                      | Create credential status lists                             |
+|                     | [`credential-status-update`](#credential-status-update)                      | Update credential status (revoke/suspend)                  |
+| **OpenAttestation** | [`oa-sign`](#oa-sign)                                                        | Sign OpenAttestation v2/v3 documents                       |
+|                     | [`oa-wrap`](#oa-wrap)                                                        | Wrap OpenAttestation documents                             |
+|                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
+| **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
+|                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
+| **Title Escrow**    | [`transfer-holder`](#title-escrow-transfer-holder)                           | Transfer document holder                                   |
+|                     | `title-escrow transfer-holder`                                               | Alternative: `transfer-holder`                             |
+|                     | [`nominate-transfer-owner`](#title-escrow-nominate-transfer-owner)           | Nominate new beneficiary                                   |
+|                     | `title-escrow nominate-transfer-owner`                                       | Alternative: `nominate-transfer-owner`                     |
+|                     | [`endorse-transfer-owner`](#title-escrow-endorse-transfer-owner)             | Endorse beneficiary change                                 |
+|                     | `title-escrow endorse-transfer-owner`                                        | Alternative: `endorse-transfer-owner`                      |
+|                     | [`transfer-owner-holder`](#title-escrow-transfer-owner-holder)               | Endorse full ownership transfer                            |
+|                     | `title-escrow transfer-owner-holder`                                         | Alternative: `transfer-owner-holder`                       |
+|                     | [`return-to-issuer`](#title-escrow-return-to-issuer)                         | Return document to issuer                                  |
+|                     | `title-escrow return-to-issuer`                                              | Alternative: `return-to-issuer`                            |
+|                     | [`accept-return-to-issuer`](#title-escrow-accept-return-to-issuer)           | Accept returned document                                   |
+|                     | `title-escrow accept-return-to-issuer`                                       | Alternative: `accept-return-to-issuer`                     |
+|                     | [`reject-return-to-issuer`](#title-escrow-reject-return-to-issuer)           | Reject returned document                                   |
+|                     | `title-escrow reject-return-to-issuer`                                       | Alternative: `reject-return-to-issuer`                     |
+|                     | [`reject-transfer-holder`](#title-escrow-reject-transfer-holder)             | Reject holder transfer                                     |
+|                     | `title-escrow reject-transfer-holder`                                        | Alternative: `reject-transfer-holder`                      |
+|                     | [`reject-transfer-owner`](#title-escrow-reject-transfer-owner)               | Reject owner transfer                                      |
+|                     | [`reject-transfer-owner-holder`](#title-escrow-reject-transfer-owner-holder) | Reject full transfer                                       |
+|                     | `title-escrow reject-transfer-owner-holder`                                  | Alternative: `reject-transfer-owner-holder`                |
 
-**Interactive prompts:**
+---
+
+### Wallet/Private Key Options
+
+All title-escrow and token registry commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
+
+**Select wallet/private key option:**
+
+- **Encrypted wallet file (recommended)** - Use an encrypted JSON wallet file for secure key storage
+- **Environment variable (OA_PRIVATE_KEY)** - Set your private key in the `OA_PRIVATE_KEY` environment variable
+- **Private key file** - Provide a file containing your private key
+- **Private key directly** - Enter your private key directly (not recommended for production)
+
+---
+
+### Detailed Command Reference
+
+<details>
+<summary><h4 id="key-pair-generation">key-pair-generation</h4></summary>
+
+Generates cryptographic key pairs for modern cryptosuites (ECDSA-SD-2023, BBS-2023).
+
+**Usage:**
+
+```sh
+trustvc key-pair-generation
+```
+
+**Interactive Prompts:**
+
 - Select encryption algorithm (ECDSA-SD-2023 or BBS-2023)
 - Enter seed (optional, BBS-2023 only)
 - Specify output directory
 
-**Output:** Creates a `keypair.json` file containing:
+**Output:**
+Creates `keypair.json` containing:
+
 - `type`: Multikey
 - `publicKeyMultibase`: Public key in multibase format
 - `secretKeyMultibase`: Secret key in multibase format
 - `seedBase58`: Seed (if provided for BBS-2023)
 
-**Example:**
+</details>
+
+<details>
+<summary><h4 id="did-web">did-web</h4></summary>
+
+Generates a did:web identifier from an existing key pair.
+
+**Usage:**
+
 ```sh
-trustvc key-pair-generation
+trustvc did-web
 ```
 
-### `trustvc did-web`
+**Interactive Prompts:**
 
-Generates a did:web identifier from an existing key pair. Supports modern Multikey format for compatibility with latest W3C standards.
-
-**Interactive prompts:**
 - Path to key pair JSON file
 - Select cryptosuite (must match the key pair)
 - Domain name for did:web hosting
 - Output directory
 
-**Output:** Creates two files:
+**Output:**
+
 - `wellknown.json`: DID document for hosting at `/.well-known/did.json`
 - `didKeyPairs.json`: Key pair information with DID references
 
-**Example:**
-```sh
-trustvc did-web
-```
+</details>
 
-### `trustvc w3c-sign`
+<details>
+<summary><h4 id="w3c-sign">w3c-sign</h4></summary>
 
-Signs a verifiable credential using a did:web identifier.
+Signs a W3C verifiable credential using a did:web identifier.
 
-**Interactive prompts:**
-- Path to did:web key-pair JSON file
-- Path to unsigned verifiable credential JSON file
-- Select cryptosuite (ECDSA-SD-2023 or BBS-2023, must match the key pair)
-- Output directory
+**Usage:**
 
-**Output:** Creates a signed verifiable credential file: `signed_vc.json`.
-
-**Example:**
 ```sh
 trustvc w3c-sign
 ```
 
-### `trustvc verify`
+**Interactive Prompts:**
 
-Verifies a verifiable credential document and shows expiration warning if the document is expired. This supports both W3C (transferable and non-transferable documents) and OA standards. 
+- Path to did:web key-pair JSON file
+- Path to unsigned verifiable credential JSON file
+- Select cryptosuite (ECDSA-SD-2023 or BBS-2023)
+- Output directory
 
-**Interactive prompts:**
-- Path to verifiable credential document
+**Output:**
+Creates `signed_vc.json` with cryptographic proof.
 
-**Output:** Results are directly displayed in the CLI 
-```
-// Example
-info: Verifying W3C document...
-warning: The document credential has expired.
-success: DOCUMENT_INTEGRITY: VALID
-success: DOCUMENT_STATUS: INVALID [Document has been revoked.]
-success: ISSUER_IDENTITY: VALID
-```
+</details>
 
-**Example:**
+<details>
+<summary><h4 id="credential-status-create">credential-status-create</h4></summary>
+
+Creates a new W3C credential status list for managing revocation.
+
+**Usage:**
+
 ```sh
-trustvc verify
+trustvc credential-status-create
 ```
 
-### `trustvc credential-status-create`
+**Interactive Prompts:**
 
-Creates a new W3C credential status list for managing the revocation status of verifiable credentials.
-
-**Interactive prompts:**
 - Path to key pair JSON file
 - Select cryptosuite (ECDSA-SD-2023 or BBS-2023)
 - Hosting URL for the credential status list
 - Output directory
 - Status list length (optional)
 
-**Output:** Creates a signed credential status list file.
+**Output:**
+Signed credential status list file.
 
-**Example:**
-```sh
-trustvc credential-status-create
-```
+</details>
 
-### `trustvc credential-status-update`
+<details>
+<summary><h4 id="credential-status-update">credential-status-update</h4></summary>
 
 Updates an existing W3C credential status list to revoke or suspend credentials.
 
-**Interactive prompts:**
+**Usage:**
+
+```sh
+trustvc credential-status-update
+```
+
+**Interactive Prompts:**
+
 - Path to existing credential status file
 - Path to key pair JSON file
 - Output directory
 - Credential index to update
 
-**Output:** Updates the credential status list file.
+**Output:**
+Updated credential status list file.
 
-**Example:**
+</details>
+
+<details>
+<summary><h4 id="oa-sign">oa-sign</h4></summary>
+
+Signs OpenAttestation v2 or v3 documents with a private key.
+
+**Usage:**
+
 ```sh
-trustvc credential-status-update
+trustvc oa-sign
 ```
 
-### `trustvc mint`
+**Interactive Prompts:**
 
-Mints a document hash (tokenId) to a token registry smart contract on the blockchain. This is a shorthand command for `trustvc token-registry mint`.
-
-**Interactive prompts:**
-- Select network (Sepolia, Mainnet, Polygon, XDC, Stability, Astron, etc.)
-- Token registry contract address
-- Document hash (tokenId) to mint
-- Beneficiary address (initial recipient)
-- Holder address (initial holder)
-- Wallet/private key option:
-  - Encrypted wallet file (recommended)
+- Path to raw OA document or directory
+- Output directory for signed documents
+- Public key (e.g., did:ethr:0x...#controller)
+- Private key source:
   - Environment variable (OA_PRIVATE_KEY)
   - Private key file
-  - Private key directly
-- Remark (optional)
-- Encryption key for document (optional, if remark provided)
+  - Direct private key input
 
-**Output:** Transaction receipt with:
-- Transaction hash
-- Block number
-- Gas used and transaction cost
-- Etherscan link for transaction details
+**Output:**
+Signed OpenAttestation documents in the specified directory.
 
-**Example:**
+**Supported Formats:**
+
+- OpenAttestation v2
+- OpenAttestation v3
+
+</details>
+
+<details>
+<summary><h4 id="oa-wrap">oa-wrap</h4></summary>
+
+Wraps OpenAttestation v2 or v3 documents
+
+**Usage:**
+
+```sh
+trustvc oa-wrap
+```
+
+**Interactive Prompts:**
+
+- Select wrapping in Individual or Batch mode
+- Path to raw OA document or directory (multiple documents)
+- Output directory for wrapped documents
+
+**Output:**
+Wrapped OpenAttestation document(s) in the specified directory.
+
+**Supported Formats:**
+
+- OpenAttestation v2
+- OpenAttestation v3
+
+</details>
+
+<details>
+<summary><h4 id="oa-unwrap">oa-unwrap</h4></summary>
+
+Unwraps OpenAttestation v2 or v3 documents
+
+**Usage:**
+
+```sh
+trustvc oa-unwrap
+```
+
+**Interactive Prompts:**
+
+- Path to wrapped OA document or directory
+- Output directory for unwrapped documents
+
+**Output:**
+Unwrapped OpenAttestation document(s) in the specified directory.
+
+**Supported Formats:**
+
+- OpenAttestation v2
+- OpenAttestation v3
+
+</details>
+
+<details>
+<summary><h4 id="mint">mint</h4></summary>
+
+Mints a document hash (tokenId) to a token registry smart contract.
+
+**Usage:**
+
 ```sh
 trustvc mint
 ```
 
-### `trustvc token-registry mint`
+**Interactive Prompts:**
 
-Alternative command for minting tokens. Functionally identical to `trustvc mint`.
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- Beneficiary address (initial recipient)
+- Holder address (initial holder)
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
 
-**Example:**
+**Output:**
+Transaction receipt with hash, block number, gas used, and explorer link.
+
+**Supported Networks:**
+
+- Ethereum (Mainnet, Sepolia)
+- Polygon (Mainnet, Amoy Testnet)
+- XDC Network (Mainnet, Apothem Testnet)
+- Stability (Mainnet, Testnet)
+- Astron (Mainnet, Testnet)
+
+</details>
+
+<details>
+<summary><h4 id="token-registry-mint">token-registry mint</h4></summary>
+
+Alternative command for minting tokens. Functionally identical to `mint`.
+
+**Usage:**
+
 ```sh
+# Short form
+trustvc mint
+
+# Or with prefix
 trustvc token-registry mint
 ```
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-transfer-holder">title-escrow transfer-holder</h4></summary>
+
+Transfers the holder of a transferable record to a new address.
+
+**Who Can Execute:**
+Only the **current holder** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc transfer-holder
+
+# Or with prefix
+trustvc title-escrow transfer-holder
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- New holder address
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming holder transfer.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-nominate-transfer-owner">title-escrow nominate-transfer-owner</h4></summary>
+
+Nominates a new beneficiary (owner) for the transferable record.
+
+**Who Can Execute:**
+Only the **current holder** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc nominate-transfer-owner
+
+# Or with prefix
+trustvc title-escrow nominate-transfer-owner
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- New beneficiary address
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming beneficiary nomination.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-endorse-transfer-owner">title-escrow endorse-transfer-owner</h4></summary>
+
+Endorses the change of beneficiary (owner) for the transferable record.
+
+**Who Can Execute:**
+Only the **current beneficiary (owner)** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc endorse-transfer-owner
+
+# Or with prefix
+trustvc title-escrow endorse-transfer-owner
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- New beneficiary address
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming beneficiary endorsement.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-transfer-owner-holder">title-escrow transfer-owner-holder</h4></summary>
+
+Endorses the transfer of both beneficiary and holder to new addresses.
+
+**Who Can Execute:**
+Only the **current beneficiary (owner)** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc transfer-owner-holder
+
+# Or with prefix
+trustvc title-escrow transfer-owner-holder
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- New beneficiary address
+- New holder address
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming full ownership transfer.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-return-to-issuer">title-escrow return-to-issuer</h4></summary>
+
+Returns the transferable record to the issuer.
+
+**Who Can Execute:**
+Both the **current holder** and **current beneficiary (owner)** must execute this together, or the entity that holds both roles.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc return-to-issuer
+
+# Or with prefix
+trustvc title-escrow return-to-issuer
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming document return.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-accept-return-to-issuer">title-escrow accept-return-to-issuer</h4></summary>
+
+Accepts a returned transferable record (issuer action).
+
+**Who Can Execute:**
+Only the **issuer** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc accept-return-to-issuer
+
+# Or with prefix
+trustvc title-escrow accept-return-to-issuer
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming acceptance.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-reject-return-to-issuer">title-escrow reject-return-to-issuer</h4></summary>
+
+Rejects a returned transferable record (issuer action).
+
+**Who Can Execute:**
+Only the **issuer** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc reject-return-to-issuer
+
+# Or with prefix
+trustvc title-escrow reject-return-to-issuer
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming rejection.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-reject-transfer-holder">title-escrow reject-transfer-holder</h4></summary>
+
+Rejects a holder transfer request.
+
+**Who Can Execute:**
+Only the **current holder** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc reject-transfer-holder
+
+# Or with prefix
+trustvc title-escrow reject-transfer-holder
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming rejection.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-reject-transfer-owner">title-escrow reject-transfer-owner</h4></summary>
+
+Rejects a beneficiary transfer request.
+
+**Who Can Execute:**
+Only the **current beneficiary (owner)** of the transferable record.
+
+**Usage:**
+
+```sh
+# Short form
+trustvc reject-transfer-owner
+
+# Or with prefix
+trustvc title-escrow reject-transfer-owner
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming rejection.
+
+</details>
+
+<details>
+<summary><h4 id="title-escrow-reject-transfer-owner-holder">title-escrow reject-transfer-owner-holder</h4></summary>
+
+Rejects a full ownership transfer (both beneficiary and holder).
+
+**Who Can Execute:**
+Only the **current holder and beneficiary (owner)** of the transferable record (must be the same address).
+
+**Usage:**
+
+```sh
+# Short form
+trustvc reject-transfer-owner-holder
+
+# Or with prefix
+trustvc title-escrow reject-transfer-owner-holder
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (or manual input)
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
+- Wallet/private key option
+- Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
+
+**Output:**
+Transaction receipt confirming rejection.
+
+</details>
 
 ## Configuration
 
@@ -250,6 +766,7 @@ trustvc token-registry mint
 You can override the default RPC endpoints for any network by setting environment variables. The format is `{NETWORK_NAME}_RPC`.
 
 **Supported networks:**
+
 - `SEPOLIA_RPC` - Sepolia testnet
 - `MAINNET_RPC` - Ethereum mainnet
 - `MATIC_RPC` - Polygon mainnet
@@ -300,41 +817,31 @@ npm test
 ### Project Structure
 
 ```
-├── src/
-│   ├── commands/
-│   │   ├── token-registry/
-│   │   │   ├── mint.ts              # Mint command shorthand
-│   │   │   └── token-registry.ts    # Token registry operations
-│   │   └── w3c/
-│   │       ├── did.ts               # DID generation command
-│   │       ├── key-pair.ts          # Key pair generation command
-│   │       ├── sign.ts              # Sign verifiable credential command
-│   │       └── credentialStatus/
-│   │           ├── create.ts        # Create credential status
-│   │           └── update.ts        # Update credential status
-│   │       └── verify.ts            # Verify document
-│   ├── utils/
-│   │   ├── wallet.ts                # Wallet and signer utilities
-│   │   ├── networks.ts              # Network configurations
-│   │   ├── gas-station.ts           # Gas price estimation
-│   │   └── ...                      # Other utilities
-│   ├── main.ts                      # CLI entry point
-│   └── types.ts                     # TypeScript type definitions
-├── tests/
-│   ├── commands/
-│   │   ├── token-registry/
-│   │   │   └── mint.test.ts
-│   │   └── w3c/
-│   │       ├── did.test.ts
-│   │       ├── key-pair.test.ts
-│   │       ├── sign.test.ts
-│   │       └── credentialStatus/
-│   │           ├── create.test.ts
-│   │           └── update.test.ts
-│   │       └── verify.test.ts
-│   └── main.test.ts
-├── package.json
-└── README.md
+src/commands/
+├── oa/
+│   └── sign.ts                      # Sign OpenAttestation documents
+│   └── wrap.ts                      # Wrap OpenAttestation documents
+│   └── unwrap.ts                    # Unwrap OpenAttestation documents
+├── token-registry/
+│   └── mint.ts                      # Mint tokens to registry
+├── title-escrow/
+│   ├── transfer-holder.ts           # Transfer holder
+│   ├── nominate-transfer-owner.ts   # Nominate beneficiary
+│   ├── endorse-transfer-owner.ts    # Endorse beneficiary change
+│   ├── transfer-owner-holder.ts     # Endorse full transfer
+│   ├── return-to-issuer.ts          # Return to issuer
+│   ├── accept-return-to-issuer.ts   # Accept returned document
+│   ├── reject-return-to-issuer.ts   # Reject returned document
+│   ├── reject-transfer-holder.ts    # Reject holder transfer
+│   ├── reject-transfer-owner.ts     # Reject owner transfer
+│   └── reject-transfer-owner-holder.ts  # Reject full transfer
+└── w3c/
+    ├── did.ts                       # Generate DID
+    ├── key-pair.ts                  # Generate key pairs
+    ├── sign.ts                      # Sign W3C credentials
+    └── credentialStatus/
+        ├── create.ts                # Create credential status list
+        └── update.ts                # Update credential status list
 ```
 
 ## License

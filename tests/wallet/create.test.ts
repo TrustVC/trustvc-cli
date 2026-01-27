@@ -29,7 +29,7 @@ vi.mock('../../src/utils', async (importOriginal) => {
   const originalUtils = await importOriginal<typeof import('../../src/utils')>();
   return {
     ...originalUtils,
-    writeFile: vi.fn((path: string, data: any, silent?: boolean) => {
+    writeFile: vi.fn((path: string, data: any) => {
       fs.writeFileSync(path, JSON.stringify(data, null, 2));
     }),
     progress: vi.fn(() => () => {}),

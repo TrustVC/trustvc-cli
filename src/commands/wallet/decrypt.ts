@@ -71,6 +71,7 @@ export const decryptAndDisplayWallet = async (walletPath: string, walletPassword
       password: walletPassword,
     })) as Wallet | HDNodeWallet;
   } catch (err) {
+    console.log(err);
     throw new Error('Failed to decrypt wallet. Please check your password and try again.');
   }
 

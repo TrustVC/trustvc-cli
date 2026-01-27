@@ -539,3 +539,55 @@ export const performDryRunWithConfirmation = async ({
     return true;
   }
 };
+
+/**
+ * Prompts for output directory path for saving files.
+ * @param fileType - Optional description of the file type (e.g., 'encrypted wallet', 'key pair')
+ * @returns The validated directory path
+ */
+export const promptOutputDirectory = async (fileType?: string): Promise<string> => {
+  const messageText = fileType
+    ? `Enter a directory to save the ${fileType} file (optional):`
+    : 'Enter a directory to save the file (optional):';
+
+  const outputPath = await input({
+    message: messageText,
+    default: '.',
+    required: true,
+  });
+
+  return outputPath;
+};
+
+/**
+ * Prompts for wallet password with confirmation.
+ * Ensures password is at least 8 characters and matches confirmation.
+ * @returns The validated password
+ */
+export const promptWalletPassword = async (): Promise<string> => {
+  const { password: passwordModule } = await import('@inquirer/prompts');
+
+  // Prompt for wallet password
+  const walletPassword = await passwordModule({
+    message: 'Enter a password to encrypt your wallet:',
+    mask: '*',
+    validate: (value: string) => {
+      if (!value || value.length < 8) {
+        return 'Password must be at least 8 characters long';
+      }
+      return true;
+    },
+  });
+
+  // Confirm password
+  const confirmPassword = await passwordModule({
+    message: 'Confirm your password:',
+    mask: '*',
+  });
+
+  if (walletPassword !== confirmPassword) {
+    throw new Error('Passwords do not match. Please try again.');
+  }
+
+  return walletPassword;
+};

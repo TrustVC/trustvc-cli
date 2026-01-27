@@ -46,6 +46,7 @@
   "devDependencies": {
     "@types/node": "^22.19.5",
     "@types/signale": "^1.4.7",
+    "@types/tmp": "^0.2.6",
     "@typescript-eslint/eslint-plugin": "^8.50.1",
     "@typescript-eslint/parser": "^8.50.1",
     "dotenv": "^17.2.3",

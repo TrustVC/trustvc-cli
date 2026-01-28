@@ -95,13 +95,11 @@ describe('wallet/decrypt', () => {
     const walletUtils = await import('../../src/utils/wallet');
 
     (utils.readFile as any).mockResolvedValue(encryptedWalletJson);
-    (walletUtils.getWalletOrSigner as any).mockRejectedValue(
-      new Error('incorrect password'),
-    );
+    (walletUtils.getWalletOrSigner as any).mockRejectedValue(new Error('incorrect password'));
 
-    await expect(
-      decryptAndDisplayWallet(tmpFile.name, 'wrongpassword'),
-    ).rejects.toThrow('Failed to decrypt wallet. Please check your password and try again.');
+    await expect(decryptAndDisplayWallet(tmpFile.name, 'wrongpassword')).rejects.toThrow(
+      'Failed to decrypt wallet. Please check your password and try again.',
+    );
 
     // Cleanup
     tmpFile.removeCallback();
@@ -120,10 +118,7 @@ describe('wallet/decrypt', () => {
 
     (utils.readFile as any).mockResolvedValue(encryptedWithMnemonic);
 
-    const decryptedWallet = await Wallet.fromEncryptedJson(
-      encryptedWithMnemonic,
-      mockedPassword,
-    );
+    const decryptedWallet = await Wallet.fromEncryptedJson(encryptedWithMnemonic, mockedPassword);
     (walletUtils.getWalletOrSigner as any).mockResolvedValue(decryptedWallet);
 
     const result = await decryptAndDisplayWallet(tmpFile.name, mockedPassword);

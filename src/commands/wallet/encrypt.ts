@@ -69,10 +69,7 @@ export const encryptAndSaveWallet = async (
   signale.info('Encrypting wallet...');
 
   // Encrypt the wallet with the provided password
-  const encryptedJson = await wallet.encrypt(
-    walletPassword,
-    defaultProgress('Encrypting Wallet'),
-  );
+  const encryptedJson = await wallet.encrypt(walletPassword, defaultProgress('Encrypting Wallet'));
 
   const walletFilePath = `${walletPath}/wallet.json`;
 
@@ -87,7 +84,9 @@ export const encryptAndSaveWallet = async (
   console.log(''); // blank line for spacing
   signale.warn('IMPORTANT: Store your password securely!');
   signale.warn('IMPORTANT: Never share this file or your private key publicly!');
-  signale.warn('IMPORTANT: If you lose your password, you will not be able to recover your wallet!');
+  signale.warn(
+    'IMPORTANT: If you lose your password, you will not be able to recover your wallet!',
+  );
 
   return wallet;
 };

@@ -91,6 +91,19 @@ trustvc oa-wrap
 trustvc oa-unwrap
 ```
 
+### Wallet Management
+
+```sh
+# Create a new encrypted wallet
+trustvc wallet create
+
+# Encrypt an existing private key
+trustvc wallet encrypt
+
+# Decrypt and view wallet details
+trustvc wallet decrypt
+```
+
 ### Token Registry & Title Escrow
 
 ```sh
@@ -170,6 +183,9 @@ trustvc title-escrow reject-transfer-owner-holder
 |                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
 | **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
 |                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
+| **Wallet**          | [`wallet create`](#wallet-create)                                            | Create a new encrypted wallet file                         |
+|                     | [`wallet encrypt`](#wallet-encrypt)                                          | Encrypt a wallet using a private key                       |
+|                     | [`wallet decrypt`](#wallet-decrypt)                                          | Decrypt an encrypted wallet file                           |
 | **Title Escrow**    | [`transfer-holder`](#title-escrow-transfer-holder)                           | Transfer document holder                                   |
 |                     | `title-escrow transfer-holder`                                               | Alternative: `transfer-holder`                             |
 |                     | [`nominate-transfer-owner`](#title-escrow-nominate-transfer-owner)           | Nominate new beneficiary                                   |
@@ -486,6 +502,165 @@ trustvc mint
 
 # Or with prefix
 trustvc token-registry mint
+```
+
+</details>
+
+<details>
+<summary><h4 id="wallet-create">wallet create</h4></summary>
+
+Creates a new encrypted wallet file with a randomly generated private key.
+
+**Usage:**
+
+```sh
+trustvc wallet create
+```
+
+**Interactive Prompts:**
+
+- Enter wallet password (with confirmation)
+- Specify output directory for the encrypted wallet file
+
+**Output:**
+
+Creates `wallet.json` containing the encrypted wallet in the specified directory.
+
+**Important Information Displayed:**
+
+- Wallet address
+- Mnemonic phrase (12-word recovery phrase)
+- Security warnings about password and mnemonic storage
+
+**Security Notes:**
+
+- Store your password securely - it cannot be recovered if lost
+- Save your mnemonic phrase in a safe place - it can be used to recover your wallet
+- Never share your encrypted wallet file or mnemonic phrase publicly
+
+**Example Output:**
+
+```
+✔ Wallet created and encrypted successfully
+ℹ Saved to: ./wallet.json
+
+ℹ Wallet Address: 0x1234567890abcdef1234567890abcdef12345678
+ℹ Mnemonic Phrase: word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12
+
+⚠ IMPORTANT: Store your password and mnemonic phrase securely!
+⚠ IMPORTANT: Never share this file or your mnemonic phrase publicly!
+⚠ IMPORTANT: If you lose your password, you will not be able to recover your wallet!
+```
+
+</details>
+
+<details>
+<summary><h4 id="wallet-encrypt">wallet encrypt</h4></summary>
+
+Encrypts an existing private key into a secure wallet file.
+
+**Usage:**
+
+```sh
+trustvc wallet encrypt
+```
+
+**Interactive Prompts:**
+
+- Enter your private key (with or without 0x prefix)
+- Enter wallet password (with confirmation)
+- Specify output directory for the encrypted wallet file
+
+**Output:**
+
+Creates `wallet.json` containing the encrypted wallet in the specified directory.
+
+**Important Information Displayed:**
+
+- Wallet address derived from the private key
+- Security warnings about password storage
+
+**Security Notes:**
+
+- Your private key is encrypted using the password you provide
+- The original private key is not stored - only the encrypted version
+- Store your password securely - it cannot be recovered if lost
+- Never share your encrypted wallet file or private key publicly
+
+**Use Cases:**
+
+- Secure storage of an existing private key
+- Converting a plain private key to an encrypted format
+- Creating a portable encrypted wallet for use with the CLI
+
+**Example Output:**
+
+```
+✔ Wallet encrypted and saved successfully
+ℹ Saved to: ./wallet.json
+
+ℹ Wallet Address: 0x1234567890abcdef1234567890abcdef12345678
+
+⚠ IMPORTANT: Store your password securely!
+⚠ IMPORTANT: Never share this file or your private key publicly!
+⚠ IMPORTANT: If you lose your password, you will not be able to recover your wallet!
+```
+
+</details>
+
+<details>
+<summary><h4 id="wallet-decrypt">wallet decrypt</h4></summary>
+
+Decrypts an encrypted wallet file and displays the private key and mnemonic phrase.
+
+**Usage:**
+
+```sh
+trustvc wallet decrypt
+```
+
+**Interactive Prompts:**
+
+- Path to encrypted wallet JSON file
+- Enter wallet password
+- Security confirmation (you must acknowledge the risks)
+
+**Output:**
+
+Displays the decrypted wallet information:
+
+- Wallet address
+- Private key
+- Mnemonic phrase (if available)
+
+**Security Warnings:**
+
+⚠️ **CRITICAL SECURITY NOTICE:**
+
+- This command reveals your private key in plain text
+- Anyone with your private key has full control of your wallet
+- Never share your private key or mnemonic phrase with anyone
+- Clear your terminal history after using this command
+- Only use this command in a secure, private environment
+
+**Use Cases:**
+
+- Recovering your private key from an encrypted wallet
+- Exporting your wallet to another application
+- Verifying wallet contents before use
+
+**Example Output:**
+
+```
+⚠️ You are about to reveal the private key of your wallet.
+? Do you understand the risks and want to proceed? Yes
+
+ℹ Wallet Address: 0x1234567890abcdef1234567890abcdef12345678
+ℹ Private Key: 0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890
+ℹ Mnemonic Phrase: word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12
+
+⚠ IMPORTANT: Never share your private key or mnemonic phrase with anyone!
+⚠ IMPORTANT: Store this information securely and delete it from your terminal history!
 ```
 
 </details>
@@ -871,6 +1046,10 @@ src/commands/
 │   ├── reject-transfer-holder.ts    # Reject holder transfer
 │   ├── reject-transfer-owner.ts     # Reject owner transfer
 │   └── reject-transfer-owner-holder.ts  # Reject full transfer
+├── wallet/
+│   ├── create.ts                    # Create encrypted wallet
+│   ├── encrypt.ts                   # Encrypt private key to wallet
+│   └── decrypt.ts                   # Decrypt wallet file
 └── w3c/
     ├── did.ts                       # Generate DID
     ├── key-pair.ts                  # Generate key pairs

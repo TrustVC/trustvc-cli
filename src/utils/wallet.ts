@@ -10,6 +10,7 @@ import {
   PrivateKeyOption,
   RpcUrlOption,
   WalletOrSignerOption,
+  WalletOption,
 } from './cli-options';
 import { readFile } from './file-io';
 import inquirer from 'inquirer';
@@ -44,7 +45,7 @@ export const getWalletOrSigner = async ({
   ...options
 }: WalletOrSignerOption &
   Partial<NetworkOption> &
-  Partial<RpcUrlOption> & { progress?: (progress: number) => void }): Promise<
+  Partial<RpcUrlOption> & { progress?: (progress: number) => void; password?: string }): Promise<
   Wallet | HDNodeWallet | ConnectedSigner
 > => {
   // Use custom RPC URL if provided, otherwise use the default network provider
@@ -52,15 +53,23 @@ export const getWalletOrSigner = async ({
     ? new JsonRpcProvider(options.rpcUrl)
     : getSupportedNetwork(network ?? 'mainnet').provider();
   if (isWalletOption(options)) {
-    const { password } = await inquirer.prompt({
-      type: 'password',
-      name: 'password',
-      message: 'Wallet password',
-    });
+    // Use provided password from options or prompt for it
+    let password: string;
+    const optionsWithPassword = options as WalletOption & { password?: string };
+    if (optionsWithPassword.password) {
+      password = optionsWithPassword.password;
+    } else {
+      const result = await inquirer.prompt({
+        type: 'password',
+        name: 'password',
+        message: 'Wallet password',
+      });
+      password = result.password;
+    }
 
     const file = await readFile(options.encryptedWalletPath);
     const wallet = await Wallet.fromEncryptedJson(file, password, progress);
-    signale.info('Wallet successfully decrypted');
+    signale.success('Wallet successfully decrypted');
     const connectedWallet = wallet.connect(provider);
     return connectedWallet as Wallet | HDNodeWallet;
   }

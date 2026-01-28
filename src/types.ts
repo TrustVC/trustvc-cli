@@ -101,3 +101,17 @@ export type TitleEscrowEndorseTransferOfOwnersCommand = BaseTitleEscrowCommand &
 export type TitleEscrowNominateBeneficiaryCommand = BaseTitleEscrowCommand & {
   newBeneficiary: string;
 };
+
+export type EncryptWalletCommand = PrivateKeyOption & {
+  outputFile: string;
+};
+
+export interface CreateWalletCommand {
+  outputFile: string;
+  fund?: string;
+}
+
+export interface DecryptWalletCommand {
+  inputFile: string;
+  yes: boolean;
+}

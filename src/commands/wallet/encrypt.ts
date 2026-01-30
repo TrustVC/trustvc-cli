@@ -59,7 +59,7 @@ export const promptQuestions = async () => {
   let isDirectory = false;
   try {
     isDirectory = fs.lstatSync(normalizedPath).isDirectory();
-  } catch (e) {
+  } catch (_e) {
     // Path doesn't exist, check if it's a .json file path
   }
 
@@ -91,7 +91,9 @@ export const encryptAndSaveWallet = async (
   let isDirectory = false;
   try {
     isDirectory = fs.lstatSync(normalizedPath).isDirectory();
-  } catch (e) {}
+  } catch (_e) {
+    // Path doesn't exist yet, that's okay
+  }
 
   if (isDirectory) {
     // If it's a directory (including current directory), create wallet.json inside it

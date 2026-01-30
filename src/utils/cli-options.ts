@@ -623,7 +623,7 @@ export const checkAndPromptOverwrite = async (walletFilePath: string): Promise<v
         }
         signale.default.info('Overwriting existing wallet...');
       }
-    } catch (error) {
+    } catch (_error) {
       // If file exists but can't be parsed as JSON or doesn't have wallet structure, proceed
       signale.default.warn(
         `File ${walletFilePath} exists but doesn't appear to be a valid wallet file.`,

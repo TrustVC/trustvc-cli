@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encryptAndSaveWallet } from '../../src/commands/wallet/encrypt';
-import tmp from 'tmp';
 import fs from 'fs';
+import path from 'path';
+import tmp from 'tmp';
 import { Wallet } from 'ethers';
 
 vi.mock('signale', async (importOriginal) => {
@@ -29,12 +30,12 @@ vi.mock('../../src/utils', async (importOriginal) => {
   const originalUtils = await importOriginal<typeof import('../../src/utils')>();
   return {
     ...originalUtils,
-    writeFile: vi.fn((path: string, data: any) => {
-      const dir = require('path').dirname(path);
+    writeFile: vi.fn((filePath: string, data: any) => {
+      const dir = path.dirname(filePath);
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
-      fs.writeFileSync(path, JSON.stringify(data, null, 2));
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     }),
     highlight: vi.fn((text: string) => text),
     progress: vi.fn(() => () => {}),

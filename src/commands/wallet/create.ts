@@ -1,6 +1,5 @@
 import { Wallet } from 'ethers';
 import signale from 'signale';
-import fs from 'fs';
 import {
   isDirectoryValid,
   progress,
@@ -8,6 +7,7 @@ import {
   promptOutputDirectory,
   promptWalletPassword,
   checkAndPromptOverwrite,
+  isDir,
 } from '../../utils';
 
 export const command = 'create';
@@ -37,22 +37,15 @@ export const promptQuestions = async () => {
     !walletPath || walletPath.trim() === '' || walletPath === '.' ? '.' : walletPath;
 
   // Validate: must be either an existing directory or a path ending with .json
-  let isDirectory = false;
-  try {
-    isDirectory = fs.lstatSync(normalizedPath).isDirectory();
-  } catch (_e) {
-    // Path doesn't exist, check if it's a .json file path
-  }
-
   const isJsonFilePath = normalizedPath.toLowerCase().endsWith('.json');
 
-  if (!isDirectory && !isJsonFilePath) {
+  if (!isDir(normalizedPath) && !isJsonFilePath) {
     throw new Error(
       `Invalid path: ${normalizedPath}. Please provide either a directory path or a file path ending with .json`,
     );
   }
 
-  if (isDirectory && !isDirectoryValid(normalizedPath)) {
+  if (isDir(normalizedPath) && !isDirectoryValid(normalizedPath)) {
     throw new Error(`Invalid directory path provided: ${normalizedPath}`);
   }
 
@@ -65,14 +58,7 @@ export const generateAndSaveWallet = async (walletPassword: string, walletPath: 
   const normalizedPath = !walletPath || walletPath.trim() === '' ? '.' : walletPath;
 
   // Check if path is a directory
-  let isDirectory = false;
-  try {
-    isDirectory = fs.lstatSync(normalizedPath).isDirectory();
-  } catch (_e) {
-    // Path doesn't exist yet, that's okay
-  }
-
-  if (isDirectory) {
+  if (isDir(normalizedPath)) {
     // If it's a directory (including current directory), create wallet.json inside it
     walletFilePath = normalizedPath === '.' ? 'wallet.json' : `${normalizedPath}/wallet.json`;
   } else if (normalizedPath.toLowerCase().endsWith('.json')) {

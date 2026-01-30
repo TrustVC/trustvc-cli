@@ -1,7 +1,6 @@
 import { input } from '@inquirer/prompts';
 import { Wallet } from 'ethers';
 import signale from 'signale';
-import fs from 'fs';
 import {
   highlight,
   isDirectoryValid,
@@ -10,6 +9,7 @@ import {
   promptOutputDirectory,
   promptWalletPassword,
   checkAndPromptOverwrite,
+  isDir,
 } from '../../utils';
 
 export const command = 'encrypt';
@@ -56,13 +56,7 @@ export const promptQuestions = async () => {
     !walletPath || walletPath.trim() === '' || walletPath === '.' ? '.' : walletPath;
 
   // Validate: must be either an existing directory or a path ending with .json
-  let isDirectory = false;
-  try {
-    isDirectory = fs.lstatSync(normalizedPath).isDirectory();
-  } catch (_e) {
-    // Path doesn't exist, check if it's a .json file path
-  }
-
+  const isDirectory = isDir(normalizedPath);
   const isJsonFilePath = normalizedPath.toLowerCase().endsWith('.json');
 
   if (!isDirectory && !isJsonFilePath) {
@@ -88,14 +82,7 @@ export const encryptAndSaveWallet = async (
   const normalizedPath = !walletPath || walletPath.trim() === '' ? '.' : walletPath;
 
   // Check if path is a directory
-  let isDirectory = false;
-  try {
-    isDirectory = fs.lstatSync(normalizedPath).isDirectory();
-  } catch (_e) {
-    // Path doesn't exist yet, that's okay
-  }
-
-  if (isDirectory) {
+  if (isDir(normalizedPath)) {
     // If it's a directory (including current directory), create wallet.json inside it
     walletFilePath = normalizedPath === '.' ? 'wallet.json' : `${normalizedPath}/wallet.json`;
   } else if (normalizedPath.toLowerCase().endsWith('.json')) {

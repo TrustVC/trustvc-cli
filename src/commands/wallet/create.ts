@@ -1,11 +1,13 @@
 import { Wallet } from 'ethers';
 import signale from 'signale';
+import fs from 'fs';
 import {
   isDirectoryValid,
   progress,
   writeFile,
   promptOutputDirectory,
   promptWalletPassword,
+  checkAndPromptOverwrite,
 } from '../../utils';
 
 export const command = 'create';
@@ -27,28 +29,70 @@ export const promptQuestions = async () => {
   // Prompt for wallet password with confirmation
   const walletPassword = await promptWalletPassword();
 
-  // Prompt for output directory
+  // Prompt for output directory or file path
   const walletPath = await promptOutputDirectory('encrypted wallet');
 
-  if (!isDirectoryValid(walletPath)) {
-    throw new Error(`Invalid directory path provided: ${walletPath}`);
+  // Normalize empty input or '.' to current directory
+  const normalizedPath =
+    !walletPath || walletPath.trim() === '' || walletPath === '.' ? '.' : walletPath;
+
+  // Validate: must be either an existing directory or a path ending with .json
+  let isDirectory = false;
+  try {
+    isDirectory = fs.lstatSync(normalizedPath).isDirectory();
+  } catch (e) {}
+
+  const isJsonFilePath = normalizedPath.toLowerCase().endsWith('.json');
+
+  if (!isDirectory && !isJsonFilePath) {
+    throw new Error(
+      `Invalid path: ${normalizedPath}. Please provide either a directory path or a file path ending with .json`,
+    );
   }
 
-  return { walletPassword, walletPath };
+  if (isDirectory && !isDirectoryValid(normalizedPath)) {
+    throw new Error(`Invalid directory path provided: ${normalizedPath}`);
+  }
+
+  return { walletPassword, walletPath: normalizedPath };
 };
 
 export const generateAndSaveWallet = async (walletPassword: string, walletPath: string) => {
+  // Determine the final file path first
+  let walletFilePath: string;
+  const normalizedPath = !walletPath || walletPath.trim() === '' ? '.' : walletPath;
+
+  // Check if path is a directory
+  let isDirectory = false;
+  try {
+    isDirectory = fs.lstatSync(normalizedPath).isDirectory();
+  } catch (e) {
+    // Path doesn't exist yet, that's okay
+  }
+
+  if (isDirectory) {
+    // If it's a directory (including current directory), create wallet.json inside it
+    walletFilePath = normalizedPath === '.' ? 'wallet.json' : `${normalizedPath}/wallet.json`;
+  } else if (normalizedPath.toLowerCase().endsWith('.json')) {
+    // If it's a .json file path, use it directly
+    walletFilePath = normalizedPath;
+  } else {
+    throw new Error(
+      `Invalid path: ${normalizedPath}. Please provide either a directory path or a file path ending with .json`,
+    );
+  }
+
+  // Check if file already exists and prompt for overwrite if needed
+  await checkAndPromptOverwrite(walletFilePath);
+
+  // Only proceed with wallet generation and encryption after confirmation
   signale.info('Generating new wallet...');
 
   // Create a random wallet
   const wallet = Wallet.createRandom();
 
-  signale.info('Encrypting wallet...');
-
   // Encrypt the wallet with the provided password
   const encryptedJson = await wallet.encrypt(walletPassword, progress('Encrypting wallet..'));
-
-  const walletFilePath = `${walletPath}/wallet.json`;
 
   // Write the encrypted wallet to file
   writeFile(walletFilePath, JSON.parse(encryptedJson), true);

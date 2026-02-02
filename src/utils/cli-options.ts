@@ -591,3 +591,43 @@ export const promptWalletPassword = async (): Promise<string> => {
 
   return walletPassword;
 };
+
+/**
+ * Checks if a wallet file already exists and prompts for overwrite confirmation.
+ * If the file exists and contains valid wallet data, prompts the user to confirm overwrite.
+ * If user declines, exits the process.
+ * @param walletFilePath - The path to the wallet file to check
+ * @returns Promise<void>
+ */
+export const checkAndPromptOverwrite = async (walletFilePath: string): Promise<void> => {
+  const fs = await import('fs');
+  const signale = await import('signale');
+
+  // Check if file already exists and contains wallet data
+  if (fs.existsSync(walletFilePath)) {
+    try {
+      const existingContent = fs.readFileSync(walletFilePath, 'utf-8');
+      const existingData = JSON.parse(existingContent);
+
+      // Check if it looks like a wallet file (has address and Crypto fields)
+      if (existingData.address && existingData.Crypto) {
+        signale.default.warn(`File ${walletFilePath} already contains an existing wallet.`);
+        const shouldOverwrite = await confirm({
+          message: 'Do you want to overwrite the existing wallet?',
+          default: false,
+        });
+
+        if (!shouldOverwrite) {
+          signale.default.info('Operation cancelled. Wallet not created.');
+          process.exit(0);
+        }
+        signale.default.info('Overwriting existing wallet...');
+      }
+    } catch (_error) {
+      // If file exists but can't be parsed as JSON or doesn't have wallet structure, proceed
+      signale.default.warn(
+        `File ${walletFilePath} exists but doesn't appear to be a valid wallet file.`,
+      );
+    }
+  }
+};

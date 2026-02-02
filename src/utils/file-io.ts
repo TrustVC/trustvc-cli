@@ -10,8 +10,7 @@ export const isFile = (path: fs.PathLike): boolean => {
   try {
     const stat = fs.lstatSync(path);
     return stat.isFile();
-  } catch (e) {
-    console.error(e);
+  } catch (_e) {
     return false;
   }
 };
@@ -20,8 +19,7 @@ export const isDir = (path: fs.PathLike): boolean => {
   try {
     const stat = fs.lstatSync(path);
     return stat.isDirectory();
-  } catch (e) {
-    console.error(e);
+  } catch (_e) {
     return false;
   }
 };
@@ -97,6 +95,12 @@ export const writeOutput = ({
 
 export const writeFile = <T>(filePath: string, data: T, silent = false) => {
   try {
+    // Ensure parent directory exists
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
     if (!silent) {
       signale.success(`Saved: ${filePath}`);

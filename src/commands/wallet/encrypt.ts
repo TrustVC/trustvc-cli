@@ -8,6 +8,8 @@ import {
   progress as defaultProgress,
   promptOutputDirectory,
   promptWalletPassword,
+  checkAndPromptOverwrite,
+  isDir,
 } from '../../utils';
 
 export const command = 'encrypt';
@@ -46,14 +48,28 @@ export const promptQuestions = async () => {
   // Prompt for wallet password with confirmation
   const walletPassword = await promptWalletPassword();
 
-  // Prompt for output directory
+  // Prompt for output directory or file path
   const walletPath = await promptOutputDirectory('encrypted wallet');
 
-  if (!isDirectoryValid(walletPath)) {
-    throw new Error(`Invalid directory path provided: ${walletPath}`);
+  // Normalize empty input or '.' to current directory
+  const normalizedPath =
+    !walletPath || walletPath.trim() === '' || walletPath === '.' ? '.' : walletPath;
+
+  // Validate: must be either an existing directory or a path ending with .json
+  const isDirectory = isDir(normalizedPath);
+  const isJsonFilePath = normalizedPath.toLowerCase().endsWith('.json');
+
+  if (!isDirectory && !isJsonFilePath) {
+    throw new Error(
+      `Invalid path: ${normalizedPath}. Please provide either a directory path or a file path ending with .json`,
+    );
   }
 
-  return { privateKey, walletPassword, walletPath };
+  if (isDirectory && !isDirectoryValid(normalizedPath)) {
+    throw new Error(`Invalid directory path provided: ${normalizedPath}`);
+  }
+
+  return { privateKey, walletPassword, walletPath: normalizedPath };
 };
 
 export const encryptAndSaveWallet = async (
@@ -61,17 +77,34 @@ export const encryptAndSaveWallet = async (
   walletPassword: string,
   walletPath: string,
 ) => {
+  // Determine the final file path first
+  let walletFilePath: string;
+  const normalizedPath = !walletPath || walletPath.trim() === '' ? '.' : walletPath;
+
+  // Check if path is a directory
+  if (isDir(normalizedPath)) {
+    // If it's a directory (including current directory), create wallet.json inside it
+    walletFilePath = normalizedPath === '.' ? 'wallet.json' : `${normalizedPath}/wallet.json`;
+  } else if (normalizedPath.toLowerCase().endsWith('.json')) {
+    // If it's a .json file path, use it directly
+    walletFilePath = normalizedPath;
+  } else {
+    throw new Error(
+      `Invalid path: ${normalizedPath}. Please provide either a directory path or a file path ending with .json`,
+    );
+  }
+
+  // Check if file already exists and prompt for overwrite if needed
+  await checkAndPromptOverwrite(walletFilePath);
+
+  // Only proceed with wallet creation and encryption after confirmation
   signale.info('Creating wallet from private key...');
 
   // Create wallet from private key
   const wallet = new Wallet(privateKey);
 
-  signale.info('Encrypting wallet...');
-
   // Encrypt the wallet with the provided password
   const encryptedJson = await wallet.encrypt(walletPassword, defaultProgress('Encrypting Wallet'));
-
-  const walletFilePath = `${walletPath}/wallet.json`;
 
   // Write the encrypted wallet to file
   writeFile(walletFilePath, JSON.parse(encryptedJson), true);

@@ -146,21 +146,33 @@ export const getResultFromFragment = (
   fragmentType: FragmentType,
   resultFragments: VerificationFragment[],
 ): VerificationFragmentWithData => {
-  const fragment = resultFragments.find(
+  const candidates = resultFragments.filter(
     (fragment: VerificationFragment) =>
       fragment.type === fragmentType && fragment.status !== 'SKIPPED',
   );
-  if (!fragment) {
+
+  if (candidates.length === 0) {
     throw new Error(`${fragmentType} could not be verified.`);
   }
-  return fragment as VerificationFragmentWithData;
+
+  const findByStatus = (status: string) =>
+    candidates.find((fragment: VerificationFragment) => fragment.status === status);
+
+  const preferred =
+    findByStatus('VALID') || findByStatus('INVALID') || findByStatus('ERROR') || candidates[0];
+
+  return preferred as VerificationFragmentWithData;
 };
 
 export const logResultStatus = (fragment: VerificationFragmentWithData): void => {
   if (fragment.status === 'VALID') {
     signale.success(`${fragment.type}: ${fragment.status}`);
+  } else if (fragment.status === 'ERROR') {
+    signale.error(`${fragment.type}: ${fragment.status} - An error has occurred.`);
   } else {
-    signale.warn(`${fragment.type}: ${fragment.status} [${fragment.reason.message}]`);
+    const reasonMessage = (fragment as any)?.reason?.message;
+    const message = reasonMessage ? reasonMessage : 'Verification failed.';
+    signale.warn(`${fragment.type}: ${fragment.status} - ${message}`);
   }
 };
 

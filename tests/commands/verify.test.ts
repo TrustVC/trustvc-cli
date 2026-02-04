@@ -327,7 +327,9 @@ describe('verify', () => {
 
       expect(prompts.select).toHaveBeenCalled();
       expect(signaleSuccessMock).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
-      expect(signaleErrorMock).toHaveBeenCalledWith('DOCUMENT_STATUS: ERROR - An error has occurred.');
+      expect(signaleErrorMock).toHaveBeenCalledWith(
+        'DOCUMENT_STATUS: ERROR - An error has occurred.',
+      );
     });
   });
 });

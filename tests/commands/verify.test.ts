@@ -40,10 +40,12 @@ describe('verify', () => {
   describe('helper functions', () => {
     let signaleSuccessMock: MockedFunction<any>;
     let signaleWarnMock: MockedFunction<any>;
+    let signaleErrorMock: MockedFunction<any>;
 
     beforeEach(async () => {
       const signale = await import('signale');
       signaleSuccessMock = (signale.default as any).success;
+      signaleErrorMock = (signale.default as any).error;
       signaleWarnMock = (signale.default as any).warn;
 
       // Mock the interactive network selection prompt for ethereum mainnet for oa_dns_txt_docstore_no_network_field.json
@@ -73,6 +75,34 @@ describe('verify', () => {
           'ISSUER_IDENTITY could not be verified.',
         );
       });
+
+      it('should prefer VALID over INVALID/ERROR when multiple non-SKIPPED fragments exist', () => {
+        const fragments: any[] = [
+          {
+            type: FragmentType.DOCUMENT_STATUS,
+            status: 'INVALID',
+            reason: { message: 'Revoked' },
+          },
+          { type: FragmentType.DOCUMENT_STATUS, status: 'VALID' },
+        ];
+
+        const fragment = getResultFromFragment(FragmentType.DOCUMENT_STATUS, fragments as any);
+        expect(fragment).toMatchObject({ type: FragmentType.DOCUMENT_STATUS, status: 'VALID' });
+      });
+
+      it('should prefer INVALID over ERROR when no VALID fragment exists', () => {
+        const fragments: any[] = [
+          { type: FragmentType.DOCUMENT_STATUS, status: 'ERROR' },
+          {
+            type: FragmentType.DOCUMENT_STATUS,
+            status: 'INVALID',
+            reason: { message: 'Revoked' },
+          },
+        ];
+
+        const fragment = getResultFromFragment(FragmentType.DOCUMENT_STATUS, fragments as any);
+        expect(fragment).toMatchObject({ type: FragmentType.DOCUMENT_STATUS, status: 'INVALID' });
+      });
     });
 
     describe('logResultStatus', () => {
@@ -82,14 +112,39 @@ describe('verify', () => {
         expect(signaleWarnMock).not.toHaveBeenCalled();
       });
 
-      it('should log warning when fragment status is not VALID', () => {
+      it('should log error when fragment status is ERROR', () => {
+        logResultStatus({ type: 'DOCUMENT_STATUS', status: 'ERROR' } as any);
+        expect(signaleErrorMock).toHaveBeenCalledWith(
+          'DOCUMENT_STATUS: ERROR - An error has occurred.',
+        );
+      });
+
+      it('should log warning when fragment status is not VALID and not ERROR', () => {
         logResultStatus({
           type: 'DOCUMENT_STATUS',
           status: 'INVALID',
           reason: { message: 'Revoked' },
         } as any);
 
-        expect(signaleWarnMock).toHaveBeenCalledWith('DOCUMENT_STATUS: INVALID [Revoked]');
+        expect(signaleWarnMock).toHaveBeenCalledWith('DOCUMENT_STATUS: INVALID - Revoked');
+      });
+
+      it('should log generic warning when fragment status is not VALID/ERROR and reason is missing', () => {
+        logResultStatus({ type: 'DOCUMENT_STATUS', status: 'INVALID' } as any);
+        expect(signaleWarnMock).toHaveBeenCalledWith(
+          'DOCUMENT_STATUS: INVALID - Verification failed.',
+        );
+      });
+
+      it('should not include reason message for ERROR fragments (generic error message)', () => {
+        logResultStatus({
+          type: 'DOCUMENT_STATUS',
+          status: 'ERROR',
+          reason: { message: 'Some low-level error' },
+        } as any);
+        expect(signaleErrorMock).toHaveBeenCalledWith(
+          'DOCUMENT_STATUS: ERROR - An error has occurred.',
+        );
       });
     });
 
@@ -102,6 +157,20 @@ describe('verify', () => {
       it('should not log when there is no expiration warning', () => {
         handleExpiredCredentialWarning([['Some other warning']]);
         expect(signaleWarnMock).not.toHaveBeenCalled();
+      });
+
+      it('should not log when warnings array is empty', () => {
+        handleExpiredCredentialWarning([]);
+        expect(signaleWarnMock).not.toHaveBeenCalled();
+      });
+
+      it('should log when expiration warning exists among other warnings', () => {
+        handleExpiredCredentialWarning([
+          ['Some other warning'],
+          ['Credential has expired.'],
+          ['Another warning'],
+        ]);
+        expect(signaleWarnMock).toHaveBeenCalledWith('The document credential has expired.');
       });
     });
   });
@@ -140,6 +209,7 @@ describe('verify', () => {
   describe('verify', () => {
     let signaleSuccessMock: MockedFunction<any>;
     let signaleWarnMock: MockedFunction<any>;
+    let signaleErrorMock: MockedFunction<any>;
 
     // Helper function to list all JSON fixture files in a directory recursively
     const listVerifyFixturePathsRecursively = (dir: string): string[] => {
@@ -165,6 +235,7 @@ describe('verify', () => {
     beforeEach(async () => {
       const signale = await import('signale');
       signaleSuccessMock = (signale.default as any).success;
+      signaleErrorMock = (signale.default as any).error;
       signaleWarnMock = (signale.default as any).warn;
     });
 
@@ -185,11 +256,21 @@ describe('verify', () => {
       const utils = await import('../../src/utils');
       const signedVC = utils.readJsonFile<SignedVerifiableCredential>(filePath, 'document');
 
+      const baseName = path.basename(filePath).toLowerCase();
+      if (baseName.includes('no_network_field')) {
+        if (baseName === 'oa_dns_txt_token_registry_no_network_field_stability_v3.json') {
+          (prompts.select as any).mockResolvedValueOnce('stability');
+        } else if (baseName === 'oa_dns_txt_docstore_no_network_field_ethereum_v2.json') {
+          (prompts.select as any).mockResolvedValueOnce('mainnet');
+        } else {
+          (prompts.select as any).mockResolvedValueOnce('mainnet');
+        }
+      }
+
       await verify(signedVC);
 
       // Ensure "no network info" OA fixture triggers the network selection.
       // Other fixtures that have network info should not trigger the network selection.
-      const baseName = path.basename(filePath).toLowerCase();
       if (baseName.includes('no_network_field')) {
         expect(prompts.select).toHaveBeenCalled();
       } else {
@@ -198,11 +279,13 @@ describe('verify', () => {
 
       const successCalls = signaleSuccessMock.mock.calls ?? [];
       const warnCalls = signaleWarnMock.mock.calls ?? [];
+      const errorCalls = signaleErrorMock.mock.calls ?? [];
 
       const successMessages = successCalls.map((call: any[]) => call[0]);
       const warnMessages = warnCalls.map((call: any[]) => call[0]);
+      const errorMessages = errorCalls.map((call: any[]) => call[0]);
 
-      const combinedMessages = [...successMessages, ...warnMessages];
+      const combinedMessages = [...successMessages, ...warnMessages, ...errorMessages];
 
       expect(combinedMessages.join('\n')).toContain('DOCUMENT_INTEGRITY:');
       expect(combinedMessages.join('\n')).toContain('ISSUER_IDENTITY:');
@@ -211,7 +294,7 @@ describe('verify', () => {
       if (expectedWarning === 'revoked') {
         expect(warnMessages.length).toBeGreaterThan(0);
         expect(warnMessages.join('\n')).toContain(
-          'DOCUMENT_STATUS: INVALID [Document has been revoked.]',
+          'DOCUMENT_STATUS: INVALID - Document has been revoked.',
         );
       }
 
@@ -229,6 +312,24 @@ describe('verify', () => {
           ]),
         );
       }
+    });
+
+    it('should handle wrong network selection when no network info is found and user is prompted to select a network', async () => {
+      (prompts.select as any).mockResolvedValueOnce('mainnet'); // Deliberately select wrong network
+      const utils = await import('../../src/utils');
+      const filePath = path.resolve(
+        process.cwd(),
+        'tests/fixtures/verify/oa/3.0/oa_dns_txt_token_registry_no_network_field_stability_v3.json',
+      );
+      const signedVC = utils.readJsonFile<SignedVerifiableCredential>(filePath, 'document');
+
+      await expect(verify(signedVC)).resolves.toBeUndefined();
+
+      expect(prompts.select).toHaveBeenCalled();
+      expect(signaleSuccessMock).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
+      expect(signaleErrorMock).toHaveBeenCalledWith(
+        'DOCUMENT_STATUS: ERROR - An error has occurred.',
+      );
     });
   });
 });

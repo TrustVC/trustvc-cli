@@ -1,16 +1,18 @@
 // External dependencies
-import { BytesLike, Wallet, HDNodeWallet, ZeroAddress, Provider } from 'ethers';
+import { BytesLike, Wallet, HDNodeWallet, ZeroAddress, Provider, Signer } from 'ethers';
 import signale from 'signale';
 import {
   v5Contracts,
   checkSupportsInterface,
   v4SupportInterfaceIds,
   v5SupportInterfaceIds,
+  DocumentStore__factory,
 } from '@trustvc/trustvc';
 import { encrypt } from '@trustvc/trustvc';
 
 // Internal utilities
 import { ConnectedSigner } from '../utils';
+import { AnyCnameRecord } from 'dns';
 
 // Contract factories from TrustVC v5
 const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
@@ -18,7 +20,7 @@ const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
 // Interface for connectToTokenRegistry function arguments
 interface ConnectToTokenRegistryArgs {
   address: string;
-  wallet: Wallet | HDNodeWallet | ConnectedSigner;
+  wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
 }
 
 /**
@@ -58,7 +60,7 @@ export const connectToTokenRegistry = async ({
 interface ConnectToTitleEscrowArgs {
   tokenId: string;
   address: string;
-  wallet: Wallet | HDNodeWallet | ConnectedSigner;
+  wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
 }
 
 /**
@@ -96,7 +98,6 @@ export const connectToTitleEscrow = async ({
     // Connect to the title escrow contract
     signale.info(`Connecting to title escrow at: ${titleEscrowAddress}`);
     const titleEscrow = TitleEscrow__factory.connect(titleEscrowAddress, wallet);
-    console.log(titleEscrow.tr);
 
     // Validate the connection was successful
     if (!titleEscrow) {
@@ -113,6 +114,40 @@ export const connectToTitleEscrow = async ({
     );
     throw error;
   }
+};
+
+interface ConnectToDocumentStoreArgs {
+  address: string;
+  wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
+}
+export const connectToDocumentStore = async ({
+  address,
+  wallet,
+}: ConnectToDocumentStoreArgs): Promise<ReturnType<typeof DocumentStore__factory.connect>> => {
+  try {
+    // Connect to the document store contract
+    signale.info(`Connecting to document store at: ${address}`);
+    const documentStore = DocumentStore__factory.connect(address, wallet);
+
+    // Validate the connection was successful
+    if (!documentStore) {
+      const error = `Failed to connect to document store at address: ${address}`;
+      signale.error(error);
+      throw new Error(error);
+    }
+
+    signale.success(`Successfully connected to document store`);
+    return documentStore;
+  } catch (error) {
+    signale.error(
+      `Error in connectToDocumentStore: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
+  }
+};
+
+export const connectToDocumentStoreFactory = async () => {
+  return new DocumentStore__factory();
 };
 
 // Interface for validateEndorseChangeOwner function arguments
@@ -320,3 +355,19 @@ export const getTokenRegistryVersion = async (
     );
   }
 };
+
+export async function waitForTransaction(tx: any | string, provider: Provider, confirmations = 1) {
+  // Check if tx has .wait() method (ethers v6 style)
+  if (typeof tx.wait === 'function') {
+    return await tx.wait(confirmations);
+  }
+
+  // Check if it's just a hash string
+  if (typeof tx === 'string') {
+    // You'll need access to a provider
+    if (provider) {
+      return await provider.waitForTransaction(tx, confirmations);
+    }
+    throw new Error('Provider required for transaction hash');
+  }
+}

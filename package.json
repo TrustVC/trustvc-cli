@@ -34,10 +34,10 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^5.3.8",
-    "@trustvc/trustvc": "^2.6.0",
+    "@trustvc/trustvc": "^2.8.0",
     "@types/yargs": "^17.0.32",
     "chalk": "^4.1.2",
-    "ethers": "^6.16.0",
+    "ethers": "^6.15.0",
     "inquirer": "^13.1.0",
     "node-fetch": "^3.3.2",
     "signale": "^1.4.0",

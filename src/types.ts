@@ -115,3 +115,9 @@ export interface DecryptWalletCommand {
   inputFile: string;
   yes: boolean;
 }
+
+export type DocumentStoreIssueCommand = NetworkAndWalletSignerOption &
+  GasPriceScale & {
+    documentStoreAddress: string;
+    documentHash: string;
+  };

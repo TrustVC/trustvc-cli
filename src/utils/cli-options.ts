@@ -9,7 +9,13 @@ import {
   CHAIN_ID,
 } from './networks';
 import { readDocumentFile } from './file-io';
-import { getTokenRegistryAddress, getTokenId, getChainId } from '@trustvc/trustvc';
+import {
+  getTokenRegistryAddress,
+  getTokenId,
+  getChainId,
+  getDocumentStoreRecords,
+  getIssuerAddress,
+} from '@trustvc/trustvc';
 import fs from 'fs';
 import { getTokenRegistryVersion } from '../commands/helpers';
 import { getErrorMessage } from './index';
@@ -350,6 +356,55 @@ export const promptAndReadDocument = async (): Promise<any> => {
   return document;
 };
 
+function extractValue(input: string) {
+  if (!input || typeof input !== 'string') return null;
+
+  const parts = input.split(':string:');
+
+  // If format is "uuid:string:value"
+  if (parts.length >= 2) return parts[1].trim();
+
+  // If input is already the value
+  return input.trim();
+}
+
+export const extractOADocumentInfo = async (
+  document: any,
+): Promise<{
+  documentStoreAddress: string;
+  tokenId: string;
+  network: string;
+}> => {
+  const documentStoreAddress = getTokenRegistryAddress(document);
+
+  // const documentStoreAddress = extractValue(document.data.issuers[0].revocation.location);
+  const tokenId = '0x' + document.signature.targetHash;
+  const chainId = getChainId(document);
+
+  if (!documentStoreAddress) {
+    throw new Error('Document does not contain a valid document store address');
+  }
+
+  if (!tokenId) {
+    throw new Error('Document does not contain a valid token ID');
+  }
+
+  if (!chainId) {
+    throw new Error('Document does not contain a valid chain ID');
+  }
+  const network = SUPPORTED_CHAINS[chainId].name;
+  info(`Extracted from document:`);
+  info(`  Network: ${network} (Chain ID: ${chainId})`);
+  info(`  Document Store Address: ${documentStoreAddress}`);
+  info(`  Token ID: ${tokenId}`);
+
+  return {
+    documentStoreAddress,
+    tokenId,
+    network,
+  };
+};
+
 /**
  * Prompts for document file path, extracts and displays document information.
  * @returns An object containing the document, tokenRegistry, tokenId, network, documentId, and registryVersion
@@ -378,7 +433,6 @@ export const extractDocumentInfo = async (
       `Failed to extract document information: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
-
   // Validate extracted values
   if (!tokenRegistry) {
     throw new Error('Document does not contain a valid token registry address');

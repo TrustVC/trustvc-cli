@@ -10,6 +10,7 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **W3C Verifiable Credentials**: Sign, verify and manage W3C verifiable credentials
 - ✅ **OpenAttestation**: Sign, verify and wrap/unwrap OpenAttestation v2/v3 documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
+- ✅ **Document Store**: Deploy and manage document store contracts
 - ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
 - ✅ **Credential Status**: Create and update W3C credential status lists
 - ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
@@ -104,6 +105,19 @@ trustvc wallet encrypt
 trustvc wallet decrypt
 ```
 
+### Document Store
+
+```sh
+# Deploy a document store contract
+trustvc document-store deploy
+
+# Issue a document hash to the store
+trustvc document-store issue
+
+# Revoke a document hash from the store
+trustvc document-store revoke
+```
+
 ### Token Registry & Title Escrow
 
 ```sh
@@ -163,6 +177,8 @@ trustvc title-escrow reject-transfer-owner-holder
 
 - **Token Registry**: Uses `mint` to mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
 
+- **Document Store**: Uses `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed document store contracts.
+
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
 
 ## Commands
@@ -183,6 +199,9 @@ trustvc title-escrow reject-transfer-owner-holder
 |                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
 | **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
 |                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
+| **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
+|                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
+|                     | [`document-store revoke`](#document-store-revoke)                            | Revoke document hashes                                     |
 | **Wallet**          | [`wallet create`](#wallet-create)                                            | Create a new encrypted wallet file                         |
 |                     | [`wallet encrypt`](#wallet-encrypt)                                          | Encrypt a wallet using a private key                       |
 |                     | [`wallet decrypt`](#wallet-decrypt)                                          | Decrypt an encrypted wallet file                           |
@@ -210,7 +229,7 @@ trustvc title-escrow reject-transfer-owner-holder
 
 ### Wallet/Private Key Options
 
-All title-escrow and token registry commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
+All title-escrow, token registry, and document-store commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
 
 **Select wallet/private key option:**
 
@@ -503,6 +522,79 @@ trustvc mint
 # Or with prefix
 trustvc token-registry mint
 ```
+
+</details>
+
+<details>
+<summary><h4 id="document-store-deploy">document-store deploy</h4></summary>
+
+Deploys a document store contract on the blockchain.
+
+**Usage:**
+
+```sh
+trustvc document-store deploy
+```
+
+**Interactive Prompts:**
+
+- Enter the name of the document store
+- Select network
+- Enter owner address (optional, defaults to deployer address)
+- Wallet/private key option
+
+**Output:**
+Transaction receipt with contract address, hash, block number, gas used, and explorer link.
+
+**Supported Networks:**
+
+- Ethereum (Mainnet, Sepolia)
+- Polygon (Mainnet, Amoy Testnet)
+- XDC Network (Mainnet, Apothem Testnet)
+- Stability (Mainnet, Testnet)
+- Astron (Mainnet, Testnet)
+
+</details>
+
+<details>
+<summary><h4 id="document-store-issue">document-store issue</h4></summary>
+
+Issues a document hash to a deployed document store.
+
+**Usage:**
+
+```sh
+trustvc document-store issue
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (extracts store address, token ID, network)
+- Wallet/private key option
+
+**Output:**
+Transaction receipt confirming the hash issuance.
+
+</details>
+
+<details>
+<summary><h4 id="document-store-revoke">document-store revoke</h4></summary>
+
+Revokes a document hash from a deployed document store.
+
+**Usage:**
+
+```sh
+trustvc document-store revoke
+```
+
+**Interactive Prompts:**
+
+- Path to TT/JSON document file (extracts store address, token ID, network)
+- Wallet/private key option
+
+**Output:**
+Transaction receipt confirming the hash revocation.
 
 </details>
 
@@ -1035,6 +1127,10 @@ src/commands/
 │   └── unwrap.ts                    # Unwrap OpenAttestation documents
 ├── token-registry/
 │   └── mint.ts                      # Mint tokens to registry
+├── document-store/
+│   ├── deploy.ts                    # Deploy document store contracts
+│   ├── issue.ts                     # Issue document hashes
+│   └── revoke.ts                    # Revoke document hashes
 ├── title-escrow/
 │   ├── transfer-holder.ts           # Transfer holder
 │   ├── nominate-transfer-owner.ts   # Nominate beneficiary

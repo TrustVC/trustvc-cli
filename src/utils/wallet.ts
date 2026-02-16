@@ -46,7 +46,7 @@ export const getWalletOrSigner = async ({
 }: WalletOrSignerOption &
   Partial<NetworkOption> &
   Partial<RpcUrlOption> & { progress?: (progress: number) => void; password?: string }): Promise<
-  Wallet | HDNodeWallet | ConnectedSigner
+  Signer | Wallet | ConnectedSigner | HDNodeWallet
 > => {
   // Use custom RPC URL if provided, otherwise use the default network provider
   const provider = isRpcUrlOption(options)
@@ -71,7 +71,7 @@ export const getWalletOrSigner = async ({
     const wallet = await Wallet.fromEncryptedJson(file, password, progress);
     signale.success('Wallet successfully decrypted');
     const connectedWallet = wallet.connect(provider);
-    return connectedWallet as Wallet | HDNodeWallet;
+    return connectedWallet;
   }
   //  else if (isAwsKmsSignerOption(options)) {
   //   const kmsCredentials = {

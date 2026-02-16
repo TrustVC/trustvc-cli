@@ -9,13 +9,7 @@ import {
   CHAIN_ID,
 } from './networks';
 import { readDocumentFile } from './file-io';
-import {
-  getTokenRegistryAddress,
-  getTokenId,
-  getChainId,
-  getDocumentStoreRecords,
-  getIssuerAddress,
-} from '@trustvc/trustvc';
+import { getTokenRegistryAddress, getTokenId, getChainId } from '@trustvc/trustvc';
 import fs from 'fs';
 import { getTokenRegistryVersion } from '../commands/helpers';
 import { getErrorMessage } from './index';
@@ -355,18 +349,6 @@ export const promptAndReadDocument = async (): Promise<any> => {
 
   return document;
 };
-
-function extractValue(input: string) {
-  if (!input || typeof input !== 'string') return null;
-
-  const parts = input.split(':string:');
-
-  // If format is "uuid:string:value"
-  if (parts.length >= 2) return parts[1].trim();
-
-  // If input is already the value
-  return input.trim();
-}
 
 export const extractOADocumentInfo = async (
   document: any,

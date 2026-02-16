@@ -12,7 +12,6 @@ import { encrypt } from '@trustvc/trustvc';
 
 // Internal utilities
 import { ConnectedSigner } from '../utils';
-import { AnyCnameRecord } from 'dns';
 
 // Contract factories from TrustVC v5
 const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;

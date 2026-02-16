@@ -13,7 +13,7 @@ import {
   getSupportedNetwork,
   performDryRunWithConfirmation,
 } from '../../utils';
-import { connectToDocumentStore, connectToDocumentStoreFactory } from '../helpers';
+import { connectToDocumentStoreFactory } from '../helpers';
 import { TransactionReceipt } from 'ethers';
 
 export const command = 'deploy';

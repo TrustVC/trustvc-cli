@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock modules first to avoid hoisting issues
 vi.mock('signale', async (importOriginal) => {

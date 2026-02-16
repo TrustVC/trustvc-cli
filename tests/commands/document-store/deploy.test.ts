@@ -83,15 +83,6 @@ import { getWalletOrSigner } from '../../../src/utils';
 describe('document-store/deploy', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
-    // let getWalletOrSignerMock: MockedFunction<any>;
-
-    // const walletModule = await import('../../../src/utils/wallet');
-    // getWalletOrSignerMock = walletModule.getWalletOrSigner as MockedFunction<any>;
-
-    // // Setup wallet mock
-    // getWalletOrSignerMock.mockResolvedValue({
-    //   provider: {},
-    // });
   });
 
   describe('promptForInputs', () => {

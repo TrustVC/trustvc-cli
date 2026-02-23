@@ -33,7 +33,10 @@ vi.mock('../../../src/utils', async () => {
 
 const TEST_KEY = 'test-decryption-key-32-bytes-long-hex!!';
 // Resolve fixture from project root so tests work regardless of cwd when run via npm test
-const OA_FIXTURE_PATH = path.resolve(process.cwd(), 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json');
+const OA_FIXTURE_PATH = path.resolve(
+  process.cwd(),
+  'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json',
+);
 
 describe('oa-decrypt', () => {
   beforeEach(() => {

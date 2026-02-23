@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, MockedFunction, vi } from 
 import { handler, promptForInputs } from '../../../src/commands/oa/encrypt';
 
 // Resolve fixture from project root so tests work regardless of cwd when run via npm test
-const FIXTURE_DOC = path.resolve(process.cwd(), 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json');
+const FIXTURE_DOC = path.resolve(
+  process.cwd(),
+  'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json',
+);
 const TEST_KEY = 'my-secret-encryption-key';
 
 vi.mock('signale', () => ({
@@ -89,7 +92,9 @@ describe('oa-encrypt', () => {
       expect(payload).toHaveProperty('type', 'encrypted-document');
       expect(payload).toHaveProperty('ciphertext');
       expect(typeof payload.ciphertext).toBe('string');
-      expect(successMock).toHaveBeenCalledWith('Encrypted document saved to: ./tmp-encrypted-out.json');
+      expect(successMock).toHaveBeenCalledWith(
+        'Encrypted document saved to: ./tmp-encrypted-out.json',
+      );
       expect(warnMock).toHaveBeenCalledWith(
         'Remember the encryption key you entered — you will need it to decrypt.',
       );

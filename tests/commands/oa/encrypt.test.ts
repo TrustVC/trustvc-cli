@@ -41,6 +41,7 @@ describe('oa-encrypt', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetAllMocks();
+    process.exitCode = undefined;
   });
 
   afterEach(() => {
@@ -133,7 +134,7 @@ describe('oa-encrypt', () => {
       expect(documentString).toStrictEqual(originalContent);
     });
 
-    it('should call signale.error and rethrow when readFile throws', async () => {
+    it('should log a friendly error and set exitCode when readFile throws', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
 
@@ -148,8 +149,36 @@ describe('oa-encrypt', () => {
         throw new Error('File not found');
       });
 
-      await expect(handler()).rejects.toThrow('File not found');
+      await handler();
+
       expect(errorMock).toHaveBeenCalledWith('File not found');
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('should show a file-not-found message when underlying error is ENOENT', async () => {
+      const utils = await import('../../../src/utils');
+      const signale = await import('signale');
+
+      (prompts.input as MockedFunction<any>)
+        .mockResolvedValueOnce('/nonexistent.json')
+        .mockResolvedValueOnce('./out.json');
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+
+      const readMock = utils.readFile as MockedFunction<any>;
+      const errorMock = (signale.default as any).error as MockedFunction<any>;
+      readMock.mockImplementationOnce(() => {
+        const err: NodeJS.ErrnoException = new Error('ENOENT') as NodeJS.ErrnoException;
+        err.code = 'ENOENT';
+        err.path = '/nonexistent.json';
+        throw err;
+      });
+
+      await handler();
+
+      expect(errorMock).toHaveBeenCalledWith(
+        'Unable to read input document. File not found at: /nonexistent.json',
+      );
+      expect(process.exitCode).toBe(1);
     });
   });
 });

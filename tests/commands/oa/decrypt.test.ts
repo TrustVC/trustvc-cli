@@ -41,6 +41,7 @@ describe('oa-decrypt', () => {
     vi.clearAllMocks();
     vi.resetAllMocks();
     vi.spyOn(fs, 'writeFileSync');
+    process.exitCode = undefined;
   });
 
   afterEach(() => {
@@ -114,7 +115,7 @@ describe('oa-decrypt', () => {
       expect(fs.writeFileSync).toHaveBeenCalledWith('./decrypted.json', documentString, 'utf8');
     });
 
-    it('should throw when encrypted payload has wrong type', async () => {
+    it('should log a clear error and set exitCode when encrypted payload has wrong type', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
 
@@ -127,13 +128,15 @@ describe('oa-decrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      await expect(handler()).rejects.toThrow(
+      await handler();
+
+      expect(errorMock).toHaveBeenCalledWith(
         'Invalid encrypted document: expected cipherText, iv, tag and type "OPEN-ATTESTATION-TYPE-1".',
       );
-      expect(errorMock).toHaveBeenCalled();
+      expect(process.exitCode).toBe(1);
     });
 
-    it('should throw when encrypted payload is missing cipherText', async () => {
+    it('should log a clear error and set exitCode when encrypted payload is missing cipherText', async () => {
       const utils = await import('../../../src/utils');
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       readMock.mockReturnValue({ type: 'OPEN-ATTESTATION-TYPE-1' });
@@ -143,12 +146,12 @@ describe('oa-decrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      await expect(handler()).rejects.toThrow(
-        'Invalid encrypted document: expected cipherText, iv, tag and type "OPEN-ATTESTATION-TYPE-1".',
-      );
+      await handler();
+
+      expect(process.exitCode).toBe(1);
     });
 
-    it('should throw when key is wrong', async () => {
+    it('should log a friendly error and set exitCode when key is wrong', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
       const actualUtils =
@@ -166,11 +169,15 @@ describe('oa-decrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce('wrong-key');
 
-      await expect(handler()).rejects.toThrow('Error decrypting message');
-      expect(errorMock).toHaveBeenCalled();
+      await handler();
+
+      expect(errorMock).toHaveBeenCalledWith(
+        'Failed to decrypt document. The password/key is likely incorrect or the file is corrupted.',
+      );
+      expect(process.exitCode).toBe(1);
     });
 
-    it('should call signale.error and rethrow when readDocumentFile throws', async () => {
+    it('should log a friendly error and set exitCode when readDocumentFile throws', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
 
@@ -185,8 +192,36 @@ describe('oa-decrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      await expect(handler()).rejects.toThrow('File not found');
+      await handler();
+
       expect(errorMock).toHaveBeenCalledWith('File not found');
+      expect(process.exitCode).toBe(1);
+    });
+
+    it('should show a file-not-found message when underlying error is ENOENT', async () => {
+      const utils = await import('../../../src/utils');
+      const signale = await import('signale');
+
+      const readMock = utils.readDocumentFile as MockedFunction<any>;
+      const errorMock = (signale.default as any).error as MockedFunction<any>;
+      readMock.mockImplementationOnce(() => {
+        const err: NodeJS.ErrnoException = new Error('ENOENT') as NodeJS.ErrnoException;
+        err.code = 'ENOENT';
+        err.path = '/nonexistent.json';
+        throw err;
+      });
+
+      (prompts.input as MockedFunction<any>)
+        .mockResolvedValueOnce('/nonexistent.json')
+        .mockResolvedValueOnce('./out.json');
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+
+      await handler();
+
+      expect(errorMock).toHaveBeenCalledWith(
+        'Unable to read encrypted document. File not found at: /nonexistent.json',
+      );
+      expect(process.exitCode).toBe(1);
     });
   });
 });

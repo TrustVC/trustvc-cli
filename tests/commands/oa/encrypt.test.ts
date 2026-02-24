@@ -32,7 +32,7 @@ vi.mock('../../../src/utils', async () => {
   const actual = await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
   return {
     ...actual,
-    readDocumentFile: vi.fn(),
+    readFile: vi.fn(),
     writeFile: vi.fn(),
   };
 });
@@ -65,7 +65,7 @@ describe('oa-encrypt', () => {
   });
 
   describe('handler', () => {
-    it('should read OA document, encrypt with prompted key, and write encrypted payload', async () => {
+    it('should read document, encrypt with prompted key, and write encrypted payload', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
       const actualUtils =
@@ -76,12 +76,12 @@ describe('oa-encrypt', () => {
         .mockResolvedValueOnce('./tmp-encrypted-out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      const readMock = utils.readDocumentFile as MockedFunction<any>;
+      const readMock = utils.readFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
       const warnMock = (signale.default as any).warn as MockedFunction<any>;
 
-      readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
+      readMock.mockImplementation(actualUtils.readFile as unknown as any);
 
       await handler();
 
@@ -89,9 +89,11 @@ describe('oa-encrypt', () => {
       expect(writeMock).toHaveBeenCalledTimes(1);
       const [writtenPath, payload] = writeMock.mock.calls[0];
       expect(writtenPath).toBe('./tmp-encrypted-out.json');
-      expect(payload).toHaveProperty('type', 'encrypted-document');
-      expect(payload).toHaveProperty('ciphertext');
-      expect(typeof payload.ciphertext).toBe('string');
+      expect(payload).toHaveProperty('type', 'OPEN-ATTESTATION-TYPE-1');
+      expect(payload).toHaveProperty('cipherText');
+      expect(payload).toHaveProperty('iv');
+      expect(payload).toHaveProperty('tag');
+      expect(typeof payload.cipherText).toBe('string');
       expect(successMock).toHaveBeenCalledWith(
         'Encrypted document saved to: ./tmp-encrypted-out.json',
       );
@@ -102,7 +104,8 @@ describe('oa-encrypt', () => {
 
     it('should produce ciphertext decryptable with the key entered by user', async () => {
       const utils = await import('../../../src/utils');
-      const trustvc = await import('@trustvc/trustvc');
+      const { decryptString } = await import('@trustvc/trustvc');
+      const crypto = await import('crypto');
       const actualUtils =
         await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
 
@@ -111,39 +114,26 @@ describe('oa-encrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      const readMock = utils.readDocumentFile as MockedFunction<any>;
+      const readMock = utils.readFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
-      readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
+      readMock.mockImplementation(actualUtils.readFile as unknown as any);
 
       await handler();
 
       const payload = writeMock.mock.calls[0][1];
-      const documentString = trustvc.decrypt(payload.ciphertext, TEST_KEY);
-      const document = JSON.parse(documentString);
-      const original = actualUtils.readDocumentFile(FIXTURE_DOC);
-      expect(document).toStrictEqual(original);
+      const derivedKey = crypto.createHash('sha256').update(TEST_KEY, 'utf8').digest('hex');
+      const documentString = decryptString({
+        cipherText: payload.cipherText,
+        iv: payload.iv,
+        tag: payload.tag,
+        key: derivedKey,
+        type: payload.type,
+      });
+      const originalContent = actualUtils.readFile(FIXTURE_DOC);
+      expect(documentString).toStrictEqual(originalContent);
     });
 
-    it('should throw when document is not a valid Open Attestation document', async () => {
-      const utils = await import('../../../src/utils');
-      const signale = await import('signale');
-
-      (prompts.input as MockedFunction<any>)
-        .mockResolvedValueOnce('./not-oa.json')
-        .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
-
-      const readMock = utils.readDocumentFile as MockedFunction<any>;
-      const errorMock = (signale.default as any).error as MockedFunction<any>;
-      readMock.mockReturnValue({ foo: 'bar', notOA: true });
-
-      await expect(handler()).rejects.toThrow(
-        'The document is not a valid Open Attestation document. Expected raw OA v2/v3 or wrapped OA v2/v3.',
-      );
-      expect(errorMock).toHaveBeenCalled();
-    });
-
-    it('should call signale.error and rethrow when readDocumentFile throws', async () => {
+    it('should call signale.error and rethrow when readFile throws', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
 
@@ -152,7 +142,7 @@ describe('oa-encrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      const readMock = utils.readDocumentFile as MockedFunction<any>;
+      const readMock = utils.readFile as MockedFunction<any>;
       const errorMock = (signale.default as any).error as MockedFunction<any>;
       readMock.mockImplementationOnce(() => {
         throw new Error('File not found');

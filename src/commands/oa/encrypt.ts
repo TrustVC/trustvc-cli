@@ -1,17 +1,16 @@
 import { input, password } from '@inquirer/prompts';
+import crypto from 'crypto';
 import signale from 'signale';
-import {
-  encrypt,
-  isRawV2Document,
-  isRawV3Document,
-  isWrappedV2Document,
-  isWrappedV3Document,
-} from '@trustvc/trustvc';
-import { readDocumentFile, writeFile } from '../../utils';
+import { encryptString } from '@trustvc/trustvc';
+import { readFile, writeFile } from '../../utils';
+
+/** Derive a 64-char hex key from passphrase for AES-256 (OPEN-ATTESTATION-TYPE-1). */
+const deriveKey = (passphrase: string): string =>
+  crypto.createHash('sha256').update(passphrase, 'utf8').digest('hex');
 
 export const command = 'oa-encrypt';
 export const describe =
-  'Encrypt an Open Attestation document for safe sharing and storage. You will be asked for an encryption key — remember it to decrypt later.';
+  'Encrypt a document for safe sharing and storage. You will be asked for an encryption key — remember it to decrypt later.';
 
 type EncryptInput = {
   inputDocumentPath: string;
@@ -19,17 +18,9 @@ type EncryptInput = {
   key: string;
 };
 
-const ENCRYPTED_DOCUMENT_TYPE = 'encrypted-document';
-
-const isOADocument = (doc: unknown): boolean =>
-  isRawV2Document(doc) ||
-  isRawV3Document(doc) ||
-  isWrappedV2Document(doc) ||
-  isWrappedV3Document(doc);
-
 export const promptForInputs = async (): Promise<EncryptInput | null> => {
   const inputDocumentPath = await input({
-    message: 'Enter the path to your Open Attestation document:',
+    message: 'Enter the path to your document:',
     required: true,
     validate: (value: string) => {
       if (!value || value.trim() === '') return 'Document path is required';
@@ -69,21 +60,10 @@ export const handler = async (): Promise<void> => {
 
     const { inputDocumentPath, outputEncryptedPath, key } = answers;
 
-    const document = readDocumentFile(inputDocumentPath);
-    if (!isOADocument(document)) {
-      throw new Error(
-        'The document is not a valid Open Attestation document. Expected raw OA v2/v3 or wrapped OA v2/v3.',
-      );
-    }
-    const documentString = JSON.stringify(document);
-
-    const ciphertext = encrypt(documentString, key);
-
-    const encryptedPayload = {
-      type: ENCRYPTED_DOCUMENT_TYPE,
-      ciphertext,
-    };
-
+    const documentString = readFile(inputDocumentPath);
+    const { cipherText, iv, tag, type } = encryptString(documentString, deriveKey(key));
+    
+    const encryptedPayload = { cipherText, iv, tag, type };
     writeFile(outputEncryptedPath, encryptedPayload, true);
     signale.success(`Encrypted document saved to: ${outputEncryptedPath}`);
     signale.warn('Remember the encryption key you entered — you will need it to decrypt.');

@@ -19,7 +19,7 @@ import {
   promptRemark,
   performDryRunWithConfirmation,
 } from '../../utils';
-import { validateAndEncryptRemark } from '../helpers';
+import { connectToTokenRegistry, validateAndEncryptRemark } from '../helpers';
 
 const { TradeTrustToken__factory } = v5Contracts;
 
@@ -142,10 +142,10 @@ export const acceptReturned = async ({
     network,
     getTransactionCallback: async () => {
       // Connect to the token registry contract instance
-      const tokenRegistryInstance = await TradeTrustToken__factory.connect(
-        tokenRegistryAddress,
+      const tokenRegistryInstance = await connectToTokenRegistry({
+        address: tokenRegistryAddress,
         wallet,
-      );
+      });
 
       // Validate and encrypt the remark if encryption key is provided
       const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);

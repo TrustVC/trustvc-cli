@@ -2,7 +2,14 @@ import { input, password } from '@inquirer/prompts';
 import crypto from 'crypto';
 import signale from 'signale';
 import { encryptString } from '@trustvc/trustvc';
-import { readFile, writeFile, getCliErrorMessage } from '../../utils';
+import {
+  readFile,
+  writeFile,
+  getCliErrorMessage,
+  ensureInputFileExists,
+  resolveOutputJsonPath,
+  validateInputFileExists,
+} from '../../utils';
 
 /** Derive a 64-char hex key from passphrase for AES-256 (OPEN-ATTESTATION-TYPE-1). */
 const deriveKey = (passphrase: string): string =>
@@ -24,7 +31,7 @@ export const promptForInputs = async (): Promise<EncryptInput | null> => {
     required: true,
     validate: (value: string) => {
       if (!value || value.trim() === '') return 'Document path is required';
-      return true;
+      return validateInputFileExists(value);
     },
   });
 
@@ -63,13 +70,19 @@ const ENCRYPT_ERROR_OPTIONS = {
 async function runEncrypt(answers: EncryptInput): Promise<void> {
   const { inputDocumentPath, outputEncryptedPath, key } = answers;
 
+  ensureInputFileExists(inputDocumentPath);
   const documentString = readFile(inputDocumentPath);
   const { cipherText, iv, tag, type } = encryptString(documentString, deriveKey(key));
 
   const encryptedPayload = { cipherText, iv, tag, type };
-  writeFile(outputEncryptedPath, encryptedPayload, true);
+  const { path: outputPath, generated } = resolveOutputJsonPath(outputEncryptedPath, 'encrypted');
+  writeFile(outputPath, encryptedPayload, true);
 
-  signale.success(`Encrypted document saved to: ${outputEncryptedPath}`);
+  if (generated) {
+    signale.success(`No output filename provided. Encrypted document saved to: ${outputPath}`);
+  } else {
+    signale.success(`Encrypted document saved to: ${outputPath}`);
+  }
   signale.warn('Remember the encryption key you entered — you will need it to decrypt.');
 }
 

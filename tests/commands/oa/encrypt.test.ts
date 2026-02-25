@@ -34,6 +34,9 @@ vi.mock('../../../src/utils', async () => {
     ...actual,
     readFile: vi.fn(),
     writeFile: vi.fn(),
+    ensureInputFileExists: vi.fn(),
+    validateInputFileExists: vi.fn().mockReturnValue(true),
+    resolveOutputJsonPath: (givenPath: string) => ({ path: givenPath, generated: false }),
   };
 });
 
@@ -143,19 +146,20 @@ describe('oa-encrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      const readMock = utils.readFile as MockedFunction<any>;
-      const errorMock = (signale.default as any).error as MockedFunction<any>;
-      readMock.mockImplementationOnce(() => {
-        throw new Error('File not found');
+      const ensureMock = utils.ensureInputFileExists as MockedFunction<any>;
+      ensureMock.mockImplementationOnce(() => {
+        throw new Error('File not found: /nonexistent.json');
       });
+
+      const errorMock = (signale.default as any).error as MockedFunction<any>;
 
       await handler();
 
-      expect(errorMock).toHaveBeenCalledWith('File not found');
+      expect(errorMock).toHaveBeenCalledWith('File not found: /nonexistent.json');
       expect(process.exitCode).toBe(1);
     });
 
-    it('should show a file-not-found message when underlying error is ENOENT', async () => {
+    it('should show a file-not-found message when input file does not exist', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
 
@@ -164,20 +168,15 @@ describe('oa-encrypt', () => {
         .mockResolvedValueOnce('./out.json');
       (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
-      const readMock = utils.readFile as MockedFunction<any>;
+      const ensureMock = utils.ensureInputFileExists as MockedFunction<any>;
       const errorMock = (signale.default as any).error as MockedFunction<any>;
-      readMock.mockImplementationOnce(() => {
-        const err: NodeJS.ErrnoException = new Error('ENOENT') as NodeJS.ErrnoException;
-        err.code = 'ENOENT';
-        err.path = '/nonexistent.json';
-        throw err;
+      ensureMock.mockImplementationOnce(() => {
+        throw new Error('File not found: /nonexistent.json');
       });
 
       await handler();
 
-      expect(errorMock).toHaveBeenCalledWith(
-        'Unable to read input document. File not found at: /nonexistent.json',
-      );
+      expect(errorMock).toHaveBeenCalledWith('File not found: /nonexistent.json');
       expect(process.exitCode).toBe(1);
     });
   });

@@ -26,7 +26,13 @@ vi.mock('@inquirer/prompts', () => ({
 
 vi.mock('../../../src/utils', async () => {
   const actual = await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
-  return { ...actual, readDocumentFile: vi.fn() };
+  return {
+    ...actual,
+    readDocumentFile: vi.fn(),
+    ensureInputFileExists: vi.fn(),
+    validateInputFileExists: vi.fn().mockReturnValue(true),
+    resolveOutputJsonPath: (givenPath: string) => ({ path: givenPath, generated: false }),
+  };
 });
 
 const TEST_KEY = 'test-decryption-key-32-bytes-long-hex!!';

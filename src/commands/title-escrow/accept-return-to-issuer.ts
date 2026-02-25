@@ -1,7 +1,7 @@
 import { error, success, info } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
-import { v5Contracts, CHAIN_ID, acceptReturned as acceptReturnedImpl } from '@trustvc/trustvc';
+import { CHAIN_ID, acceptReturned as acceptReturnedImpl } from '@trustvc/trustvc';
 import { BaseTitleEscrowCommand as TitleEscrowReturnDocumentCommand } from '../../types';
 import {
   displayTransactionPrice,

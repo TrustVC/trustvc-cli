@@ -1,7 +1,7 @@
 import { error, success, info } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
-import { v5Contracts, CHAIN_ID, rejectReturned as rejectReturnedImpl } from '@trustvc/trustvc';
+import { CHAIN_ID, rejectReturned as rejectReturnedImpl } from '@trustvc/trustvc';
 import { BaseTitleEscrowCommand as TitleEscrowReturnDocumentCommand } from '../../types';
 import {
   displayTransactionPrice,
@@ -20,8 +20,6 @@ import {
   performDryRunWithConfirmation,
 } from '../../utils';
 import { connectToTokenRegistry, validateAndEncryptRemark } from '../helpers';
-
-const { TradeTrustToken__factory } = v5Contracts;
 
 export const command = 'reject-return-to-issuer';
 

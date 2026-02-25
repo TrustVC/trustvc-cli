@@ -1,4 +1,3 @@
-import { TransactionReceipt } from 'ethers';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import {
   handler,
@@ -233,7 +232,9 @@ describe('token-registry/deploy', () => {
       const result = await promptForInputs();
 
       expect(result.registryName).toBe(mockInputs.registryName);
-      expect((result as any).key).toBe('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80');
+      expect((result as any).key).toBe(
+        '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+      );
     });
 
     it('should validate registry name is required', async () => {
@@ -503,7 +504,7 @@ describe('token-registry/deploy', () => {
       expect(exitSpy).toHaveBeenCalledWith(0);
 
       exitSpy.mockRestore();
-      
+
       // Reset the mock back to true for other tests
       (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
     });
@@ -519,10 +520,12 @@ describe('token-registry/deploy', () => {
 
       const utils = await import('../../../src/utils');
       let capturedCallback: any;
-      (utils.performDryRunWithConfirmation as any).mockImplementation(async ({ getTransactionCallback }: any) => {
-        capturedCallback = getTransactionCallback;
-        return true;
-      });
+      (utils.performDryRunWithConfirmation as any).mockImplementation(
+        async ({ getTransactionCallback }: any) => {
+          capturedCallback = getTransactionCallback;
+          return true;
+        },
+      );
 
       const helpersModule = await import('../../../src/commands/helpers');
       const mockFactory = {
@@ -562,10 +565,12 @@ describe('token-registry/deploy', () => {
 
       const utils = await import('../../../src/utils');
       let capturedCallback: any;
-      (utils.performDryRunWithConfirmation as any).mockImplementation(async ({ getTransactionCallback }: any) => {
-        capturedCallback = getTransactionCallback;
-        return true;
-      });
+      (utils.performDryRunWithConfirmation as any).mockImplementation(
+        async ({ getTransactionCallback }: any) => {
+          capturedCallback = getTransactionCallback;
+          return true;
+        },
+      );
 
       const helpersModule = await import('../../../src/commands/helpers');
       const mockDeployer = {

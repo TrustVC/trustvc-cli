@@ -21,8 +21,6 @@ import {
 } from '../../utils';
 import { connectToTokenRegistry, validateAndEncryptRemark } from '../helpers';
 
-const { TradeTrustToken__factory } = v5Contracts;
-
 export const command = 'accept-return-to-issuer';
 
 export const describe = 'Accepts a returned transferable record on the blockchain';

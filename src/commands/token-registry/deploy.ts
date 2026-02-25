@@ -9,7 +9,6 @@ import {
   promptWalletSelection,
   promptNetworkSelection,
   getWalletOrSigner,
-  TransactionReceiptFees,
   getSupportedNetwork,
   performDryRunWithConfirmation,
   promptAddress,

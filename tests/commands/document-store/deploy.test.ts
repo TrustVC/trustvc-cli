@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock modules first to avoid hoisting issues
 vi.mock('signale', async (importOriginal) => {
   const originalSignale = await importOriginal<typeof import('signale')>();
   return {
@@ -24,20 +23,6 @@ vi.mock('@trustvc/trustvc', async (importOriginal) => {
   return {
     ...actual,
     deployDocumentStore: vi.fn(),
-    CHAIN_ID: {
-      mainnet: 1,
-      sepolia: 11155111,
-    },
-    SUPPORTED_CHAINS: {
-      11155111: {
-        name: 'sepolia',
-        chain: 'ETH',
-        network: 'sepolia',
-        rpc: ['https://sepolia.infura.io/v3/'],
-        nativeCurrency: { name: 'Sepolia Ether', symbol: 'SEP', decimals: 18 },
-        infoURL: 'https://sepolia.etherscan.io',
-      },
-    },
   };
 });
 

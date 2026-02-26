@@ -485,7 +485,11 @@ export const promptRemark = async (registryVersion: string): Promise<string | un
  * @param description - Optional additional description (e.g., 'initial recipient', 'initial holder')
  * @returns The validated Ethereum address
  */
-export const promptAddress = async (role: string, description?: string): Promise<string> => {
+export const promptAddress = async (
+  role: string,
+  description?: string,
+  optional?: boolean,
+): Promise<string | undefined> => {
   const roleCapitalized = role.charAt(0).toUpperCase() + role.slice(1);
   const messageText = description
     ? `Enter the address of the ${role} (${description}):`
@@ -493,9 +497,11 @@ export const promptAddress = async (role: string, description?: string): Promise
 
   const address = await input({
     message: messageText,
-    required: true,
+    required: optional ? false : true,
     validate: (value: string) => {
-      if (!value || value.trim() === '') {
+      if (optional && (!value || value.trim() === '')) {
+        return true;
+      } else if (!value || value.trim() === '') {
         return `${roleCapitalized} address is required`;
       }
       if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
@@ -504,6 +510,11 @@ export const promptAddress = async (role: string, description?: string): Promise
       return true;
     },
   });
+
+  // Return undefined for empty strings when optional
+  if (optional && (!address || address.trim() === '')) {
+    return undefined;
+  }
 
   return address;
 };

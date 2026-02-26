@@ -124,6 +124,9 @@ trustvc document-store revoke
 # Mint a token to a registry
 trustvc mint
 
+# Deploy a token registry contract
+trustvc token-registry deploy
+
 # Transfer document holder
 trustvc title-escrow transfer-holder
 
@@ -175,9 +178,9 @@ trustvc title-escrow reject-transfer-owner-holder
 
 ### Blockchain Operations
 
-- **Token Registry**: Uses `mint` to mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
+- **Token Registry**: Deploy token registry contracts and mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
 
-- **Document Store**: Uses `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed document store contracts.
+- **Document Store**: Deploy document store contracts and use `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed contracts.
 
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
 

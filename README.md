@@ -8,7 +8,7 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
 - ✅ **W3C Verifiable Credentials**: Sign, verify and manage W3C verifiable credentials
-- ✅ **OpenAttestation**: Sign, verify and wrap/unwrap OpenAttestation v2/v3 documents
+- ✅ **OpenAttestation**: Sign, verify, wrap/unwrap, and encrypt/decrypt OpenAttestation v2/v3 documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Document Store**: Deploy and manage document store contracts
 - ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
@@ -90,6 +90,12 @@ trustvc oa-wrap
 
 # Unwrap an OpenAttestation document
 trustvc oa-unwrap
+
+# Encrypt an Open Attestation document for safe sharing
+trustvc oa-encrypt
+
+# Decrypt an encrypted Open Attestation document
+trustvc oa-decrypt
 ```
 
 ### Wallet Management
@@ -176,6 +182,8 @@ trustvc title-escrow reject-transfer-owner-holder
 
 - **Document Unwrapping**: Uses `unwrapOA` to unwrap OpenAttestation documents.
 
+- **Document Encryption**: Uses `oa-encrypt` to encrypt OA documents for safe sharing; use `oa-decrypt` with the same key to recover the document.
+
 ### Blockchain Operations
 
 - **Token Registry**: Deploy token registry contracts and mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
@@ -200,7 +208,10 @@ trustvc title-escrow reject-transfer-owner-holder
 |                     | [`verify`](#verify)                                                          | Verify OpenAttestation documents                           |
 |                     | [`oa-wrap`](#oa-wrap)                                                        | Wrap OpenAttestation documents                             |
 |                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
-| **Token Registry**  | [`token-registry deploy`](#token-registry-deploy)                            | Deploy token registry contracts                            |
+|                     | [`oa-encrypt`](#oa-encrypt)                                                  | Encrypt an OA document for safe sharing and storage        |
+|                     | [`oa-decrypt`](#oa-decrypt)                                                  | Decrypt an OA document encrypted with oa-encrypt           |
+| **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
+|                     | [`token-registry deploy`](#token-registry-deploy)                            | Deploy token registry contracts                            |
 |                     | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
 |                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
 | **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
@@ -476,6 +487,57 @@ Unwrapped OpenAttestation document(s) in the specified directory.
 
 - OpenAttestation v2
 - OpenAttestation v3
+
+</details>
+
+<details>
+<summary><h4 id="oa-encrypt">oa-encrypt</h4></summary>
+
+Encrypts an Open Attestation document for safe sharing and storage. You will be prompted for an encryption key — remember it to decrypt later.
+
+**Usage:**
+
+```sh
+trustvc oa-encrypt
+```
+
+**Interactive Prompts:**
+
+- Path to your Open Attestation document (raw or wrapped OA v2/v3)
+- Path for the output encrypted file
+- Encryption key (entered securely; not echoed)
+
+**Output:**
+
+Writes an encrypted document file containing `type: "encrypted-document"` and a `ciphertext` field. Only someone with the same key can decrypt it with `oa-decrypt`.
+
+**Supported Input:**
+
+- OpenAttestation v2 (raw or wrapped)
+- OpenAttestation v3 (raw or wrapped)
+
+</details>
+
+<details>
+<summary><h4 id="oa-decrypt">oa-decrypt</h4></summary>
+
+Decrypts an Open Attestation document that was encrypted using `oa-encrypt`. You will be prompted for the decryption key.
+
+**Usage:**
+
+```sh
+trustvc oa-decrypt
+```
+
+**Interactive Prompts:**
+
+- Path to the encrypted document file
+- Path for the output decrypted document
+- Decryption key (entered securely; not echoed)
+
+**Output:**
+
+Writes the decrypted Open Attestation document (raw OA v2/v3 or wrapped OA v2/v3) to the specified path. Fails if the key is wrong or the file is not a valid encrypted OA document.
 
 </details>
 
@@ -1158,9 +1220,11 @@ npm test
 ```
 src/commands/
 ├── oa/
-│   └── sign.ts                      # Sign OpenAttestation documents
-│   └── wrap.ts                      # Wrap OpenAttestation documents
-│   └── unwrap.ts                    # Unwrap OpenAttestation documents
+│   ├── sign.ts                      # Sign OpenAttestation documents
+│   ├── wrap.ts                      # Wrap OpenAttestation documents
+│   ├── unwrap.ts                    # Unwrap OpenAttestation documents
+│   ├── encrypt.ts                   # Encrypt OA documents for safe sharing
+│   └── decrypt.ts                   # Decrypt OA documents
 ├── token-registry/
 │   ├── deploy.ts                    # Deploy token registry contracts
 │   └── mint.ts                      # Mint tokens to registry

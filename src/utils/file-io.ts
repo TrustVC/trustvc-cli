@@ -1,4 +1,5 @@
 import signale from 'signale';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import util from 'util';
@@ -133,3 +134,57 @@ export const isDirectoryValid = (path: string): boolean => {
 
 export const getEtherscanAddress = ({ network }: { network: string }): string =>
   getSupportedNetwork(network).explorer;
+
+/** Throws if path does not exist or is not a file (e.g. is a directory). */
+export function ensureInputFileExists(filePath: string): void {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+  if (!isFile(filePath)) {
+    throw new Error(`Path is not a file: ${filePath}`);
+  }
+}
+
+/** Returns an error message if the path does not exist or is not a file; otherwise true. Use in prompt validate. */
+export function validateInputFileExists(filePath: string): string | true {
+  const trimmed = filePath.trim();
+  if (!trimmed) return 'Path is required';
+  if (!fs.existsSync(trimmed)) return `File not found: ${trimmed}`;
+  if (!isFile(trimmed)) return `Path is not a file: ${trimmed}`;
+  return true;
+}
+
+const JSON_EXT = '.json';
+
+export type ResolveOutputResult = { path: string; generated: boolean };
+
+/**
+ * If the given path ends with .json, use it (parent dirs created if needed).
+ * Otherwise generate a new filename with the given prefix and random suffix.
+ * Returns the resolved path and whether it was generated (true) or user-provided (false).
+ */
+export function resolveOutputJsonPath(givenPath: string, prefix: string): ResolveOutputResult {
+  const normalized = path.normalize(givenPath.trim());
+  if (normalized.toLowerCase().endsWith(JSON_EXT)) {
+    const dir = path.dirname(normalized);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return { path: path.resolve(normalized), generated: false };
+  }
+  let baseDir: string;
+  if (fs.existsSync(normalized) && isDir(normalized)) {
+    baseDir = path.resolve(normalized);
+  } else if (path.dirname(normalized) === '.' || path.dirname(normalized) === normalized) {
+    baseDir = process.cwd();
+  } else {
+    // User path like "tests/valid" – create it as a directory and put the file inside
+    baseDir = path.resolve(normalized);
+  }
+  if (!fs.existsSync(baseDir)) {
+    fs.mkdirSync(baseDir, { recursive: true });
+  }
+  const randomId = crypto.randomBytes(6).toString('hex');
+  const fileName = `${prefix}-${randomId}${JSON_EXT}`;
+  return { path: path.join(baseDir, fileName), generated: true };
+}

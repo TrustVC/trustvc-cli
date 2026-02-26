@@ -1,6 +1,9 @@
 // CLI Options and Types
 export * from './cli-options';
 
+// CLI error handling (type guards + user message mapping)
+export * from './cli-errors';
+
 // File I/O Operations
 export * from './file-io';
 

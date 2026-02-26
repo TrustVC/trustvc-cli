@@ -37,9 +37,24 @@ vi.mock('@trustvc/trustvc', () => ({
     connect: vi.fn(),
   },
   SUPPORTED_CHAINS: {
-    1: { name: 'mainnet', explorerUrl: 'https://etherscan.io', rpcUrl: 'https://mainnet.infura.io/v3/test', nativeCurrency: { symbol: 'ETH', decimals: 18 } },
-    11155111: { name: 'sepolia', explorerUrl: 'https://sepolia.etherscan.io', rpcUrl: 'https://sepolia.infura.io/v3/test', nativeCurrency: { symbol: 'ETH', decimals: 18 } },
-    137: { name: 'matic', explorerUrl: 'https://polygonscan.com', rpcUrl: 'https://polygon-mainnet.infura.io/v3/test', nativeCurrency: { symbol: 'MATIC', decimals: 18 } },
+    1: {
+      name: 'mainnet',
+      explorerUrl: 'https://etherscan.io',
+      rpcUrl: 'https://mainnet.infura.io/v3/test',
+      nativeCurrency: { symbol: 'ETH', decimals: 18 },
+    },
+    11155111: {
+      name: 'sepolia',
+      explorerUrl: 'https://sepolia.etherscan.io',
+      rpcUrl: 'https://sepolia.infura.io/v3/test',
+      nativeCurrency: { symbol: 'ETH', decimals: 18 },
+    },
+    137: {
+      name: 'matic',
+      explorerUrl: 'https://polygonscan.com',
+      rpcUrl: 'https://polygon-mainnet.infura.io/v3/test',
+      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
+    },
   },
   CHAIN_ID: {
     mainnet: 1,

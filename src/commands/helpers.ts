@@ -86,7 +86,6 @@ export const connectToTDocDeployerContract = async ({
     }
 
     signale.success(`Successfully connected to Deployer contract`);
-    console.log('deployerContract', deployerContract);
     return deployerContract;
   } catch (error) {
     signale.error(

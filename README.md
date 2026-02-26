@@ -197,7 +197,8 @@ trustvc title-escrow reject-transfer-owner-holder
 |                     | [`verify`](#verify)                                                          | Verify OpenAttestation documents                           |
 |                     | [`oa-wrap`](#oa-wrap)                                                        | Wrap OpenAttestation documents                             |
 |                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
-| **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
+| **Token Registry**  | [`token-registry deploy`](#token-registry-deploy)                            | Deploy token registry contracts                            |
+|                     | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
 |                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
 | **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
 |                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
@@ -497,6 +498,38 @@ trustvc mint
 
 **Output:**
 Transaction receipt with hash, block number, gas used, and explorer link.
+
+**Supported Networks:**
+
+- Ethereum (Mainnet, Sepolia)
+- Polygon (Mainnet, Amoy Testnet)
+- XDC Network (Mainnet, Apothem Testnet)
+- Stability (Mainnet, Testnet)
+- Astron (Mainnet, Testnet)
+
+</details>
+
+<details>
+<summary><h4 id="token-registry-deploy">token-registry deploy</h4></summary>
+
+Deploys a token registry contract on the blockchain.
+
+**Usage:**
+
+```sh
+trustvc token-registry deploy
+```
+
+**Interactive Prompts:**
+
+- Network selection (Ethereum, Polygon, XDC, Stability, Astron)
+- Token registry name
+- Token registry symbol
+- Wallet/private key option
+- Dry-run option (estimate gas before deployment)
+
+**Output:**
+Transaction receipt with deployed contract address, hash, block number, gas used, and explorer link.
 
 **Supported Networks:**
 
@@ -1126,6 +1159,7 @@ src/commands/
 │   └── wrap.ts                      # Wrap OpenAttestation documents
 │   └── unwrap.ts                    # Unwrap OpenAttestation documents
 ├── token-registry/
+│   ├── deploy.ts                    # Deploy token registry contracts
 │   └── mint.ts                      # Mint tokens to registry
 ├── document-store/
 │   ├── deploy.ts                    # Deploy document store contracts

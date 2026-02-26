@@ -1,6 +1,5 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SUPPORTED_CHAINS, CHAIN_ID } from './fixtures';
 
 vi.mock('signale', async (importOriginal) => {
   const originalSignale = await importOriginal<typeof import('signale')>();
@@ -24,8 +23,6 @@ vi.mock('@trustvc/trustvc', async (importOriginal) => {
   return {
     ...actual,
     deployDocumentStore: vi.fn(),
-    SUPPORTED_CHAINS,
-    CHAIN_ID,
   };
 });
 

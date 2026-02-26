@@ -130,6 +130,9 @@ trustvc document-store revoke
 # Mint a token to a registry
 trustvc mint
 
+# Deploy a token registry contract
+trustvc token-registry deploy
+
 # Transfer document holder
 trustvc title-escrow transfer-holder
 
@@ -183,9 +186,9 @@ trustvc title-escrow reject-transfer-owner-holder
 
 ### Blockchain Operations
 
-- **Token Registry**: Uses `mint` to mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
+- **Token Registry**: Deploy token registry contracts and mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
 
-- **Document Store**: Uses `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed document store contracts.
+- **Document Store**: Deploy document store contracts and use `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed contracts.
 
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
 
@@ -208,6 +211,8 @@ trustvc title-escrow reject-transfer-owner-holder
 |                     | [`oa-encrypt`](#oa-encrypt)                                                  | Encrypt an OA document for safe sharing and storage        |
 |                     | [`oa-decrypt`](#oa-decrypt)                                                  | Decrypt an OA document encrypted with oa-encrypt           |
 | **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
+|                     | [`token-registry deploy`](#token-registry-deploy)                            | Deploy token registry contracts                            |
+|                     | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
 |                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
 | **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
 |                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
@@ -558,6 +563,38 @@ trustvc mint
 
 **Output:**
 Transaction receipt with hash, block number, gas used, and explorer link.
+
+**Supported Networks:**
+
+- Ethereum (Mainnet, Sepolia)
+- Polygon (Mainnet, Amoy Testnet)
+- XDC Network (Mainnet, Apothem Testnet)
+- Stability (Mainnet, Testnet)
+- Astron (Mainnet, Testnet)
+
+</details>
+
+<details>
+<summary><h4 id="token-registry-deploy">token-registry deploy</h4></summary>
+
+Deploys a token registry contract on the blockchain.
+
+**Usage:**
+
+```sh
+trustvc token-registry deploy
+```
+
+**Interactive Prompts:**
+
+- Network selection (Ethereum, Polygon, XDC, Stability, Astron)
+- Token registry name
+- Token registry symbol
+- Wallet/private key option
+- Dry-run option (estimate gas before deployment)
+
+**Output:**
+Transaction receipt with deployed contract address, hash, block number, gas used, and explorer link.
 
 **Supported Networks:**
 
@@ -1189,6 +1226,7 @@ src/commands/
 │   ├── encrypt.ts                   # Encrypt OA documents for safe sharing
 │   └── decrypt.ts                   # Decrypt OA documents
 ├── token-registry/
+│   ├── deploy.ts                    # Deploy token registry contracts
 │   └── mint.ts                      # Mint tokens to registry
 ├── document-store/
 │   ├── deploy.ts                    # Deploy document store contracts

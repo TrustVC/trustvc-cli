@@ -1,5 +1,5 @@
 // External dependencies
-import { BytesLike, Wallet, HDNodeWallet, ZeroAddress, Provider, Signer } from 'ethers';
+import { BytesLike, Wallet, HDNodeWallet, ZeroAddress, Provider, Signer, ethers } from 'ethers';
 import signale from 'signale';
 import {
   v5Contracts,
@@ -14,11 +14,16 @@ import { encrypt } from '@trustvc/trustvc';
 import { ConnectedSigner } from '../utils';
 
 // Contract factories from TrustVC v5
-const { TitleEscrow__factory, TradeTrustToken__factory } = v5Contracts;
+const { TitleEscrow__factory, TradeTrustToken__factory, TDocDeployer__factory } = v5Contracts;
 
 // Interface for connectToTokenRegistry function arguments
 interface ConnectToTokenRegistryArgs {
   address: string;
+  wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
+}
+
+interface ConnectToTDocDeployerContractArgs {
+  tDocDeployerContractAddress: string;
   wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
 }
 
@@ -37,7 +42,8 @@ export const connectToTokenRegistry = async ({
   try {
     // Connect to the token registry contract
     signale.info(`Connecting to token registry at: ${address}`);
-    const tokenRegistry = TradeTrustToken__factory.connect(address, wallet);
+    const tokenRegistry = new ethers.Contract(address, TradeTrustToken__factory.abi, wallet as any);
+    // TradeTrustToken__factory.connect(address, wallet);
 
     // Validate the connection was successful
     if (!tokenRegistry) {
@@ -51,6 +57,39 @@ export const connectToTokenRegistry = async ({
   } catch (error) {
     signale.error(
       `Error in connectToTokenRegistry: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
+  }
+};
+export const connectToTDocDeployerContract = async ({
+  tDocDeployerContractAddress,
+  wallet,
+}: ConnectToTDocDeployerContractArgs): Promise<InstanceType<typeof TDocDeployer__factory>> => {
+  try {
+    // Connect to the deployer contract
+    signale.info(`Connecting to Deployer contract at: ${tDocDeployerContractAddress}`);
+
+    // Cast to any to handle ethers v5/v6 compatibility
+    // The CLI uses ethers v6 wallets but @trustvc/trustvc uses ethers v5 contract factories
+    const deployerContract = new ethers.Contract(
+      tDocDeployerContractAddress,
+      TDocDeployer__factory.abi,
+      wallet as any,
+    );
+    // TDocDeployer__factory.connect(address, wallet as any);
+
+    // Validate the connection was successful
+    if (!deployerContract) {
+      const error = `Failed to connect to Deployer contract at address: ${tDocDeployerContractAddress}`;
+      signale.error(error);
+      throw new Error(error);
+    }
+
+    signale.success(`Successfully connected to Deployer contract`);
+    return deployerContract;
+  } catch (error) {
+    signale.error(
+      `Error in connectToTDocDeployerContract: ${error instanceof Error ? error.message : String(error)}`,
     );
     throw error;
   }
@@ -80,7 +119,8 @@ export const connectToTitleEscrow = async ({
   try {
     // Connect to the token registry contract
     signale.info(`Connecting to token registry at: ${address}`);
-    const tokenRegistry = TradeTrustToken__factory.connect(address, wallet);
+    const tokenRegistry = new ethers.Contract(address, TradeTrustToken__factory.abi, wallet as any);
+    // TradeTrustToken__factory.connect(address, wallet);
 
     // Fetch the title escrow address by getting the owner of the token
     signale.info(`Fetching title escrow address for tokenId: ${tokenId}`);
@@ -96,7 +136,12 @@ export const connectToTitleEscrow = async ({
 
     // Connect to the title escrow contract
     signale.info(`Connecting to title escrow at: ${titleEscrowAddress}`);
-    const titleEscrow = TitleEscrow__factory.connect(titleEscrowAddress, wallet);
+    const titleEscrow = new ethers.Contract(
+      titleEscrowAddress,
+      TitleEscrow__factory.abi,
+      wallet as any,
+    );
+    // TitleEscrow__factory.connect(titleEscrowAddress, wallet);
 
     // Validate the connection was successful
     if (!titleEscrow) {
@@ -126,7 +171,7 @@ export const connectToDocumentStore = async ({
   try {
     // Connect to the document store contract
     signale.info(`Connecting to document store at: ${address}`);
-    const documentStore = DocumentStore__factory.connect(address, wallet);
+    const documentStore = DocumentStore__factory.connect(address, wallet as any);
 
     // Validate the connection was successful
     if (!documentStore) {
@@ -147,6 +192,10 @@ export const connectToDocumentStore = async ({
 
 export const connectToDocumentStoreFactory = async () => {
   return new DocumentStore__factory();
+};
+
+export const connectToTradeTrustTokenFactory = async () => {
+  return new TradeTrustToken__factory();
 };
 
 // Interface for validateEndorseChangeOwner function arguments

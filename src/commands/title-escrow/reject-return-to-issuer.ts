@@ -1,7 +1,7 @@
 import { error, success, info } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
-import { v5Contracts, CHAIN_ID, rejectReturned as rejectReturnedImpl } from '@trustvc/trustvc';
+import { CHAIN_ID, rejectReturned as rejectReturnedImpl } from '@trustvc/trustvc';
 import { BaseTitleEscrowCommand as TitleEscrowReturnDocumentCommand } from '../../types';
 import {
   displayTransactionPrice,
@@ -19,9 +19,7 @@ import {
   promptRemark,
   performDryRunWithConfirmation,
 } from '../../utils';
-import { validateAndEncryptRemark } from '../helpers';
-
-const { TradeTrustToken__factory } = v5Contracts;
+import { connectToTokenRegistry, validateAndEncryptRemark } from '../helpers';
 
 export const command = 'reject-return-to-issuer';
 
@@ -143,10 +141,10 @@ export const rejectReturned = async ({
     network,
     getTransactionCallback: async () => {
       // Connect to the token registry contract instance
-      const tokenRegistryInstance = await TradeTrustToken__factory.connect(
-        tokenRegistryAddress,
+      const tokenRegistryInstance = await connectToTokenRegistry({
+        address: tokenRegistryAddress,
         wallet,
-      );
+      });
 
       // Validate and encrypt the remark if encryption key is provided
       const encryptedRemark = validateAndEncryptRemark(remark, encryptionKey);

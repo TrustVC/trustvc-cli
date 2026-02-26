@@ -1,5 +1,5 @@
 import signale, { error, info, success } from 'signale';
-import { DocumentStoreIssueCommand } from '../../types';
+import { select } from '@inquirer/prompts';
 import {
   displayTransactionPrice,
   getErrorMessage,
@@ -9,35 +9,72 @@ import {
   getWalletOrSigner,
   canEstimateGasPrice,
   getGasFees,
-  promptAndReadDocument,
   performDryRunWithConfirmation,
+  promptAddress,
+  promptAndReadDocument,
   extractOADocumentInfo,
+  NetworkAndWalletSignerOption,
+  GasPriceScale,
 } from '../../utils';
 import { connectToDocumentStore, waitForTransaction } from '../helpers';
-import { documentStoreIssue } from '@trustvc/trustvc';
-import { Provider } from 'ethers';
+import { documentStoreRevokeRole } from '@trustvc/trustvc';
+import { Provider, id as keccak256Hash } from 'ethers';
 
-export const command = 'issue';
+// Define the command type for revoke-role
+type DocumentStoreRevokeRoleCommand = NetworkAndWalletSignerOption &
+  GasPriceScale & {
+    documentStoreAddress: string;
+    role: string;
+    account: string;
+  };
 
-export const describe = 'Issues a hash to a document store deployed on the blockchain';
+export const command = 'revoke-role';
+
+export const describe = 'Revokes a role from a document store deployed on the blockchain';
 
 export const handler = async (): Promise<void> => {
   try {
     const answers = await promptForInputs();
     if (!answers) return;
 
-    await issueToken(answers);
+    await revokeRoleFromDocumentStore(answers);
   } catch (err: unknown) {
     error(err instanceof Error ? err.message : String(err));
   }
 };
 
 // Prompt user for all required inputs
-export const promptForInputs = async (): Promise<DocumentStoreIssueCommand> => {
+export const promptForInputs = async (): Promise<DocumentStoreRevokeRoleCommand> => {
   // Extract document information using utility function
   const document = await promptAndReadDocument();
 
-  const { documentStoreAddress, tokenId, network } = await extractOADocumentInfo(document);
+  const { documentStoreAddress, network } = await extractOADocumentInfo(document);
+
+  // Role selection
+  const role = await select({
+    message: 'Select the role to revoke:',
+    choices: [
+      {
+        name: 'Issuer Role',
+        value: 'ISSUER_ROLE',
+        description: 'Allows the account to issue documents',
+      },
+      {
+        name: 'Revoker Role',
+        value: 'REVOKER_ROLE',
+        description: 'Allows the account to revoke documents',
+      },
+      {
+        name: 'Default Admin Role',
+        value: 'DEFAULT_ADMIN_ROLE',
+        description: 'Allows the account to manage roles',
+      },
+    ],
+    default: 'ISSUER_ROLE',
+  });
+
+  // Account address to revoke the role from
+  const account = (await promptAddress('account', 'address to revoke the role from')) as string;
 
   // Wallet selection
   const { encryptedWalletPath, key, keyFile } = await promptWalletSelection();
@@ -45,7 +82,8 @@ export const promptForInputs = async (): Promise<DocumentStoreIssueCommand> => {
   // Build the result object with proper typing
   const baseResult = {
     documentStoreAddress,
-    documentHash: tokenId,
+    role,
+    account,
     network,
     maxPriorityFeePerGasScale: 1,
   };
@@ -55,34 +93,43 @@ export const promptForInputs = async (): Promise<DocumentStoreIssueCommand> => {
     return {
       ...baseResult,
       encryptedWalletPath,
-    } as DocumentStoreIssueCommand;
+    } as DocumentStoreRevokeRoleCommand;
   } else if (keyFile) {
     return {
       ...baseResult,
       keyFile,
-    } as DocumentStoreIssueCommand;
+    } as DocumentStoreRevokeRoleCommand;
   } else if (key) {
     return {
       ...baseResult,
       key,
-    } as DocumentStoreIssueCommand;
+    } as DocumentStoreRevokeRoleCommand;
   }
 
   // For environment variable case (when all wallet options are undefined)
-  return baseResult as DocumentStoreIssueCommand;
+  return baseResult as DocumentStoreRevokeRoleCommand;
 };
 
-// Mint the token with the provided inputs
-export const issueToken = async ({
+// Revoke role from document store with the provided inputs
+export const revokeRoleFromDocumentStore = async ({
   documentStoreAddress,
-  documentHash,
+  role,
+  account,
   network,
   ...rest
-}: DocumentStoreIssueCommand) => {
+}: DocumentStoreRevokeRoleCommand) => {
   try {
-    info(`Issuing ${documentHash} to the document store ${documentStoreAddress}`);
+    info(`Revoking ${role} from ${account} on document store ${documentStoreAddress}`);
 
     const wallet = await getWalletOrSigner({ network, ...rest });
+
+    // Get the role hash from the role name using keccak256
+    // For AccessControl contracts, roles are stored as keccak256 hashes
+    // DEFAULT_ADMIN_ROLE is 0x00...00, others are keccak256("ROLE_NAME")
+    const roleHash =
+      role === 'DEFAULT_ADMIN_ROLE'
+        ? '0x0000000000000000000000000000000000000000000000000000000000000000'
+        : keccak256Hash(role);
 
     // Automatic dry run for Ethereum and Polygon networks
     const shouldProceed = await performDryRunWithConfirmation({
@@ -93,7 +140,7 @@ export const issueToken = async ({
           wallet,
         });
         // Populate the transaction for gas estimation
-        const tx = await documentStore.issue.populateTransaction(documentHash);
+        const tx = await documentStore.revokeRole.populateTransaction(roleHash, account);
 
         // Ensure the transaction has a 'from' address for proper gas estimation
         return {
@@ -118,14 +165,14 @@ export const issueToken = async ({
 
       // Get current gas fees from the network
       const gasFees = await getGasFees({ provider: wallet.provider, ...rest });
-      // Execute mint with EIP-1559 gas parameters
-      transaction = await documentStoreIssue(documentStoreAddress, documentHash, wallet, {
+      // Execute revoke role with EIP-1559 gas parameters
+      transaction = await documentStoreRevokeRole(documentStoreAddress, roleHash, account, wallet, {
         maxFeePerGas: gasFees.maxFeePerGas?.toString(),
         maxPriorityFeePerGas: gasFees.maxPriorityFeePerGas?.toString(),
       });
     } else {
-      // Execute mint without gas estimation (for networks that don't support it)
-      transaction = await documentStoreIssue(documentStoreAddress, documentHash, wallet);
+      // Execute revoke role without gas estimation (for networks that don't support it)
+      transaction = await documentStoreRevokeRole(documentStoreAddress, roleHash, account, wallet);
     }
 
     signale.await(`Waiting for transaction ${transaction.hash} to be mined`);
@@ -135,7 +182,7 @@ export const issueToken = async ({
     displayTransactionPrice(receipt, network as NetworkCmdName);
     const { hash: transactionHash } = transaction;
 
-    success(`Token with hash ${documentHash} has been issued on ${documentStoreAddress}`);
+    success(`Role ${role} has been revoked from ${account} on ${documentStoreAddress}`);
     info(`Find more details at ${getEtherscanAddress({ network })}/tx/${transactionHash}`);
 
     return documentStoreAddress;

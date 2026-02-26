@@ -1,7 +1,7 @@
-import { TransactionReceipt } from '@ethersproject/providers';
 import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import { handler, revokeToken, promptForInputs } from '../../../src/commands/document-store/revoke';
 import { NetworkCmdName } from '../../../src/utils';
+import { TransactionReceipt } from 'ethers';
 
 vi.mock('signale', async (importOriginal) => {
   const originalSignale = await importOriginal<typeof import('signale')>();
@@ -33,79 +33,18 @@ vi.mock('@trustvc/trustvc', () => ({
   getTokenRegistryAddress: vi.fn(),
   getTokenId: vi.fn(),
   getChainId: vi.fn(),
+  DocumentStore__factory: {
+    connect: vi.fn(),
+  },
   SUPPORTED_CHAINS: {
-    1: {
-      name: 'mainnet',
-      explorerUrl: 'https://etherscan.io',
-      rpcUrl: 'https://mainnet.infura.io/v3/test',
-      nativeCurrency: { symbol: 'ETH', decimals: 18 },
-    },
-    11155111: {
-      name: 'sepolia',
-      explorerUrl: 'https://sepolia.etherscan.io',
-      rpcUrl: 'https://sepolia.infura.io/v3/test',
-      nativeCurrency: { symbol: 'ETH', decimals: 18 },
-    },
-    137: {
-      name: 'matic',
-      explorerUrl: 'https://polygonscan.com',
-      rpcUrl: 'https://polygon-mainnet.infura.io/v3/test',
-      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
-    },
-    80002: {
-      name: 'amoy',
-      explorerUrl: 'https://www.oklink.com/amoy',
-      rpcUrl: 'https://rpc-amoy.polygon.technology',
-      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
-    },
-    50: {
-      name: 'xdc',
-      explorerUrl: 'https://xdcscan.io',
-      rpcUrl: 'https://rpc.ankr.com/xdc',
-      nativeCurrency: { symbol: 'XDC', decimals: 18 },
-    },
-    51: {
-      name: 'xdcapothem',
-      explorerUrl: 'https://apothem.xdcscan.io',
-      rpcUrl: 'https://rpc.apothem.network',
-      nativeCurrency: { symbol: 'XDC', decimals: 18 },
-    },
-    101010: {
-      name: 'stability',
-      explorerUrl: 'https://stability.blockscout.com',
-      rpcUrl: 'https://rpc.stabilityprotocol.com/zgt/tradeTrust',
-      nativeCurrency: { symbol: 'FREE', decimals: 18 },
-    },
-    20180427: {
-      name: 'stabilitytestnet',
-      explorerUrl: 'https://stability-testnet.blockscout.com/',
-      rpcUrl: 'https://rpc.testnet.stabilityprotocol.com/zgt/tradeTrust',
-      nativeCurrency: { symbol: 'FREE', decimals: 18 },
-    },
-    1338: {
-      name: 'astron',
-      explorerUrl: 'https://astronscanl2.bitfactory.cn/',
-      rpcUrl: 'https://astronlayer2.bitfactory.cn/query/',
-      nativeCurrency: { symbol: 'ASTRON', decimals: 18 },
-    },
-    21002: {
-      name: 'astrontestnet',
-      explorerUrl: 'https://dev-astronscanl2.bitfactory.cn/',
-      rpcUrl: 'https://dev-astronlayer2.bitfactory.cn/query/',
-      nativeCurrency: { symbol: 'ASTRON', decimals: 18 },
-    },
+    1: { name: 'mainnet', explorerUrl: 'https://etherscan.io', rpcUrl: 'https://mainnet.infura.io/v3/test', nativeCurrency: { symbol: 'ETH', decimals: 18 } },
+    11155111: { name: 'sepolia', explorerUrl: 'https://sepolia.etherscan.io', rpcUrl: 'https://sepolia.infura.io/v3/test', nativeCurrency: { symbol: 'ETH', decimals: 18 } },
+    137: { name: 'matic', explorerUrl: 'https://polygonscan.com', rpcUrl: 'https://polygon-mainnet.infura.io/v3/test', nativeCurrency: { symbol: 'MATIC', decimals: 18 } },
   },
   CHAIN_ID: {
     mainnet: 1,
     sepolia: 11155111,
     matic: 137,
-    amoy: 80002,
-    xdc: 50,
-    xdcapothem: 51,
-    stability: 101010,
-    stabilitytestnet: 20180427,
-    astron: 1338,
-    astrontestnet: 21002,
   },
 }));
 
@@ -525,27 +464,28 @@ describe('document-store/revoke', () => {
         maxPriorityFeePerGasScale: 1,
       };
 
-      const mockTransaction: TransactionReceipt = {
-        transactionHash: '0xtxhash123',
-        blockNumber: 12345,
-        blockHash: '0xblockhash',
-        confirmations: 1,
-        from: '0xfrom',
+      const mockTransaction = {
         to: mockArgs.address,
-        gasUsed: { toNumber: () => 100000 } as any,
-        cumulativeGasUsed: { toNumber: () => 100000 } as any,
-        effectiveGasPrice: { toNumber: () => 1000000000 } as any,
-        byzantium: true,
+        from: '0xfrom',
+        contractAddress: null,
+        hash: '0xtxhash123',
+        index: 0,
+        blockHash: '0xblockhash',
+        blockNumber: 12345,
+        logsBloom: '0x',
+        gasUsed: BigInt(100000),
+        cumulativeGasUsed: BigInt(100000),
+        blobGasUsed: null,
+        gasPrice: BigInt(1000000000),
+        blobGasPrice: null,
         type: 2,
         status: 1,
-        contractAddress: '',
-        transactionIndex: 0,
+        root: null,
         logs: [],
-        logsBloom: '0x',
-      };
+      } as unknown as TransactionReceipt;
 
       documentStoreRevokeMock.mockResolvedValue({
-        hash: mockTransaction.transactionHash,
+        hash: mockTransaction.hash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
 
@@ -557,7 +497,7 @@ describe('document-store/revoke', () => {
         encryptedWalletPath: mockArgs.encryptedWalletPath,
         maxPriorityFeePerGasScale: mockArgs.maxPriorityFeePerGasScale,
       });
-      expect(result.hash).toBe(mockTransaction.transactionHash);
+      expect(result.hash).toBe(mockTransaction.hash);
     });
 
     it('should handle errors during revoke', async () => {
@@ -599,24 +539,25 @@ describe('document-store/revoke', () => {
         tokenRegistry: mockInputs.documentStoreAddress,
       };
 
-      const mockTransaction: TransactionReceipt = {
-        transactionHash: '0xtxhash',
-        blockNumber: 12345,
-        blockHash: '0xblockhash',
-        confirmations: 1,
-        from: '0xfrom',
+      const mockTransaction = {
         to: mockInputs.address,
-        gasUsed: { toNumber: () => 100000 } as any,
-        cumulativeGasUsed: { toNumber: () => 100000 } as any,
-        effectiveGasPrice: { toNumber: () => 1000000000 } as any,
-        byzantium: true,
+        from: '0xfrom',
+        contractAddress: null,
+        hash: '0xtxhash',
+        index: 0,
+        blockHash: '0xblockhash',
+        blockNumber: 12345,
+        logsBloom: '0x',
+        gasUsed: BigInt(100000),
+        cumulativeGasUsed: BigInt(100000),
+        blobGasUsed: null,
+        gasPrice: BigInt(1000000000),
+        blobGasPrice: null,
         type: 2,
         status: 1,
-        contractAddress: '',
-        transactionIndex: 0,
+        root: null,
         logs: [],
-        logsBloom: '0x',
-      };
+      } as unknown as TransactionReceipt;
 
       const utils = await import('../../../src/utils');
       (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
@@ -636,7 +577,7 @@ describe('document-store/revoke', () => {
       const trustvcModule = await import('@trustvc/trustvc');
       const revokeMock = trustvcModule.documentStoreRevoke as MockedFunction<any>;
       revokeMock.mockResolvedValue({
-        hash: mockTransaction.transactionHash,
+        hash: mockTransaction.hash,
         wait: vi.fn().mockResolvedValue(mockTransaction),
       });
 

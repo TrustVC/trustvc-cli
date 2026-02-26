@@ -116,6 +116,15 @@ trustvc document-store issue
 
 # Revoke a document hash from the store
 trustvc document-store revoke
+
+# Grant a role to an account
+trustvc document-store grant-role
+
+# Revoke a role from an account
+trustvc document-store revoke-role
+
+# Transfer ownership of the document store
+trustvc document-store transfer-ownership
 ```
 
 ### Token Registry & Title Escrow
@@ -206,6 +215,9 @@ trustvc title-escrow reject-transfer-owner-holder
 | **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
 |                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
 |                     | [`document-store revoke`](#document-store-revoke)                            | Revoke document hashes                                     |
+|                     | [`document-store grant-role`](#document-store-grant-role)                    | Grant roles to accounts                                    |
+|                     | [`document-store revoke-role`](#document-store-revoke-role)                  | Revoke roles from accounts                                 |
+|                     | [`document-store transfer-ownership`](#document-store-transfer-ownership)    | Transfer document store ownership                          |
 | **Wallet**          | [`wallet create`](#wallet-create)                                            | Create a new encrypted wallet file                         |
 |                     | [`wallet encrypt`](#wallet-encrypt)                                          | Encrypt a wallet using a private key                       |
 |                     | [`wallet decrypt`](#wallet-decrypt)                                          | Decrypt an encrypted wallet file                           |
@@ -631,6 +643,100 @@ trustvc document-store revoke
 
 **Output:**
 Transaction receipt confirming the hash revocation.
+
+</details>
+
+<details>
+<summary><h4 id="document-store-grant-role">document-store grant-role</h4></summary>
+
+Grants a role (ISSUER_ROLE, REVOKER_ROLE, or DEFAULT_ADMIN_ROLE) to an account in a deployed document store.
+
+**Usage:**
+
+```sh
+trustvc document-store grant-role
+```
+
+**Interactive Prompts:**
+
+- Path to document file (or manual input for document store address)
+- Role to grant (ISSUER_ROLE, REVOKER_ROLE, DEFAULT_ADMIN_ROLE)
+- Account address to grant the role to
+- Wallet/private key option
+- Dry-run option (estimate gas before execution)
+
+**Output:**
+Transaction receipt with hash, block number, gas used, and explorer link.
+
+**Supported Networks:**
+
+- Ethereum (Mainnet, Sepolia)
+- Polygon (Mainnet, Amoy Testnet)
+- XDC Network (Mainnet, Apothem Testnet)
+- Stability (Mainnet, Testnet)
+- Astron (Mainnet, Testnet)
+
+</details>
+
+<details>
+<summary><h4 id="document-store-revoke-role">document-store revoke-role</h4></summary>
+
+Revokes a role (ISSUER_ROLE, REVOKER_ROLE, or DEFAULT_ADMIN_ROLE) from an account in a deployed document store.
+
+**Usage:**
+
+```sh
+trustvc document-store revoke-role
+```
+
+**Interactive Prompts:**
+
+- Path to document file (or manual input for document store address)
+- Role to revoke (ISSUER_ROLE, REVOKER_ROLE, DEFAULT_ADMIN_ROLE)
+- Account address to revoke the role from
+- Wallet/private key option
+- Dry-run option (estimate gas before execution)
+
+**Output:**
+Transaction receipt with hash, block number, gas used, and explorer link.
+
+**Supported Networks:**
+
+- Ethereum (Mainnet, Sepolia)
+- Polygon (Mainnet, Amoy Testnet)
+- XDC Network (Mainnet, Apothem Testnet)
+- Stability (Mainnet, Testnet)
+- Astron (Mainnet, Testnet)
+
+</details>
+
+<details>
+<summary><h4 id="document-store-transfer-ownership">document-store transfer-ownership</h4></summary>
+
+Transfers ownership of a document store contract to a new owner. This grants DEFAULT_ADMIN_ROLE to the new owner and revokes it from the current owner.
+
+**Usage:**
+
+```sh
+trustvc document-store transfer-ownership
+```
+
+**Interactive Prompts:**
+
+- Path to document file (or manual input for document store address)
+- New owner address
+- Wallet/private key option
+
+**Output:**
+Transaction receipts for both grant and revoke operations with hashes, block numbers, gas used, and explorer links.
+
+**Supported Networks:**
+
+- Ethereum (Mainnet, Sepolia)
+- Polygon (Mainnet, Amoy Testnet)
+- XDC Network (Mainnet, Apothem Testnet)
+- Stability (Mainnet, Testnet)
+- Astron (Mainnet, Testnet)
 
 </details>
 
@@ -1167,7 +1273,10 @@ src/commands/
 ├── document-store/
 │   ├── deploy.ts                    # Deploy document store contracts
 │   ├── issue.ts                     # Issue document hashes
-│   └── revoke.ts                    # Revoke document hashes
+│   ├── revoke.ts                    # Revoke document hashes
+│   ├── grant-role.ts                # Grant roles to accounts
+│   ├── revoke-role.ts               # Revoke roles from accounts
+│   └── transfer-ownership.ts        # Transfer document store ownership
 ├── title-escrow/
 │   ├── transfer-holder.ts           # Transfer holder
 │   ├── nominate-transfer-owner.ts   # Nominate beneficiary

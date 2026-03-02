@@ -133,6 +133,13 @@ trustvc document-store revoke-role
 trustvc document-store transfer-ownership
 ```
 
+### Transaction
+
+```sh
+# Cancel a pending transaction (replace-by-fee)
+trustvc transaction cancel
+```
+
 ### Token Registry & Title Escrow
 
 ```sh
@@ -199,6 +206,8 @@ trustvc title-escrow reject-transfer-owner-holder
 
 - **Document Store**: Deploy document store contracts and use `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed contracts.
 
+- **Transaction Cancel**: Cancel a pending transaction by replacing it with a 0-value transaction to yourself (same nonce, higher gas price). Supports specifying by transaction hash or by nonce and gas price.
+
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
 
 ## Commands
@@ -226,9 +235,13 @@ trustvc title-escrow reject-transfer-owner-holder
 | **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
 |                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
 |                     | [`document-store revoke`](#document-store-revoke)                            | Revoke document hashes                                     |
+<<<<<<< Updated upstream
 |                     | [`document-store grant-role`](#document-store-grant-role)                    | Grant roles to accounts                                    |
 |                     | [`document-store revoke-role`](#document-store-revoke-role)                  | Revoke roles from accounts                                 |
 |                     | [`document-store transfer-ownership`](#document-store-transfer-ownership)    | Transfer document store ownership                          |
+=======
+| **Transaction**     | [`transaction cancel`](#transaction-cancel)                                  | Cancel a pending transaction                              |
+>>>>>>> Stashed changes
 | **Wallet**          | [`wallet create`](#wallet-create)                                            | Create a new encrypted wallet file                         |
 |                     | [`wallet encrypt`](#wallet-encrypt)                                          | Encrypt a wallet using a private key                       |
 |                     | [`wallet decrypt`](#wallet-decrypt)                                          | Decrypt an encrypted wallet file                           |
@@ -256,7 +269,7 @@ trustvc title-escrow reject-transfer-owner-holder
 
 ### Wallet/Private Key Options
 
-All title-escrow, token registry, and document-store commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
+All title-escrow, token registry, document-store, and transaction commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
 
 **Select wallet/private key option:**
 

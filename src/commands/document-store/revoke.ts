@@ -12,6 +12,7 @@ import {
   promptAndReadDocument,
   performDryRunWithConfirmation,
   extractOADocumentInfo,
+  verifyDocumentSignature,
 } from '../../utils';
 import { connectToDocumentStore, waitForTransaction } from '../helpers';
 import { documentStoreRevoke } from '@trustvc/trustvc';
@@ -36,6 +37,8 @@ export const handler = async (): Promise<void> => {
 export const promptForInputs = async (): Promise<DocumentStoreIssueCommand> => {
   // Extract document information using utility function
   const document = await promptAndReadDocument();
+
+  await verifyDocumentSignature(document);
 
   const { documentStoreAddress, tokenId, network } = await extractOADocumentInfo(document);
 

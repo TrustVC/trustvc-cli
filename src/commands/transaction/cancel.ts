@@ -125,11 +125,15 @@ export const runCancelTransaction = async (
     rpcUrl,
   });
 
-  const replacementHash = await cancelTransaction(wallet as any, {
-    nonce,
-    gasPrice,
-    transactionHash,
-  });
+  // Wallet from getWalletOrSigner satisfies CancelTransactionSigner (ethers v5/v6 compatible)
+  const replacementHash = await cancelTransaction(
+    wallet as Parameters<typeof cancelTransaction>[0],
+    {
+      nonce,
+      gasPrice,
+      transactionHash,
+    },
+  );
 
   success('Transaction has been cancelled');
   if (replacementHash) {

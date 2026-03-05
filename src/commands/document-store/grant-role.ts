@@ -15,6 +15,7 @@ import {
   extractOADocumentInfo,
   NetworkAndWalletSignerOption,
   GasPriceScale,
+  verifyDocumentSignature,
 } from '../../utils';
 import { connectToDocumentStore, waitForTransaction } from '../helpers';
 import { documentStoreGrantRole } from '@trustvc/trustvc';
@@ -47,6 +48,8 @@ export const handler = async (): Promise<void> => {
 export const promptForInputs = async (): Promise<DocumentStoreGrantRoleCommand> => {
   // Extract document information using utility function
   const document = await promptAndReadDocument();
+
+  await verifyDocumentSignature(document);
 
   const { documentStoreAddress, network } = await extractOADocumentInfo(document);
 

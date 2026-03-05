@@ -19,6 +19,7 @@ import {
   promptAndReadDocument,
   promptAddress,
   performDryRunWithConfirmation,
+  verifyDocumentSignature,
 } from '../../utils';
 import { connectToTitleEscrow, validateAndEncryptRemark } from '../helpers';
 
@@ -41,6 +42,9 @@ export const handler = async (): Promise<string | undefined> => {
 export const promptForInputs = async (): Promise<TitleEscrowTransferHolderCommand> => {
   // Extract document information using utility function
   const document = await promptAndReadDocument();
+
+  // Verify document signature before proceeding
+  await verifyDocumentSignature(document);
 
   // Extract document information using utility function
   const { tokenRegistry, tokenId, network, documentId, registryVersion } =

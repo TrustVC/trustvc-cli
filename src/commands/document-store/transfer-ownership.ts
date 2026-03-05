@@ -13,6 +13,7 @@ import {
   extractOADocumentInfo,
   NetworkAndWalletSignerOption,
   GasPriceScale,
+  verifyDocumentSignature,
 } from '../../utils';
 import { waitForTransaction } from '../helpers';
 import { documentStoreTransferOwnership } from '@trustvc/trustvc';
@@ -44,6 +45,8 @@ export const handler = async (): Promise<void> => {
 export const promptForInputs = async (): Promise<DocumentStoreTransferOwnershipCommand> => {
   // Extract document information using utility function
   const document = await promptAndReadDocument();
+
+  await verifyDocumentSignature(document);
 
   const { documentStoreAddress, network } = await extractOADocumentInfo(document);
 

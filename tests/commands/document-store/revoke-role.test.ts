@@ -40,6 +40,11 @@ vi.mock('@trustvc/trustvc', () => ({
   v4SupportInterfaceIds: {},
   v5SupportInterfaceIds: {},
   encrypt: vi.fn(),
+  isWrappedV2Document: vi.fn(),
+  isWrappedV3Document: vi.fn(),
+  verifyOASignature: vi.fn(),
+  verifyW3CSignature: vi.fn(),
+  deriveW3C: vi.fn(),
   DocumentStore__factory: {
     connect: vi.fn(),
   },
@@ -88,6 +93,7 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     promptAddress: vi.fn(),
     promptWalletSelection: vi.fn(),
     performDryRunWithConfirmation: vi.fn(async () => true),
+    verifyDocumentSignature: vi.fn(),
   };
 });
 

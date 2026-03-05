@@ -15,6 +15,7 @@ import {
   promptRemark,
   promptAddress,
   performDryRunWithConfirmation,
+  verifyDocumentSignature,
 } from '../../utils';
 import { connectToTokenRegistry, validateAndEncryptRemark } from '../helpers';
 import { TransactionReceipt } from 'ethers';
@@ -39,6 +40,8 @@ export const handler = async (): Promise<void> => {
 export const promptForInputs = async (): Promise<TokenRegistryMintCommand> => {
   // Extract document information using utility function
   const document = await promptAndReadDocument();
+
+  await verifyDocumentSignature(document);
 
   // Extract document information using utility function
   const { tokenRegistry, tokenId, network, documentId, registryVersion } =

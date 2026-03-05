@@ -27,3 +27,6 @@ export * from './wallet';
 
 // Dry Run
 export * from './dryRun';
+
+// Document Verification
+export * from './document-verification';

@@ -41,6 +41,8 @@ vi.mock('@trustvc/trustvc', async () => {
   return {
     ...actual,
     transferHolder: vi.fn(),
+    verifyOASignature: vi.fn().mockResolvedValue(true),
+    verifyW3CSignature: vi.fn().mockResolvedValue({ verified: true }),
   };
 });
 
@@ -73,6 +75,7 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     promptWalletSelection: vi.fn(),
     promptRemark: vi.fn(),
     performDryRunWithConfirmation: vi.fn(async () => true), // Mock to always proceed
+    verifyDocumentSignature: vi.fn().mockResolvedValue(undefined), // Mock signature verification
   };
 });
 

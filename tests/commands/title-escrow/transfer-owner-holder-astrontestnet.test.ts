@@ -8,6 +8,8 @@ vi.mock('@trustvc/trustvc', async () => {
   return {
     ...actual,
     transferOwners: vi.fn(),
+    verifyOASignature: vi.fn().mockResolvedValue(true),
+    verifyW3CSignature: vi.fn().mockResolvedValue({ verified: true }),
   };
 });
 

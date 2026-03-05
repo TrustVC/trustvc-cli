@@ -66,6 +66,7 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     promptWalletSelection: vi.fn(),
     promptRemark: vi.fn(),
     performDryRunWithConfirmation: vi.fn(async () => true),
+    verifyDocumentSignature: vi.fn().mockResolvedValue(undefined),
   };
 });
 const acceptReturnedDocumentParams: TitleEscrowReturnDocumentCommand = {

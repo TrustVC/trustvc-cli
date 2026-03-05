@@ -32,6 +32,11 @@ vi.mock('@trustvc/trustvc', () => ({
   getTokenRegistryAddress: vi.fn(),
   getTokenId: vi.fn(),
   getChainId: vi.fn(),
+  isWrappedV2Document: vi.fn(),
+  isWrappedV3Document: vi.fn(),
+  verifyOASignature: vi.fn(),
+  verifyW3CSignature: vi.fn(),
+  deriveW3C: vi.fn(),
   SUPPORTED_CHAINS: {
     1: {
       name: 'mainnet',
@@ -131,6 +136,7 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     promptWalletSelection: vi.fn(),
     promptRemark: vi.fn(),
     performDryRunWithConfirmation: vi.fn(async () => true), // Mock to always proceed
+    verifyDocumentSignature: vi.fn(),
   };
 });
 

@@ -8,6 +8,8 @@ import {
   getEtherscanAddress,
   promptNetworkSelection,
   promptWalletSelection,
+  supportedNetwork,
+  withNetworkAndWalletSignerOption,
 } from '../../utils';
 
 export type TransactionCancelCommand = {
@@ -25,7 +27,36 @@ export const command = 'cancel';
 
 export const describe = 'Cancel a pending transaction on the blockchain';
 
-export const builder = (yargs: Argv): Argv => yargs;
+export const builder = (yargs: Argv): Argv =>
+  withNetworkAndWalletSignerOption(
+    yargs
+      .option('nonce', {
+        description: 'Pending transaction nonce',
+        type: 'string',
+        implies: 'gas-price',
+        conflicts: 'transaction-hash',
+      })
+      .option('gas-price', {
+        description:
+          'Gas price (wei) for the replacement transaction (must be higher than the pending tx)',
+        type: 'string',
+        implies: 'nonce',
+        conflicts: 'transaction-hash',
+      })
+      .option('transaction-hash', {
+        alias: 'th',
+        description: 'Pending transaction hash (0x...)',
+        type: 'string',
+      })
+      .option('wallet-path', {
+        description: 'Alias for encrypted-wallet-path (path to wallet.json)',
+        type: 'string',
+      }),
+  ).option('network', {
+    choices: Object.keys(supportedNetwork),
+    default: undefined,
+    description: 'Ethereum network (prompted if not provided)',
+  });
 
 /** Prompt for how to specify the pending transaction and collect nonce/gas or hash */
 async function promptTransactionSpec(): Promise<{
@@ -91,11 +122,30 @@ async function promptTransactionSpec(): Promise<{
   return { nonce: nonce.trim(), gasPrice: gasPrice.trim() };
 }
 
-/** Collect all inputs via prompts */
-export const promptForInputs = async (): Promise<TransactionCancelCommand> => {
-  const txSpec = await promptTransactionSpec();
-  const network = await promptNetworkSelection();
-  const walletSelection = await promptWalletSelection();
+/** Collect inputs via prompts; only prompts for missing fields when partial is provided */
+export const promptForInputs = async (
+  partial?: Partial<TransactionCancelCommand>,
+): Promise<TransactionCancelCommand> => {
+  const hasTxSpec = !!partial?.transactionHash || (!!partial?.nonce && !!partial?.gasPrice);
+  const txSpec = hasTxSpec
+    ? {
+        nonce: partial?.nonce,
+        gasPrice: partial?.gasPrice,
+        transactionHash: partial?.transactionHash,
+      }
+    : await promptTransactionSpec();
+  const network =
+    partial?.network && partial.network.length > 0
+      ? partial.network
+      : await promptNetworkSelection();
+  const hasWallet = !!partial?.encryptedWalletPath || !!partial?.key || !!partial?.keyFile;
+  const walletSelection = hasWallet
+    ? {
+        encryptedWalletPath: partial?.encryptedWalletPath,
+        key: partial?.key,
+        keyFile: partial?.keyFile,
+      }
+    : await promptWalletSelection();
 
   return {
     ...txSpec,
@@ -130,7 +180,7 @@ export const runCancelTransaction = async (
     wallet as Parameters<typeof cancelTransaction>[0],
     {
       nonce,
-      gasPrice,
+      gasPrice, // already a string (wei)
       transactionHash,
     },
   );
@@ -143,10 +193,82 @@ export const runCancelTransaction = async (
   return replacementHash;
 };
 
-export const handler = async (): Promise<void> => {
+type RawCliArgs = TransactionCancelCommand & {
+  // CLI flags as they come from yargs
+  nonce?: string;
+  'gas-price'?: string;
+  'transaction-hash'?: string;
+  'wallet-path'?: string;
+};
+
+/** Normalise yargs CLI arguments into a single internal shape. */
+const normaliseCliArgs = (argv: RawCliArgs): TransactionCancelCommand => {
+  const a = argv as Record<string, unknown>;
+
+  const cliNonce: string | undefined = (argv.nonce ?? (a.nonce as string)) as string | undefined;
+  const cliGasPrice = (a['gas-price'] ?? a.gasPrice) as string | undefined;
+  const cliTxHash = (a['transaction-hash'] ?? a.transactionHash) as string | undefined;
+  const cliEncryptedWalletPath = (a['encrypted-wallet-path'] ??
+    a.encryptedWalletPath ??
+    a['wallet-path'] ??
+    a.walletPath) as string | undefined;
+
+  return {
+    network: (argv.network ?? a.network) as string,
+    nonce: cliNonce,
+    gasPrice: cliGasPrice,
+    transactionHash: cliTxHash,
+    encryptedWalletPath: cliEncryptedWalletPath,
+    key: argv.key,
+    keyFile: argv.keyFile,
+    rpcUrl: argv.rpcUrl,
+  };
+};
+
+/** Decide if we have enough input to run non-interactively (no prompts). */
+const hasCompleteNonInteractiveInput = (base: TransactionCancelCommand): boolean => {
+  const hasTxSpec = !!base.transactionHash || (!!base.nonce && !!base.gasPrice);
+  const hasNetwork = typeof base.network === 'string' && base.network.length > 0;
+  const hasWalletInput =
+    !!base.encryptedWalletPath || !!base.key || !!base.keyFile || !!process.env.OA_PRIVATE_KEY;
+
+  return hasTxSpec && hasNetwork && hasWalletInput;
+};
+
+/**
+ * Prompt only for missing inputs, then merge them with any CLI-provided values.
+ * CLI inputs always win over prompted values.
+ */
+const collectFinalAnswers = async (
+  baseFromCli: TransactionCancelCommand,
+): Promise<TransactionCancelCommand> => {
+  const prompted = await promptForInputs(baseFromCli);
+
+  return {
+    ...prompted,
+    ...baseFromCli,
+    nonce: baseFromCli.nonce ?? prompted.nonce,
+    gasPrice: baseFromCli.gasPrice ?? prompted.gasPrice,
+    transactionHash: baseFromCli.transactionHash ?? prompted.transactionHash,
+    network: baseFromCli.network ?? prompted.network,
+    encryptedWalletPath: baseFromCli.encryptedWalletPath ?? prompted.encryptedWalletPath,
+    key: baseFromCli.key ?? prompted.key,
+    keyFile: baseFromCli.keyFile ?? prompted.keyFile,
+    rpcUrl: baseFromCli.rpcUrl ?? prompted.rpcUrl,
+  };
+};
+
+export const handler = async (argv: RawCliArgs): Promise<void> => {
   try {
-    const answers = await promptForInputs();
-    await runCancelTransaction(answers);
+    const baseFromCli = normaliseCliArgs(argv);
+
+    if (hasCompleteNonInteractiveInput(baseFromCli)) {
+      await runCancelTransaction(baseFromCli);
+      return;
+    }
+
+    const finalAnswers = await collectFinalAnswers(baseFromCli);
+    await runCancelTransaction(finalAnswers);
   } catch (e) {
     error(getErrorMessage(e));
   }

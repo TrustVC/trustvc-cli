@@ -136,8 +136,12 @@ trustvc document-store transfer-ownership
 ### Transaction
 
 ```sh
-# Cancel a pending transaction (replace-by-fee)
+# Cancel a pending transaction (replace-by-fee) — interactive prompts
 trustvc transaction cancel
+
+# Or with options (non-interactive)
+trustvc transaction cancel [options]
+# e.g. trustvc transaction cancel --transaction-hash 0x... --network sepolia --encrypted-wallet-path ./wallet.json
 ```
 
 ### Token Registry & Title Escrow
@@ -235,13 +239,10 @@ trustvc title-escrow reject-transfer-owner-holder
 | **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
 |                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
 |                     | [`document-store revoke`](#document-store-revoke)                            | Revoke document hashes                                     |
-<<<<<<< Updated upstream
 |                     | [`document-store grant-role`](#document-store-grant-role)                    | Grant roles to accounts                                    |
 |                     | [`document-store revoke-role`](#document-store-revoke-role)                  | Revoke roles from accounts                                 |
 |                     | [`document-store transfer-ownership`](#document-store-transfer-ownership)    | Transfer document store ownership                          |
-=======
 | **Transaction**     | [`transaction cancel`](#transaction-cancel)                                  | Cancel a pending transaction                              |
->>>>>>> Stashed changes
 | **Wallet**          | [`wallet create`](#wallet-create)                                            | Create a new encrypted wallet file                         |
 |                     | [`wallet encrypt`](#wallet-encrypt)                                          | Encrypt a wallet using a private key                       |
 |                     | [`wallet decrypt`](#wallet-decrypt)                                          | Decrypt an encrypted wallet file                           |
@@ -281,6 +282,58 @@ All title-escrow, token registry, document-store, and transaction commands requi
 ---
 
 ### Detailed Command Reference
+
+<details>
+<summary><h4 id="transaction-cancel">transaction cancel</h4></summary>
+
+Cancels a pending transaction by replacing it with a 0-value transaction to yourself using the same nonce and a higher gas price (replace-by-fee). This action is irreversible.
+
+**Interactive Usage (recommended):**
+
+```sh
+trustvc transaction cancel
+```
+
+You will be prompted for:
+
+1. **How to specify the pending transaction**
+   - **By transaction hash (recommended)** – Enter the pending transaction hash (0x...). Nonce and gas price are fetched from the network and the gas price is increased by 100% for the replacement.
+   - **By nonce and gas price** – Enter the pending transaction nonce and a higher gas price (wei) for the replacement. Use this when the pending transaction uses EIP-1559 (no legacy `gasPrice`) or when you prefer to set the replacement gas manually.
+
+2. **Network** – Select the network (e.g. Sepolia, Mainnet).
+
+3. **Wallet / private key** – Choose encrypted wallet file, environment variable (OA_PRIVATE_KEY), key file, or enter the private key.
+
+**With options (non-interactive):**
+
+```sh
+# Cancel by nonce and gas price
+trustvc transaction cancel \
+  --nonce 205 \
+  --gas-price 25000000000 \
+  --network sepolia \
+  --encrypted-wallet-path ./wallet.json
+
+# Cancel by transaction hash
+trustvc transaction cancel \
+  --transaction-hash 0x... \
+  --network sepolia \
+  --encrypted-wallet-path ./wallet.json
+```
+
+**Options:** `--transaction-hash` (or `-th`), `--nonce`, `--gas-price`, `--network`, `--encrypted-wallet-path`, `--key`, `--key-file`, `--rpc-url`. Wallet can also be provided via `OA_PRIVATE_KEY`.
+
+- `--nonce` and `--gas-price` must be provided together and must not be combined with `--transaction-hash`.
+- `--transaction-hash` can be used alone; gas price is fetched and increased by 100% automatically.
+
+**Output:**
+
+- The replacement transaction hash.
+- A link to view the replacement transaction on the network’s block explorer (e.g. Etherscan).
+
+**Note:** If the pending transaction uses EIP-1559 (maxFeePerGas / maxPriorityFeePerGas), it has no legacy `gasPrice`. In that case, specify the transaction by **nonce and gas price** and set a gas price (in wei) for the replacement.
+
+</details>
 
 <details>
 <summary><h4 id="key-pair-generation">key-pair-generation</h4></summary>
@@ -1327,12 +1380,14 @@ npm install
 # Build the project
 npm run build
 
-# Link for local development
+# Link for local development (global `trustvc` will use this package)
 npm link
 
 # Run tests
 npm test
 ```
+
+**Important:** The cancel command is **`trustvc transaction cancel`** (not `trustvc cancel`). After `npm run build && npm link`, the global `trustvc` command will use your local build, so both interactive prompts and single-line options (e.g. `trustvc transaction cancel --transaction-hash 0x... --network sepolia --encrypted-wallet-path ./wallet.json`) work with your local code.
 
 ### Project Structure
 
@@ -1365,6 +1420,8 @@ src/commands/
 │   ├── reject-transfer-holder.ts    # Reject holder transfer
 │   ├── reject-transfer-owner.ts     # Reject owner transfer
 │   └── reject-transfer-owner-holder.ts  # Reject full transfer
+├── transaction/
+│   └── cancel.ts                    # Cancel a pending transaction
 ├── wallet/
 │   ├── create.ts                    # Create encrypted wallet
 │   ├── encrypt.ts                   # Encrypt private key to wallet

@@ -1387,8 +1387,6 @@ npm link
 npm test
 ```
 
-**Important:** The cancel command is **`trustvc transaction cancel`** (not `trustvc cancel`). After `npm run build && npm link`, the global `trustvc` command will use your local build, so both interactive prompts and single-line options (e.g. `trustvc transaction cancel --transaction-hash 0x... --network sepolia --encrypted-wallet-path ./wallet.json`) work with your local code.
-
 ### Project Structure
 
 ```

@@ -1,5 +1,5 @@
-import { input, password } from '@inquirer/prompts';
-import crypto from 'crypto';
+import { input } from '@inquirer/prompts';
+import chalk from 'chalk';
 import signale from 'signale';
 import { encryptString } from '@trustvc/trustvc';
 import {
@@ -11,18 +11,12 @@ import {
   validateInputFileExists,
 } from '../../utils';
 
-/** Derive a 64-char hex key from passphrase for AES-256 (OPEN-ATTESTATION-TYPE-1). */
-const deriveKey = (passphrase: string): string =>
-  crypto.createHash('sha256').update(passphrase, 'utf8').digest('hex');
-
 export const command = 'oa-encrypt';
-export const describe =
-  'Encrypt a document for safe sharing and storage. You will be asked for an encryption key — remember it to decrypt later.';
+export const describe = 'Encrypt a document in order to share and store it safely';
 
 type EncryptInput = {
   inputDocumentPath: string;
   outputEncryptedPath: string;
-  key: string;
 };
 
 export const promptForInputs = async (): Promise<EncryptInput | null> => {
@@ -44,19 +38,9 @@ export const promptForInputs = async (): Promise<EncryptInput | null> => {
     },
   });
 
-  const key = await password({
-    message: 'Enter the encryption key (remember it to decrypt later):',
-    mask: '*',
-    validate: (value: string) => {
-      if (!value || value.trim() === '') return 'Encryption key is required';
-      return true;
-    },
-  });
-
   return {
     inputDocumentPath: inputDocumentPath.trim(),
     outputEncryptedPath: outputEncryptedPath.trim(),
-    key: key.trim(),
   };
 };
 
@@ -66,24 +50,25 @@ const ENCRYPT_ERROR_OPTIONS = {
   permissionDenied: 'Permission denied. Cannot write to: {path}',
 } as const;
 
-/** Reads document from disk, encrypts it, writes payload and shows success message. */
+/** Reads document from disk, encrypts with generated key, writes payload (no key in file), prints key. */
 async function runEncrypt(answers: EncryptInput): Promise<void> {
-  const { inputDocumentPath, outputEncryptedPath, key } = answers;
+  const { inputDocumentPath, outputEncryptedPath } = answers;
 
   ensureInputFileExists(inputDocumentPath);
   const documentString = readFile(inputDocumentPath);
-  const { cipherText, iv, tag, type } = encryptString(documentString, deriveKey(key));
+  const { key, ...encryptedDocument } = encryptString(documentString);
 
-  const encryptedPayload = { cipherText, iv, tag, type };
   const { path: outputPath, generated } = resolveOutputJsonPath(outputEncryptedPath, 'encrypted');
-  writeFile(outputPath, encryptedPayload, true);
+  writeFile(outputPath, encryptedDocument, true);
 
   if (generated) {
     signale.success(`No output filename provided. Encrypted document saved to: ${outputPath}`);
   } else {
     signale.success(`Encrypted document saved to: ${outputPath}`);
   }
-  signale.warn('Remember the encryption key you entered — you will need it to decrypt.');
+  signale.warn(
+    `Here is the key to decrypt the document: don't lose it: ${chalk.hsl(39, 100, 50)(key)}`,
+  );
 }
 
 export const handler = async (): Promise<void> => {

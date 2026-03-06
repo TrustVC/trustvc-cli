@@ -9,6 +9,8 @@ vi.mock('@trustvc/trustvc', async () => {
   return {
     ...actual,
     transferHolder: vi.fn(),
+    verifyOASignature: vi.fn().mockResolvedValue(true),
+    verifyW3CSignature: vi.fn().mockResolvedValue({ verified: true }),
   };
 });
 

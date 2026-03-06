@@ -8,7 +8,6 @@ const FIXTURE_DOC = path.resolve(
   process.cwd(),
   'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json',
 );
-const TEST_KEY = 'my-secret-encryption-key';
 
 vi.mock('signale', () => ({
   default: {
@@ -25,7 +24,6 @@ vi.mock('signale', () => ({
 
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
-  password: vi.fn(),
 }));
 
 vi.mock('../../../src/utils', async () => {
@@ -52,24 +50,22 @@ describe('oa-encrypt', () => {
   });
 
   describe('promptForInputs', () => {
-    it('should return inputs when user provides document path, output path and key', async () => {
+    it('should return inputs when user provides document path and output path', async () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce(FIXTURE_DOC)
         .mockResolvedValueOnce('./encrypted.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
       const result = await promptForInputs();
 
       expect(result).toEqual({
         inputDocumentPath: FIXTURE_DOC,
         outputEncryptedPath: './encrypted.json',
-        key: TEST_KEY,
       });
     });
   });
 
   describe('handler', () => {
-    it('should read document, encrypt with prompted key, and write encrypted payload', async () => {
+    it('should read document, encrypt with generated key, write payload (no key in file), and print key', async () => {
       const utils = await import('../../../src/utils');
       const signale = await import('signale');
       const actualUtils =
@@ -78,7 +74,6 @@ describe('oa-encrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce(FIXTURE_DOC)
         .mockResolvedValueOnce('./tmp-encrypted-out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
       const readMock = utils.readFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
@@ -93,6 +88,7 @@ describe('oa-encrypt', () => {
       expect(writeMock).toHaveBeenCalledTimes(1);
       const [writtenPath, payload] = writeMock.mock.calls[0];
       expect(writtenPath).toBe('./tmp-encrypted-out.json');
+      expect(payload).not.toHaveProperty('key');
       expect(payload).toHaveProperty('type', 'OPEN-ATTESTATION-TYPE-1');
       expect(payload).toHaveProperty('cipherText');
       expect(payload).toHaveProperty('iv');
@@ -101,22 +97,22 @@ describe('oa-encrypt', () => {
       expect(successMock).toHaveBeenCalledWith(
         'Encrypted document saved to: ./tmp-encrypted-out.json',
       );
-      expect(warnMock).toHaveBeenCalledWith(
-        'Remember the encryption key you entered — you will need it to decrypt.',
+      expect(warnMock).toHaveBeenCalled();
+      expect(warnMock.mock.calls[0][0]).toContain(
+        "Here is the key to decrypt the document: don't lose it:",
       );
     });
 
-    it('should produce ciphertext decryptable with the key entered by user', async () => {
+    it('should produce ciphertext decryptable with the printed key', async () => {
       const utils = await import('../../../src/utils');
-      const { decryptString } = await import('@trustvc/trustvc');
-      const crypto = await import('crypto');
+      const trustvc = await import('@trustvc/trustvc');
       const actualUtils =
         await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
+      const encryptSpy = vi.spyOn(trustvc, 'encryptString');
 
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce(FIXTURE_DOC)
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
       const readMock = utils.readFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
@@ -124,17 +120,18 @@ describe('oa-encrypt', () => {
 
       await handler();
 
+      const key = (encryptSpy.mock.results[0]?.value as { key: string })?.key;
+      expect(key).toBeTruthy();
       const payload = writeMock.mock.calls[0][1];
-      const derivedKey = crypto.createHash('sha256').update(TEST_KEY, 'utf8').digest('hex');
-      const documentString = decryptString({
+      const documentString = trustvc.decryptString({
         cipherText: payload.cipherText,
         iv: payload.iv,
         tag: payload.tag,
-        key: derivedKey,
+        key: key!,
         type: payload.type,
       });
-      const originalContent = actualUtils.readFile(FIXTURE_DOC);
-      expect(documentString).toStrictEqual(originalContent);
+      expect(documentString).toStrictEqual(actualUtils.readFile(FIXTURE_DOC));
+      encryptSpy.mockRestore();
     });
 
     it('should log a friendly error and set exitCode when readFile throws', async () => {
@@ -144,7 +141,6 @@ describe('oa-encrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('/nonexistent.json')
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
       const ensureMock = utils.ensureInputFileExists as MockedFunction<any>;
       ensureMock.mockImplementationOnce(() => {
@@ -166,7 +162,6 @@ describe('oa-encrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('/nonexistent.json')
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
 
       const ensureMock = utils.ensureInputFileExists as MockedFunction<any>;
       const errorMock = (signale.default as any).error as MockedFunction<any>;

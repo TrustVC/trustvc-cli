@@ -1,7 +1,6 @@
 import path from 'path';
 import * as prompts from '@inquirer/prompts';
 import { afterEach, beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
-import crypto from 'crypto';
 import fs from 'fs';
 import { handler, promptForInputs } from '../../../src/commands/oa/decrypt';
 import { encryptString } from '@trustvc/trustvc';
@@ -35,7 +34,8 @@ vi.mock('../../../src/utils', async () => {
   };
 });
 
-const TEST_KEY = 'test-decryption-key-32-bytes-long-hex!!';
+// Hex key used in promptForInputs test (any 64-char hex is valid format)
+const TEST_KEY_INPUT = 'a'.repeat(64);
 // Resolve fixture from project root so tests work regardless of cwd when run via npm test
 const OA_FIXTURE_PATH = path.resolve(
   process.cwd(),
@@ -59,14 +59,14 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('./encrypted.json')
         .mockResolvedValueOnce('./decrypted.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY_INPUT);
 
       const result = await promptForInputs();
 
       expect(result).toEqual({
         inputEncryptedPath: './encrypted.json',
         outputPath: './decrypted.json',
-        key: TEST_KEY,
+        key: TEST_KEY_INPUT,
       });
     });
   });
@@ -80,8 +80,7 @@ describe('oa-decrypt', () => {
       const oaDocument = actualUtils.readDocumentFile(OA_FIXTURE_PATH);
       const documentString = JSON.stringify(oaDocument);
 
-      const derivedKey = crypto.createHash('sha256').update(TEST_KEY, 'utf8').digest('hex');
-      const { cipherText, iv, tag, type } = encryptString(documentString, derivedKey);
+      const { key, cipherText, iv, tag, type } = encryptString(documentString);
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       const successMock = (signale.default as any).success as MockedFunction<any>;
 
@@ -90,7 +89,7 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('./encrypted.json')
         .mockResolvedValueOnce('./decrypted.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(key);
 
       await handler();
 
@@ -105,8 +104,7 @@ describe('oa-decrypt', () => {
         await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
       const oaDocument = actualUtils.readDocumentFile(OA_FIXTURE_PATH);
       const documentString = JSON.stringify(oaDocument);
-      const derivedKey = crypto.createHash('sha256').update(TEST_KEY, 'utf8').digest('hex');
-      const { cipherText, iv, tag, type } = encryptString(documentString, derivedKey);
+      const { key, cipherText, iv, tag, type } = encryptString(documentString);
       const readMock = utils.readDocumentFile as MockedFunction<any>;
 
       readMock.mockReturnValue({ cipherText, iv, tag, type });
@@ -114,7 +112,7 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('./encrypted.json')
         .mockResolvedValueOnce('./decrypted.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(`  ${TEST_KEY}  `);
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(`  ${key}  `);
 
       await handler();
 
@@ -132,7 +130,7 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('./bad.json')
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce('0'.repeat(64));
 
       await handler();
 
@@ -150,7 +148,7 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('./bad.json')
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce('0'.repeat(64));
 
       await handler();
 
@@ -163,8 +161,7 @@ describe('oa-decrypt', () => {
       const actualUtils =
         await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
       const oaDocument = actualUtils.readDocumentFile(OA_FIXTURE_PATH);
-      const derivedKey = crypto.createHash('sha256').update(TEST_KEY, 'utf8').digest('hex');
-      const { cipherText, iv, tag, type } = encryptString(JSON.stringify(oaDocument), derivedKey);
+      const { cipherText, iv, tag, type } = encryptString(JSON.stringify(oaDocument));
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       const errorMock = (signale.default as any).error as MockedFunction<any>;
 
@@ -173,12 +170,12 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('./encrypted.json')
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce('wrong-key');
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce('0'.repeat(64));
 
       await handler();
 
       expect(errorMock).toHaveBeenCalledWith(
-        'Failed to decrypt document. The password/key is likely incorrect or the file is corrupted.',
+        'Failed to decrypt document. The key is likely incorrect or the file is corrupted.',
       );
       expect(process.exitCode).toBe(1);
     });
@@ -196,7 +193,7 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('/nonexistent.json')
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce('0'.repeat(64));
 
       await handler();
 
@@ -220,7 +217,7 @@ describe('oa-decrypt', () => {
       (prompts.input as MockedFunction<any>)
         .mockResolvedValueOnce('/nonexistent.json')
         .mockResolvedValueOnce('./out.json');
-      (prompts.password as MockedFunction<any>).mockResolvedValueOnce(TEST_KEY);
+      (prompts.password as MockedFunction<any>).mockResolvedValueOnce('0'.repeat(64));
 
       await handler();
 

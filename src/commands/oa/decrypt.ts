@@ -1,6 +1,5 @@
 import fs from 'fs';
 import { input, password } from '@inquirer/prompts';
-import crypto from 'crypto';
 import signale from 'signale';
 import { decryptString } from '@trustvc/trustvc';
 import {
@@ -12,13 +11,8 @@ import {
   validateInputFileExists,
 } from '../../utils';
 
-/** Derive a 64-char hex key from passphrase for AES-256 (OPEN-ATTESTATION-TYPE-1). */
-const deriveKey = (passphrase: string): string =>
-  crypto.createHash('sha256').update(passphrase, 'utf8').digest('hex');
-
 export const command = 'oa-decrypt';
-export const describe =
-  'Decrypt a document that was encrypted using oa-encrypt. You will be asked for the decryption key.';
+export const describe = 'Decrypt a document encrypted with a key';
 
 type DecryptInput = {
   inputEncryptedPath: string;
@@ -55,7 +49,7 @@ export const promptForInputs = async (): Promise<DecryptInput | null> => {
   });
 
   const key = await password({
-    message: 'Enter the decryption key:',
+    message: 'Enter the decryption key (hex key from encrypt):',
     mask: '*',
     validate: (value: string) => {
       if (!value || value.trim() === '') return 'Decryption key is required';
@@ -108,17 +102,17 @@ function validateEncryptedPayload(payload: unknown): EncryptedPayload {
   return { cipherText, iv, tag, type };
 }
 
-/** Decrypts payload with derived key; rethrows a user-friendly error on library failure. */
+/** Decrypts payload with key (hex, as returned by encrypt); rethrows a user-friendly error on library failure. */
 function decryptPayload(payload: EncryptedPayload, key: string): string {
   try {
     return decryptString({
       ...payload,
-      key: deriveKey(key),
+      key: key.trim(),
     });
   } catch (err: unknown) {
     if (isErrorWithMessage(err) && err.message === DECRYPT_FAILED_LIBRARY_MESSAGE) {
       throw new Error(
-        'Failed to decrypt document. The password/key is likely incorrect or the file is corrupted.',
+        'Failed to decrypt document. The key is likely incorrect or the file is corrupted.',
       );
     }
     throw err;

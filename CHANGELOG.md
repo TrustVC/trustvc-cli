@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/TrustVC/trustvc-cli/compare/v1.0.0...v1.0.1) (2026-03-10)
+
+
+### Bug Fixes
+
+* move dotenv to dependencies and add Node.js version check ([6f8d4bd](https://github.com/TrustVC/trustvc-cli/commit/6f8d4bd2f7a6d512992d476f006b9952bbfdfbc1))
+
 # 1.0.0 (2026-03-10)
 
 

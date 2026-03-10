@@ -26,6 +26,7 @@ This CLI leverages the TrustVC package:
 ## Table of Contents
 
 - [Features](#features)
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [How It Works](#how-it-works)
@@ -38,6 +39,15 @@ This CLI leverages the TrustVC package:
   - [Project Structure](#project-structure)
 - [License](#license)
 
+## Prerequisites
+
+- **Node.js 22+** — Download from [nodejs.org](https://nodejs.org) or use [nvm](https://github.com/nvm-sh/nvm):
+
+```sh
+nvm install 22
+nvm use 22
+```
+
 ## Installation
 
 Install the CLI globally:
@@ -46,7 +56,7 @@ Install the CLI globally:
 npm install -g @trustvc/trustvc-cli
 ```
 
-Or use with npx (no installation required):
+Or run a single command without installing:
 
 ```sh
 npx @trustvc/trustvc-cli <command>

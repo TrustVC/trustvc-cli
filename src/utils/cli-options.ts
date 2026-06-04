@@ -163,7 +163,7 @@ export const promptNetworkSelection = async (): Promise<string> => {
       { name: 'Local', value: NetworkCmdName.Local },
       { name: 'Ethereum Mainnet', value: NetworkCmdName.Mainnet },
       { name: 'Sepolia Testnet', value: NetworkCmdName.Sepolia },
-      { name: 'Polygon Mainnet', value: NetworkCmdName.Matic },
+      { name: 'Polygon Mainnet (POL)', value: NetworkCmdName.Pol },
       { name: 'Polygon Amoy Testnet', value: NetworkCmdName.Amoy },
       { name: 'XDC Network', value: NetworkCmdName.XDC },
       { name: 'XDC Apothem Testnet', value: NetworkCmdName.XDCApothem },
@@ -293,7 +293,7 @@ export const getNetworkFromChainId = (chainId: number): string => {
   const chainIdMap: Record<number, string> = {
     1: 'mainnet',
     11155111: 'sepolia',
-    137: 'matic',
+    137: 'pol', // Polygon PoS — canonical name is now 'pol' (POL token)
     80002: 'amoy',
     101010: 'stability',
     20180427: 'stabilitytestnet',
@@ -526,7 +526,8 @@ export const shouldRunDryRun = (network: string): boolean => {
   const dryRunNetworks = [
     NetworkCmdName.Mainnet, // Ethereum Mainnet
     NetworkCmdName.Sepolia, // Ethereum Sepolia Testnet
-    NetworkCmdName.Matic, // Polygon Mainnet
+    NetworkCmdName.Pol, // Polygon Mainnet (POL)
+    NetworkCmdName.Matic, // Polygon Mainnet — backward-compat alias for pol
     NetworkCmdName.Amoy, // Polygon Amoy Testnet
   ];
   return dryRunNetworks.includes(network as NetworkCmdName);

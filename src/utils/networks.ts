@@ -5,7 +5,7 @@ import { SUPPORTED_CHAINS, CHAIN_ID } from '@trustvc/trustvc';
 // Re-export for use in other modules
 export { SUPPORTED_CHAINS, CHAIN_ID };
 
-export type networkCurrency = 'ETH' | 'MATIC' | 'XDC' | 'FREE' | 'ASTRON';
+export type networkCurrency = 'ETH' | 'MATIC' | 'POL' | 'XDC' | 'FREE' | 'ASTRON';
 
 type SupportedNetwork = {
   explorer: string;
@@ -20,6 +20,7 @@ export enum NetworkCmdName {
   Local = 'local',
   Mainnet = 'mainnet',
   Sepolia = 'sepolia',
+  Pol = 'pol',
   Matic = 'matic',
   Amoy = 'amoy',
   XDC = 'xdc',
@@ -64,7 +65,8 @@ const rpcUrls: { [key in NetworkCmdName]: string } = {
   [NetworkCmdName.Local]: 'http://127.0.0.1:8545',
   [NetworkCmdName.Mainnet]: 'homestead', // Special case for Infura
   [NetworkCmdName.Sepolia]: 'sepolia', // Special case for Infura
-  [NetworkCmdName.Matic]: 'matic',
+  [NetworkCmdName.Pol]: 'matic', // Infura network name for Polygon PoS
+  [NetworkCmdName.Matic]: 'matic', // backward-compat alias — same provider as pol
   [NetworkCmdName.Amoy]: 'matic-amoy',
   [NetworkCmdName.XDC]: 'https://rpc.ankr.com/xdc',
   [NetworkCmdName.XDCApothem]: 'https://rpc.apothem.network',
@@ -78,10 +80,11 @@ const rpcUrls: { [key in NetworkCmdName]: string } = {
 const createProvider = (networkName: NetworkCmdName): (() => Provider) => {
   const rpcUrl = rpcUrls[networkName];
 
-  // Use Infura provider for mainnet and sepolia
+  // Use Infura provider for mainnet, sepolia, and Polygon networks
   if (
     networkName === NetworkCmdName.Mainnet ||
     networkName === NetworkCmdName.Sepolia ||
+    networkName === NetworkCmdName.Pol ||
     networkName === NetworkCmdName.Matic ||
     networkName === NetworkCmdName.Amoy
   ) {
@@ -112,6 +115,11 @@ const buildSupportedNetwork = (): { [key in NetworkCmdName]: SupportedNetwork } 
       };
     }
   });
+
+  // Register 'matic' as a backward-compat alias for pol
+  if (networks[NetworkCmdName.Pol] && !networks[NetworkCmdName.Matic]) {
+    networks[NetworkCmdName.Matic] = networks[NetworkCmdName.Pol];
+  }
 
   return networks as { [key in NetworkCmdName]: SupportedNetwork };
 };

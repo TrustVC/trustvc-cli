@@ -43,3 +43,7 @@ coverage/
 # Temporary files
 *.tmp
 .cache/
+
+# local yalc configuration for help build and test local environment
+.yalc/
+yalc.lock

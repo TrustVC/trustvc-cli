@@ -4,13 +4,13 @@ import { verify } from '../../src/commands/verify';
 import { readJsonFile } from '../../src/utils';
 import { SignedVerifiableCredential } from '@trustvc/trustvc';
 
-const POL_FIXTURES_DIR = path.resolve(process.cwd(), 'tests/fixtures/pol');
-const OA_POL_FIXTURE = path.join(POL_FIXTURES_DIR, 'oa-token-registry-pol-mainnet-v2.json');
-const W3C_POL_FIXTURE = path.join(POL_FIXTURES_DIR, 'w3c-transferable-record-pol-mainnet.json');
+const AMOY_FIXTURES_DIR = path.resolve(process.cwd(), 'tests/fixtures/amoy');
+const OA_AMOY_FIXTURE = path.join(AMOY_FIXTURES_DIR, 'oa-token-registry-amoy-testnet-v2.json');
+const W3C_AMOY_FIXTURE = path.join(AMOY_FIXTURES_DIR, 'w3c-transferable-record-amoy-testnet.json');
 
-// Live-network tests require real Polygon mainnet RPC.
-// Run with: RUN_LIVE_TESTS=true npx vitest --run verify.pol
-// Optionally set MATIC_RPC=https://polygon-bor-rpc.publicnode.com to avoid Infura rate limits.
+// Live-network tests require real Polygon Amoy testnet RPC.
+// Run with: RUN_LIVE_TESTS=true npx vitest --run verify.amoy
+// Optionally set AMOY_RPC=https://rpc-amoy.polygon.technology/ to avoid Infura rate limits.
 const RUN_LIVE_TESTS = !!process.env.RUN_LIVE_TESTS;
 
 vi.mock('signale', () => ({
@@ -26,7 +26,7 @@ vi.mock('signale', () => ({
   })),
 }));
 
-describe('Polygon (POL) mainnet verify', () => {
+describe('Polygon Amoy (testnet) verify', () => {
   let signaleSuccessMock: MockedFunction<any>;
   let signaleWarnMock: MockedFunction<any>;
   let signaleErrorMock: MockedFunction<any>;
@@ -39,95 +39,91 @@ describe('Polygon (POL) mainnet verify', () => {
     signaleWarnMock = (signale.default as any).warn;
   });
 
-  // ─── Fixture structure (offline, no network) ──────────────────────────────
+  // ─── OA v2 fixture structure (offline, no network) ───────────────────────
 
   describe('OA v2 token registry fixture (structural)', () => {
     it('fixture should be a valid wrapped OA v2 document', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(OA_POL_FIXTURE, 'document');
+      const doc = readJsonFile<SignedVerifiableCredential>(OA_AMOY_FIXTURE, 'document');
       expect((doc as any).version).toBe('https://schema.openattestation.com/2.0/schema.json');
       expect((doc as any).signature).toBeDefined();
       expect((doc as any).signature.type).toBe('SHA3MerkleProof');
     });
 
-    it('fixture should target POL mainnet (chainId 137)', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(OA_POL_FIXTURE, 'document') as any;
+    it('fixture should target Polygon Amoy testnet (chainId 80002)', () => {
+      const doc = readJsonFile<SignedVerifiableCredential>(OA_AMOY_FIXTURE, 'document') as any;
       // data.network.chainId is UUID-encoded in wrapped OA v2
-      expect((doc as any).data.network.chainId).toContain('137');
+      expect(doc.data.network.chainId).toContain('80002');
     });
 
-    it('fixture should reference correct token registry', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(OA_POL_FIXTURE, 'document') as any;
+    it('fixture should reference the correct Amoy token registry', () => {
+      const doc = readJsonFile<SignedVerifiableCredential>(OA_AMOY_FIXTURE, 'document') as any;
       expect(doc.data.issuers[0].tokenRegistry).toContain(
-        '0x0961d9C2dA9a7105fDFC9DC4ec45951C024F88B0',
+        '0xa5f9a7106a599E4caAFacE6872da097aa802Cc64',
       );
     });
 
     it('fixture should have a valid SHA3MerkleProof signature with non-empty targetHash', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(OA_POL_FIXTURE, 'document') as any;
+      const doc = readJsonFile<SignedVerifiableCredential>(OA_AMOY_FIXTURE, 'document') as any;
       expect(doc.signature.targetHash).toMatch(/^[a-f0-9]{64}$/);
       expect(doc.signature.merkleRoot).toBe(doc.signature.targetHash);
     });
   });
 
+  // ─── W3C fixture structure (offline, no network) ──────────────────────────
+
   describe('W3C transferable record fixture (structural)', () => {
     it('fixture should be a W3C VC with TransferableRecords credentialStatus', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(W3C_POL_FIXTURE, 'document') as any;
+      const doc = readJsonFile<SignedVerifiableCredential>(W3C_AMOY_FIXTURE, 'document') as any;
       expect(doc['@context']).toBeDefined();
       expect(doc.type).toContain('VerifiableCredential');
       expect(doc.credentialStatus.type).toBe('TransferableRecords');
     });
 
-    it('fixture should target POL mainnet (chainId 137)', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(W3C_POL_FIXTURE, 'document') as any;
+    it('fixture should target Polygon Amoy testnet (chain POL, chainId 80002)', () => {
+      const doc = readJsonFile<SignedVerifiableCredential>(W3C_AMOY_FIXTURE, 'document') as any;
       expect(doc.credentialStatus.tokenNetwork.chain).toBe('POL');
-      expect(doc.credentialStatus.tokenNetwork.chainId).toBe(137);
+      expect(doc.credentialStatus.tokenNetwork.chainId).toBe(80002);
     });
 
-    it('fixture should reference correct token registry and token ID', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(W3C_POL_FIXTURE, 'document') as any;
-      expect(doc.credentialStatus.tokenRegistry).toBe('0x0961d9C2dA9a7105fDFC9DC4ec45951C024F88B0');
+    it('fixture should reference the correct Amoy token registry and token ID', () => {
+      const doc = readJsonFile<SignedVerifiableCredential>(W3C_AMOY_FIXTURE, 'document') as any;
+      expect(doc.credentialStatus.tokenRegistry).toBe('0xa5f9a7106a599E4caAFacE6872da097aa802Cc64');
       expect(doc.credentialStatus.tokenId).toBe(
-        '1174afa500e1b265450b55200cb16487e92e7c5410cff84b693eda59194b10fd',
+        'd320d1e7eaf6a0f9ec185c8b25470d027115ef2059e5b1bcb41cde09f799be75',
       );
     });
 
     it('fixture issuer should be did:web:trustvc.github.io:did:1', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(W3C_POL_FIXTURE, 'document') as any;
+      const doc = readJsonFile<SignedVerifiableCredential>(W3C_AMOY_FIXTURE, 'document') as any;
       expect(doc.issuer).toBe('did:web:trustvc.github.io:did:1');
     });
 
     it('fixture should have a DataIntegrityProof', () => {
-      const doc = readJsonFile<SignedVerifiableCredential>(W3C_POL_FIXTURE, 'document') as any;
+      const doc = readJsonFile<SignedVerifiableCredential>(W3C_AMOY_FIXTURE, 'document') as any;
       expect(doc.proof.type).toBe('DataIntegrityProof');
     });
   });
 
-  // ─── Network routing (no live RPC needed) ─────────────────────────────────
+  // ─── Network routing (no live RPC needed) ────────────────────────────────
 
   describe('network routing', () => {
-    it('chainId 137 maps to NetworkCmdName.Matic (ethers.js internal name)', async () => {
-      const { getSupportedNetworkNameFromId, NetworkCmdName } =
+    it('chainId 80002 maps to NetworkCmdName.Amoy', async () => {
+      const { getSupportedNetworkNameFromId, getSupportedNetwork, NetworkCmdName } =
         await import('../../src/utils/networks');
-      expect(getSupportedNetworkNameFromId(137)).toBe(NetworkCmdName.Matic);
+      expect(getSupportedNetworkNameFromId(80002)).toBe(NetworkCmdName.Amoy);
+      expect(getSupportedNetwork(NetworkCmdName.Amoy)).toBeDefined();
     });
 
-    it('getSupportedNetwork returns Polygon config for NetworkCmdName.Matic', async () => {
-      const { getSupportedNetwork, NetworkCmdName } = await import('../../src/utils/networks');
-      const maticNetwork = getSupportedNetwork(NetworkCmdName.Matic);
-      expect(maticNetwork).toBeDefined();
-      expect(maticNetwork.networkId).toBe(137);
-      expect(maticNetwork.currency).toBe('POL');
-    });
-
-    it('MATIC_RPC env var overrides the default Infura provider for Polygon', async () => {
-      const customRpc = 'https://polygon-bor-rpc.publicnode.com';
-      process.env.MATIC_RPC = customRpc;
+    it('AMOY_RPC env var overrides the default Infura provider for Polygon Amoy', async () => {
+      const customRpc = 'https://rpc-amoy.polygon.technology/';
+      process.env.AMOY_RPC = customRpc;
 
       const { getSupportedNetwork, NetworkCmdName } = await import('../../src/utils/networks');
       const { JsonRpcProvider } = await import('ethers');
-      const provider = getSupportedNetwork(NetworkCmdName.Matic).provider();
+      const network = getSupportedNetwork(NetworkCmdName.Amoy);
+      const provider = network.provider();
 
-      delete process.env.MATIC_RPC;
+      delete process.env.AMOY_RPC;
 
       expect(provider).toBeInstanceOf(JsonRpcProvider);
       expect((provider as any)._getConnection?.().url ?? (provider as any).connection?.url).toBe(
@@ -136,14 +132,14 @@ describe('Polygon (POL) mainnet verify', () => {
     });
   });
 
-  // ─── Live POL mainnet tests ────────────────────────────────────────────────
+  // ─── Live Amoy testnet tests ──────────────────────────────────────────────
 
-  describe.skipIf(!RUN_LIVE_TESTS)('live POL mainnet — OA token registry (minted)', () => {
+  describe.skipIf(!RUN_LIVE_TESTS)('live Amoy testnet — OA token registry (minted)', () => {
     it(
       'should verify OA doc with VALID DOCUMENT_INTEGRITY and DOCUMENT_STATUS',
       { timeout: 60000 },
       async () => {
-        const doc = readJsonFile<SignedVerifiableCredential>(OA_POL_FIXTURE, 'document');
+        const doc = readJsonFile<SignedVerifiableCredential>(OA_AMOY_FIXTURE, 'document');
         await verify(doc);
 
         const successMessages = signaleSuccessMock.mock.calls.map((c: any[]) => c[0]);
@@ -156,7 +152,7 @@ describe('Polygon (POL) mainnet verify', () => {
       'should log all three fragment types (INTEGRITY, STATUS, IDENTITY)',
       { timeout: 60000 },
       async () => {
-        const doc = readJsonFile<SignedVerifiableCredential>(OA_POL_FIXTURE, 'document');
+        const doc = readJsonFile<SignedVerifiableCredential>(OA_AMOY_FIXTURE, 'document');
         await verify(doc);
 
         const allMessages = [
@@ -172,12 +168,12 @@ describe('Polygon (POL) mainnet verify', () => {
     );
   });
 
-  describe.skipIf(!RUN_LIVE_TESTS)('live POL mainnet — W3C transferable record (minted)', () => {
+  describe.skipIf(!RUN_LIVE_TESTS)('live Amoy testnet — W3C transferable record (minted)', () => {
     it(
       'should verify W3C doc with VALID DOCUMENT_INTEGRITY, DOCUMENT_STATUS, ISSUER_IDENTITY',
       { timeout: 60000 },
       async () => {
-        const doc = readJsonFile<SignedVerifiableCredential>(W3C_POL_FIXTURE, 'document');
+        const doc = readJsonFile<SignedVerifiableCredential>(W3C_AMOY_FIXTURE, 'document');
         await verify(doc);
 
         const successMessages = signaleSuccessMock.mock.calls.map((c: any[]) => c[0]);
@@ -191,7 +187,7 @@ describe('Polygon (POL) mainnet verify', () => {
       'should not log any ERROR level messages for a valid minted W3C doc',
       { timeout: 60000 },
       async () => {
-        const doc = readJsonFile<SignedVerifiableCredential>(W3C_POL_FIXTURE, 'document');
+        const doc = readJsonFile<SignedVerifiableCredential>(W3C_AMOY_FIXTURE, 'document');
         await verify(doc);
         expect(signaleErrorMock).not.toHaveBeenCalled();
       },

@@ -20,7 +20,6 @@ export enum NetworkCmdName {
   Local = 'local',
   Mainnet = 'mainnet',
   Sepolia = 'sepolia',
-  Pol = 'pol',
   Matic = 'matic',
   Amoy = 'amoy',
   XDC = 'xdc',
@@ -65,8 +64,7 @@ const rpcUrls: { [key in NetworkCmdName]: string } = {
   [NetworkCmdName.Local]: 'http://127.0.0.1:8545',
   [NetworkCmdName.Mainnet]: 'homestead', // Special case for Infura
   [NetworkCmdName.Sepolia]: 'sepolia', // Special case for Infura
-  [NetworkCmdName.Pol]: 'matic', // Infura network name for Polygon PoS
-  [NetworkCmdName.Matic]: 'matic', // backward-compat alias — same provider as pol
+  [NetworkCmdName.Matic]: 'matic',
   [NetworkCmdName.Amoy]: 'matic-amoy',
   [NetworkCmdName.XDC]: 'https://rpc.ankr.com/xdc',
   [NetworkCmdName.XDCApothem]: 'https://rpc.apothem.network',
@@ -84,7 +82,6 @@ const createProvider = (networkName: NetworkCmdName): (() => Provider) => {
   if (
     networkName === NetworkCmdName.Mainnet ||
     networkName === NetworkCmdName.Sepolia ||
-    networkName === NetworkCmdName.Pol ||
     networkName === NetworkCmdName.Matic ||
     networkName === NetworkCmdName.Amoy
   ) {
@@ -115,11 +112,6 @@ const buildSupportedNetwork = (): { [key in NetworkCmdName]: SupportedNetwork } 
       };
     }
   });
-
-  // Register 'matic' as a backward-compat alias for pol
-  if (networks[NetworkCmdName.Pol] && !networks[NetworkCmdName.Matic]) {
-    networks[NetworkCmdName.Matic] = networks[NetworkCmdName.Pol];
-  }
 
   return networks as { [key in NetworkCmdName]: SupportedNetwork };
 };

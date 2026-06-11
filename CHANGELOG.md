@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/TrustVC/trustvc-cli/compare/v1.0.1...v1.1.0) (2026-06-11)
+
+
+### Features
+
+* POL network ([#25](https://github.com/TrustVC/trustvc-cli/issues/25)) ([3aa1233](https://github.com/TrustVC/trustvc-cli/commit/3aa1233e32ddede7f17d34974b4c23a10f761d2d))
+
 ## [1.0.1](https://github.com/TrustVC/trustvc-cli/compare/v1.0.0...v1.0.1) (2026-03-10)
 
 

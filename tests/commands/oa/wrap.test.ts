@@ -373,11 +373,12 @@ describe('oa-wrap', () => {
   describe('testing with OA v3 fixtures', () => {
     const RAW_OA_V3_DID_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-did.json';
     const RAW_OA_V3_TXT_FILE = 'tests/fixtures/wrap/oa_v3/raw_oa_docs_v3/raw-dns-txt.json';
+    const OA_V3_DEPRECATION_MESSAGE =
+      'OA v3 is deprecated in TrustVC as of 1 October 2025. Please switch over to W3C VC.';
 
-    it('should wrap documents in batch mode successfully', async () => {
+    it('should reject OA v3 documents in batch mode', async () => {
       const utils = await import('../../../src/utils');
       const trustvc = await import('@trustvc/trustvc');
-      const signale = await import('signale');
 
       const actualUtils =
         await vi.importActual<typeof import('../../../src/utils')>('../../../src/utils');
@@ -385,56 +386,21 @@ describe('oa-wrap', () => {
         await vi.importActual<typeof import('@trustvc/trustvc')>('@trustvc/trustvc');
 
       const readMock = utils.readDocumentFile as MockedFunction<any>;
-      const writeMock = utils.writeFile as MockedFunction<any>;
       const wrapOADocumentsMock = trustvc.wrapOADocuments as MockedFunction<any>;
-      const successMock = (signale.default as any).success as MockedFunction<any>;
 
       readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
       wrapOADocumentsMock.mockImplementation(actualTrustvc.wrapOADocuments as unknown as any);
 
-      const originalDidData = actualUtils.readDocumentFile(RAW_OA_V3_DID_FILE);
-      const originalTxtData = actualUtils.readDocumentFile(RAW_OA_V3_TXT_FILE);
-
-      await wrapOA({
-        mode: WrapMode.Batch,
-        docPaths: [RAW_OA_V3_DID_FILE, RAW_OA_V3_TXT_FILE],
-        pathToOutputDirectory: './out',
-      });
-
-      expect(wrapOADocumentsMock).toHaveBeenCalledTimes(1);
-      expect(wrapOADocumentsMock.mock.calls[0][0]).toHaveLength(2);
-
-      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-did.json');
-      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-txt.json');
-      expect(didCall).toBeTruthy();
-      expect(txtCall).toBeTruthy();
-
-      const file1 = didCall![1] as any;
-      const file2 = txtCall![1] as any;
-      const proof1 = file1.proof;
-      const proof2 = file2.proof;
-
-      const merkleRoot = proof1.merkleRoot as string;
-      expect(merkleRoot).toHaveLength(64);
-      expect(merkleRoot).toStrictEqual(proof1.merkleRoot);
-      expect(merkleRoot).toStrictEqual(proof2.merkleRoot);
-      expect(merkleRoot).not.toStrictEqual(proof1.targetHash);
-      expect(merkleRoot).not.toStrictEqual(proof2.targetHash);
-      expect(proof1.targetHash).not.toStrictEqual(proof2.targetHash);
-
-      expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
-      expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
-
-      expect(successMock).toHaveBeenCalledWith(
-        'Wrapped OpenAttestation document: out/raw-dns-did.json',
-      );
-      expect(successMock).toHaveBeenCalledWith(
-        'Wrapped OpenAttestation document: out/raw-dns-txt.json',
-      );
-      expect(successMock).toHaveBeenCalledWith('All documents wrapped in batch mode');
+      await expect(
+        wrapOA({
+          mode: WrapMode.Batch,
+          docPaths: [RAW_OA_V3_DID_FILE, RAW_OA_V3_TXT_FILE],
+          pathToOutputDirectory: './out',
+        }),
+      ).rejects.toThrow(OA_V3_DEPRECATION_MESSAGE);
     });
 
-    it('should wrap documents in individual mode with merkleRoot equal to targetHash', async () => {
+    it('should log errors and skip output when wrapping OA v3 documents individually', async () => {
       const utils = await import('../../../src/utils');
       const trustvc = await import('@trustvc/trustvc');
       const signale = await import('signale');
@@ -447,13 +413,10 @@ describe('oa-wrap', () => {
       const readMock = utils.readDocumentFile as MockedFunction<any>;
       const writeMock = utils.writeFile as MockedFunction<any>;
       const wrapOADocumentMock = trustvc.wrapOADocument as MockedFunction<any>;
-      const successMock = (signale.default as any).success as MockedFunction<any>;
+      const errorMock = (signale.default as any).error as MockedFunction<any>;
 
       readMock.mockImplementation(actualUtils.readDocumentFile as unknown as any);
       wrapOADocumentMock.mockImplementation(actualTrustvc.wrapOADocument as unknown as any);
-
-      const originalDidData = actualUtils.readDocumentFile(RAW_OA_V3_DID_FILE);
-      const originalTxtData = actualUtils.readDocumentFile(RAW_OA_V3_TXT_FILE);
 
       await wrapOA({
         mode: WrapMode.Individual,
@@ -462,33 +425,14 @@ describe('oa-wrap', () => {
       });
 
       expect(wrapOADocumentMock).toHaveBeenCalledTimes(2);
-
-      const didCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-did.json');
-      const txtCall = writeMock.mock.calls.find((c) => c[0] === 'out/raw-dns-txt.json');
-      expect(didCall).toBeTruthy();
-      expect(txtCall).toBeTruthy();
-
-      const file1 = didCall![1] as any;
-      const file2 = txtCall![1] as any;
-      const proof1 = file1.proof;
-      const proof2 = file2.proof;
-
-      expect(proof1.merkleRoot).toHaveLength(64);
-      expect(proof2.merkleRoot).toHaveLength(64);
-      expect(proof1.merkleRoot).toStrictEqual(proof1.targetHash);
-      expect(proof2.merkleRoot).toStrictEqual(proof2.targetHash);
-      expect(proof1.targetHash).not.toStrictEqual(proof2.targetHash);
-
-      expect(actualTrustvc.getDocumentData(file1)).toStrictEqual(originalDidData);
-      expect(actualTrustvc.getDocumentData(file2)).toStrictEqual(originalTxtData);
-
-      expect(successMock).toHaveBeenCalledWith(
-        'Wrapped OpenAttestation document: out/raw-dns-did.json',
+      expect(writeMock).not.toHaveBeenCalled();
+      expect(errorMock).toHaveBeenCalledWith(
+        `Error while wrapping OpenAttestation document: ${RAW_OA_V3_DID_FILE}`,
       );
-      expect(successMock).toHaveBeenCalledWith(
-        'Wrapped OpenAttestation document: out/raw-dns-txt.json',
+      expect(errorMock).toHaveBeenCalledWith(
+        `Error while wrapping OpenAttestation document: ${RAW_OA_V3_TXT_FILE}`,
       );
-      expect(successMock).toHaveBeenCalledWith('All documents wrapped in individual mode');
+      expect(errorMock).toHaveBeenCalledWith(OA_V3_DEPRECATION_MESSAGE);
     });
   });
 });

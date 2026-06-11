@@ -1352,7 +1352,7 @@ You can override the default RPC endpoints for any network by setting environmen
 
 - `SEPOLIA_RPC` - Sepolia testnet
 - `MAINNET_RPC` - Ethereum mainnet
-- `MATIC_RPC` - Polygon mainnet
+- `POL_RPC` - Polygon mainnet
 - `AMOY_RPC` - Polygon Amoy testnet
 - `XDC_RPC` - XDC Network
 - `XDCAPOTHEM_RPC` - XDC Apothem testnet
@@ -1374,7 +1374,7 @@ trustvc mint
 
 # Set multiple custom RPCs
 export MAINNET_RPC=https://mainnet.infura.io/v3/your-api-key
-export MATIC_RPC=https://polygon-rpc.com
+export POL_RPC=https://polygon-rpc.com
 ```
 
 If no environment variable is set, the CLI will use the default RPC endpoint for each network.

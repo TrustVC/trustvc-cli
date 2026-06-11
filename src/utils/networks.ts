@@ -5,7 +5,7 @@ import { SUPPORTED_CHAINS, CHAIN_ID } from '@trustvc/trustvc';
 // Re-export for use in other modules
 export { SUPPORTED_CHAINS, CHAIN_ID };
 
-export type networkCurrency = 'ETH' | 'MATIC' | 'XDC' | 'FREE' | 'ASTRON';
+export type networkCurrency = 'ETH' | 'POL' | 'XDC' | 'FREE' | 'ASTRON';
 
 type SupportedNetwork = {
   explorer: string;
@@ -20,7 +20,7 @@ export enum NetworkCmdName {
   Local = 'local',
   Mainnet = 'mainnet',
   Sepolia = 'sepolia',
-  Matic = 'matic',
+  Pol = 'pol',
   Amoy = 'amoy',
   XDC = 'xdc',
   XDCApothem = 'xdcapothem',
@@ -64,7 +64,7 @@ const rpcUrls: { [key in NetworkCmdName]: string } = {
   [NetworkCmdName.Local]: 'http://127.0.0.1:8545',
   [NetworkCmdName.Mainnet]: 'homestead', // Special case for Infura
   [NetworkCmdName.Sepolia]: 'sepolia', // Special case for Infura
-  [NetworkCmdName.Matic]: 'matic',
+  [NetworkCmdName.Pol]: 'matic',
   [NetworkCmdName.Amoy]: 'matic-amoy',
   [NetworkCmdName.XDC]: 'https://rpc.ankr.com/xdc',
   [NetworkCmdName.XDCApothem]: 'https://rpc.apothem.network',
@@ -78,11 +78,11 @@ const rpcUrls: { [key in NetworkCmdName]: string } = {
 const createProvider = (networkName: NetworkCmdName): (() => Provider) => {
   const rpcUrl = rpcUrls[networkName];
 
-  // Use Infura provider for mainnet and sepolia
+  // Use Infura provider for mainnet, sepolia, and Polygon networks
   if (
     networkName === NetworkCmdName.Mainnet ||
     networkName === NetworkCmdName.Sepolia ||
-    networkName === NetworkCmdName.Matic ||
+    networkName === NetworkCmdName.Pol ||
     networkName === NetworkCmdName.Amoy
   ) {
     return getProviderWithEnvOverride(networkName, defaultInfuraProvider(rpcUrl));
@@ -97,8 +97,13 @@ const buildSupportedNetwork = (): { [key in NetworkCmdName]: SupportedNetwork } 
   const networks: Partial<{ [key in NetworkCmdName]: SupportedNetwork }> = {};
 
   // Map SUPPORTED_CHAINS to our network structure
+  const libraryNameToCmdName: Partial<Record<string, NetworkCmdName>> = {
+    matic: NetworkCmdName.Pol,
+  };
+
   Object.entries(SUPPORTED_CHAINS).forEach(([chainId, chainConfig]) => {
-    const networkName = chainConfig.name as NetworkCmdName;
+    const networkName =
+      libraryNameToCmdName[chainConfig.name] ?? (chainConfig.name as NetworkCmdName);
 
     // Only process networks that are in our NetworkCmdName enum
     if (Object.values(NetworkCmdName).includes(networkName)) {

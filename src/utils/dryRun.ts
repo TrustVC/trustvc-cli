@@ -44,8 +44,8 @@ export const dryRunMode = async ({
 
   const spotRateETHUSD = await getSpotRate('ETH', 'USD');
   const spotRateETHSGD = await getSpotRate('ETH', 'SGD');
-  const spotRateMATICUSD = await getSpotRate('POL', 'USD');
-  const spotRateMATICSGD = await getSpotRate('POL', 'SGD');
+  const spotRatePOLUSD = await getSpotRate('POL', 'USD');
+  const spotRatePOLSGD = await getSpotRate('POL', 'SGD');
   const estimatedFeeUSD = convertWeiFiatDollars(gasCost, spotRateETHUSD);
 
   console.log(
@@ -97,15 +97,15 @@ export const dryRunMode = async ({
       'priority fee price': convertWeiFiatDollars(maxPriorityCost, spotRateETHSGD),
       'max fee price': convertWeiFiatDollars(maxCost, spotRateETHSGD),
     },
-    MATICUSD: {
-      'gas cost': convertWeiFiatDollars(gasCost, spotRateMATICUSD),
-      'priority fee price': convertWeiFiatDollars(maxPriorityCost, spotRateMATICUSD),
-      'max fee price': convertWeiFiatDollars(maxCost, spotRateMATICUSD),
+    POLUSD: {
+      'gas cost': convertWeiFiatDollars(gasCost, spotRatePOLUSD),
+      'priority fee price': convertWeiFiatDollars(maxPriorityCost, spotRatePOLUSD),
+      'max fee price': convertWeiFiatDollars(maxCost, spotRatePOLUSD),
     },
-    MATICSGD: {
-      'gas cost': convertWeiFiatDollars(gasCost, spotRateMATICSGD),
-      'priority fee price': convertWeiFiatDollars(maxPriorityCost, spotRateMATICSGD),
-      'max fee price': convertWeiFiatDollars(maxCost, spotRateMATICSGD),
+    POLSGD: {
+      'gas cost': convertWeiFiatDollars(gasCost, spotRatePOLSGD),
+      'priority fee price': convertWeiFiatDollars(maxPriorityCost, spotRatePOLSGD),
+      'max fee price': convertWeiFiatDollars(maxCost, spotRatePOLSGD),
     },
   });
   console.log(red('Please read the information above to understand the table'));

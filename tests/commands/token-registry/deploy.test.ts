@@ -77,13 +77,13 @@ vi.mock('@trustvc/trustvc', () => ({
       name: 'matic',
       explorerUrl: 'https://polygonscan.com',
       rpcUrl: 'https://polygon-mainnet.infura.io/v3/test',
-      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
+      nativeCurrency: { symbol: 'POL', decimals: 18 },
     },
   },
   CHAIN_ID: {
     mainnet: 1,
     sepolia: 11155111,
-    matic: 137,
+    pol: 137,
   },
 }));
 
@@ -99,12 +99,12 @@ vi.mock('../../../src/utils', async (importOriginal) => {
     getEtherscanAddress: vi.fn(() => 'https://etherscan.io'),
     displayTransactionPrice: vi.fn(),
     getSupportedNetwork: vi.fn((network: string) => ({
-      networkId: network === 'sepolia' ? 11155111 : network === 'matic' ? 137 : 1,
+      networkId: network === 'sepolia' ? 11155111 : network === 'pol' ? 137 : 1,
     })),
     supportedNetwork: {
       mainnet: { networkId: 1 },
       sepolia: { networkId: 11155111 },
-      matic: { networkId: 137 },
+      pol: { networkId: 137 },
     },
     promptNetworkSelection: vi.fn(),
     promptAddress: vi.fn(),
@@ -212,7 +212,7 @@ describe('token-registry/deploy', () => {
         registryName: 'Key Token Registry',
         registrySymbol: 'KTR',
         standalone: true,
-        network: NetworkCmdName.Matic,
+        network: NetworkCmdName.Pol,
       };
 
       const utils = await import('../../../src/utils');
@@ -317,7 +317,7 @@ describe('token-registry/deploy', () => {
       const utils = await import('../../../src/utils');
       (utils.performDryRunWithConfirmation as any).mockResolvedValue(true);
       (utils.getSupportedNetwork as any).mockImplementation((network: string) => ({
-        networkId: network === 'sepolia' ? 11155111 : network === 'matic' ? 137 : 1,
+        networkId: network === 'sepolia' ? 11155111 : network === 'pol' ? 137 : 1,
       }));
     });
 

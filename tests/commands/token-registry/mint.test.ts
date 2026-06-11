@@ -54,13 +54,13 @@ vi.mock('@trustvc/trustvc', () => ({
       name: 'matic',
       explorerUrl: 'https://polygonscan.com',
       rpcUrl: 'https://polygon-mainnet.infura.io/v3/test',
-      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
+      nativeCurrency: { symbol: 'POL', decimals: 18 },
     },
     80002: {
       name: 'amoy',
       explorerUrl: 'https://www.oklink.com/amoy',
       rpcUrl: 'https://rpc-amoy.polygon.technology',
-      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
+      nativeCurrency: { symbol: 'POL', decimals: 18 },
     },
     50: {
       name: 'xdc',
@@ -102,7 +102,7 @@ vi.mock('@trustvc/trustvc', () => ({
   CHAIN_ID: {
     mainnet: 1,
     sepolia: 11155111,
-    matic: 137,
+    pol: 137,
     amoy: 80002,
     xdc: 50,
     xdcapothem: 51,
@@ -258,7 +258,7 @@ describe('token-registry/mint', () => {
 
     it('should return correct answers for valid inputs with direct private key', async () => {
       const mockInputs = {
-        network: NetworkCmdName.Matic,
+        network: NetworkCmdName.Pol,
         address: '0x1234567890123456789012345678901234567890',
         tokenId: '0xabcdef1234567890',
         beneficiary: '0x0987654321098765432109876543210987654321',
@@ -449,7 +449,7 @@ describe('token-registry/mint', () => {
         NetworkCmdName.Local,
         NetworkCmdName.Mainnet,
         NetworkCmdName.Sepolia,
-        NetworkCmdName.Matic,
+        NetworkCmdName.Pol,
         NetworkCmdName.Amoy,
         NetworkCmdName.XDC,
         NetworkCmdName.XDCApothem,

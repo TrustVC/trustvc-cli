@@ -58,13 +58,13 @@ vi.mock('@trustvc/trustvc', () => ({
       name: 'matic',
       explorerUrl: 'https://polygonscan.com',
       rpcUrl: 'https://polygon-mainnet.infura.io/v3/test',
-      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
+      nativeCurrency: { symbol: 'POL', decimals: 18 },
     },
   },
   CHAIN_ID: {
     mainnet: 1,
     sepolia: 11155111,
-    matic: 137,
+    pol: 137,
   },
 }));
 
@@ -390,7 +390,7 @@ describe('document-store/issue', () => {
       const networks = [
         { name: NetworkCmdName.Mainnet, chainId: 1 },
         { name: NetworkCmdName.Sepolia, chainId: 11155111 },
-        { name: NetworkCmdName.Matic, chainId: 137 },
+        { name: NetworkCmdName.Pol, chainId: 137 },
         { name: NetworkCmdName.Amoy, chainId: 80002 },
         { name: NetworkCmdName.XDC, chainId: 50 },
         { name: NetworkCmdName.XDCApothem, chainId: 51 },

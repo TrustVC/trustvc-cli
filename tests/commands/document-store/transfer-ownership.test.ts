@@ -58,13 +58,13 @@ vi.mock('@trustvc/trustvc', () => ({
       name: 'matic',
       explorerUrl: 'https://polygonscan.com',
       rpcUrl: 'https://polygon-mainnet.infura.io/v3/test',
-      nativeCurrency: { symbol: 'MATIC', decimals: 18 },
+      nativeCurrency: { symbol: 'POL', decimals: 18 },
     },
   },
   CHAIN_ID: {
     mainnet: 1,
     sepolia: 11155111,
-    matic: 137,
+    pol: 137,
   },
 }));
 
@@ -207,7 +207,7 @@ describe('document-store/transfer-ownership', () => {
       (utils.promptAndReadDocument as any).mockResolvedValue(mockDocument);
       (utils.extractOADocumentInfo as any).mockResolvedValue({
         documentStoreAddress: mockInputs.documentStoreAddress,
-        network: NetworkCmdName.Matic,
+        network: NetworkCmdName.Pol,
       });
 
       (utils.promptAddress as any).mockResolvedValue(mockInputs.newOwner);

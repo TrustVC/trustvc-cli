@@ -12,6 +12,7 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Document Store**: Deploy and manage document store contracts
 - ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
+- ✅ **Obligation Registry (BoE)**: Deploy/mint obligation registries, manage ObligationEscrow lifecycle, and verify BoE documents via a dedicated pipeline
 - ✅ **Credential Status**: Create and update W3C credential status lists
 - ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
 - ✅ **Multi-Network Support**: Ethereum, Polygon, XDC, Stability, and Astron networks
@@ -38,6 +39,7 @@ This CLI leverages the TrustVC package:
   - [Setup](#setup)
   - [Project Structure](#project-structure)
 - [License](#license)
+- [Obligation Registry user guide](#obligation-registry-user-guide)
 
 ## Prerequisites
 
@@ -188,6 +190,37 @@ trustvc title-escrow reject-transfer-owner
 trustvc title-escrow reject-transfer-owner-holder
 ```
 
+### Obligation Registry & Escrow (BoE)
+
+```sh
+# Deploy Obligation Registry (TrustVCToken + factory)
+trustvc obligation-registry deploy
+
+# Mint a BoE tokenId to obligationRegistry
+trustvc obligation-registry mint
+
+# Lifecycle
+trustvc obligation-escrow accept
+trustvc obligation-escrow reject
+trustvc obligation-escrow discharge
+trustvc obligation-escrow status
+
+# Transfers (mirror title-escrow)
+trustvc obligation-escrow transfer-holder
+trustvc obligation-escrow nominate-transfer-owner
+trustvc obligation-escrow endorse-transfer-owner
+trustvc obligation-escrow transfer-owner-holder
+trustvc obligation-escrow reject-transfer-holder
+trustvc obligation-escrow reject-transfer-owner
+trustvc obligation-escrow reject-transfer-owner-holder
+trustvc obligation-escrow return-to-issuer
+trustvc obligation-escrow accept-return-to-issuer
+trustvc obligation-escrow reject-return-to-issuer
+
+# Verify via obligation pipeline (not classic verify)
+trustvc verify-obligation
+```
+
 ## How It Works
 
 ### W3C Credentials
@@ -223,6 +256,8 @@ trustvc title-escrow reject-transfer-owner-holder
 - **Transaction Cancel**: Cancel a pending transaction by replacing it with a 0-value transaction to yourself (same nonce, higher gas price). Supports specifying by transaction hash or by nonce and gas price.
 
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
+
+- **Obligation Registry (BoE)**: Separate command trees for electronic Bill of Exchange flows — `obligation-registry` (deploy/mint), `obligation-escrow` (accept/reject/discharge, transfers, return), and `verify-obligation` (dedicated BoE verify pipeline). Do not use classic `token-registry` / `title-escrow` / `verify` for obligation documents. See [Obligation Registry user guide](#obligation-registry-user-guide).
 
 ## Commands
 
@@ -275,12 +310,27 @@ trustvc title-escrow reject-transfer-owner-holder
 |                     | [`reject-transfer-owner`](#title-escrow-reject-transfer-owner)               | Reject owner transfer                                      |
 |                     | [`reject-transfer-owner-holder`](#title-escrow-reject-transfer-owner-holder) | Reject full transfer                                       |
 |                     | `title-escrow reject-transfer-owner-holder`                                  | Alternative: `reject-transfer-owner-holder`                |
+| **Obligation / BoE**| [`obligation-registry deploy`](#obligation-registry-deploy)                  | Deploy Obligation Registry                                 |
+|                     | [`obligation-registry mint`](#obligation-registry-mint)                      | Mint BoE token to obligationRegistry                       |
+|                     | [`obligation-escrow accept`](#obligation-escrow-accept)                      | Accept obligation                                          |
+|                     | [`obligation-escrow reject`](#obligation-escrow-reject)                      | Reject obligation                                          |
+|                     | [`obligation-escrow discharge`](#obligation-escrow-discharge)                | Discharge obligation                                       |
+|                     | [`obligation-escrow status`](#obligation-escrow-status)                      | Read obligation / escrow status                            |
+|                     | [`obligation-escrow transfer-holder`](#obligation-escrow-transfer-holder)    | Transfer BoE holder                                        |
+|                     | `obligation-escrow nominate-transfer-owner`                                  | Nominate BoE beneficiary                                   |
+|                     | `obligation-escrow endorse-transfer-owner`                                   | Endorse BoE beneficiary change                             |
+|                     | `obligation-escrow transfer-owner-holder`                                    | Endorse full BoE ownership transfer                        |
+|                     | `obligation-escrow return-to-issuer`                                         | Return BoE to issuer                                       |
+|                     | `obligation-escrow accept-return-to-issuer`                                  | Accept returned BoE                                        |
+|                     | `obligation-escrow reject-return-to-issuer`                                  | Reject returned BoE                                        |
+|                     | `obligation-escrow reject-transfer-*`                                        | Reject BoE transfer requests                               |
+|                     | [`verify-obligation`](#verify-obligation)                                    | Verify BoE via obligation pipeline                         |
 
 ---
 
 ### Wallet/Private Key Options
 
-All title-escrow, token registry, document-store, and transaction commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
+All title-escrow, obligation-registry, obligation-escrow, token registry, document-store, and transaction commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
 
 **Select wallet/private key option:**
 
@@ -1342,6 +1392,196 @@ Transaction receipt confirming rejection.
 
 </details>
 
+<details>
+<summary><h4 id="obligation-registry-deploy">obligation-registry deploy</h4></summary>
+
+Deploys an Obligation Registry (`TrustVCToken` + `ObligationEscrowFactory`) for electronic Bill of Exchange (BoE) flows.
+
+**Do not use** `token-registry deploy` for BoE documents.
+
+**Usage:**
+
+```sh
+trustvc obligation-registry deploy
+```
+
+**Interactive Prompts:**
+
+- Network selection
+- Registry name and symbol
+- Optionally reuse an existing ObligationEscrowFactory address
+- Wallet/private key option
+- Dry-run confirmation before broadcasting
+
+**Output:**
+Deployed obligation registry (and factory) addresses plus transaction receipt.
+
+</details>
+
+<details>
+<summary><h4 id="obligation-registry-mint">obligation-registry mint</h4></summary>
+
+Mints a BoE tokenId to an Obligation Registry and creates the linked ObligationEscrow.
+
+**Do not use** classic `mint` / `token-registry mint` for BoE documents.
+
+**Usage:**
+
+```sh
+trustvc obligation-registry mint
+```
+
+**Interactive Prompts:**
+
+- Path to signed BoE / obligation document
+  - _Network, obligationRegistry address, token ID, and document ID are extracted from the document_
+- Holder and beneficiary (drawer/drawee) addresses as required
+- Wallet/private key option
+- Dry-run confirmation before broadcasting
+
+**Output:**
+Transaction receipt confirming mint.
+
+</details>
+
+<details>
+<summary><h4 id="obligation-escrow-accept">obligation-escrow accept</h4></summary>
+
+Accepts an obligation on the ObligationEscrow (drawee acceptance).
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow accept
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+  - _Network, obligationRegistry, token ID, and document ID are extracted from the document_
+- Wallet/private key option
+- Remark (optional)
+
+**Output:**
+Transaction receipt confirming acceptance.
+
+</details>
+
+<details>
+<summary><h4 id="obligation-escrow-reject">obligation-escrow reject</h4></summary>
+
+Rejects an obligation on the ObligationEscrow.
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow reject
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+- Wallet/private key option
+- Remark (optional)
+
+**Output:**
+Transaction receipt confirming rejection.
+
+</details>
+
+<details>
+<summary><h4 id="obligation-escrow-discharge">obligation-escrow discharge</h4></summary>
+
+Discharges an accepted obligation on the ObligationEscrow.
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow discharge
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+- Wallet/private key option
+- Remark (optional)
+
+**Output:**
+Transaction receipt confirming discharge.
+
+</details>
+
+<details>
+<summary><h4 id="obligation-escrow-status">obligation-escrow status</h4></summary>
+
+Reads on-chain obligation / escrow status for a BoE document (read-only; no wallet required for the status call itself beyond network connectivity).
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow status
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+  - _Network, obligationRegistry, and token ID are extracted from the document_
+
+**Output:**
+Obligation and escrow status fields from the chain.
+
+</details>
+
+<details>
+<summary><h4 id="obligation-escrow-transfer-holder">obligation-escrow transfer-holder</h4></summary>
+
+Transfers the holder of a BoE obligation record. Transfer, nominate, endorse, return, and reject variants mirror `title-escrow` but operate on ObligationEscrow via `obligation-escrow <method>`.
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow transfer-holder
+# Also:
+#   nominate-transfer-owner, endorse-transfer-owner, transfer-owner-holder
+#   return-to-issuer, accept-return-to-issuer, reject-return-to-issuer
+#   reject-transfer-holder, reject-transfer-owner, reject-transfer-owner-holder
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+- New address(es) where applicable
+- Wallet/private key option
+- Remark (optional)
+
+**Output:**
+Transaction receipt confirming the escrow action.
+
+</details>
+
+<details>
+<summary><h4 id="verify-obligation">verify-obligation</h4></summary>
+
+Verifies a BoE / obligation document using the dedicated obligation verify pipeline (`verifyObligationDocument`).
+
+**Do not use** classic `verify` for BoE documents — it targets ETR / classic transferable records and will skip or mis-handle ObligationRecords.
+
+**Usage:**
+
+```sh
+trustvc verify-obligation
+```
+
+**Interactive Prompts:**
+
+- Path to signed BoE / obligation document
+- Network selection when needed for on-chain checks
+
+**Output:**
+Verification fragments and overall validity (VALID / INVALID / SKIPPED outcomes as applicable).
+
+</details>
+
 ## Configuration
 
 ### Custom RPC Endpoints
@@ -1428,12 +1668,31 @@ src/commands/
 │   ├── reject-transfer-holder.ts    # Reject holder transfer
 │   ├── reject-transfer-owner.ts     # Reject owner transfer
 │   └── reject-transfer-owner-holder.ts  # Reject full transfer
+├── obligation-registry/
+│   ├── deploy.ts                    # Deploy Obligation Registry
+│   └── mint.ts                      # Mint BoE token to obligationRegistry
+├── obligation-escrow/
+│   ├── accept.ts                    # Accept obligation
+│   ├── reject.ts                    # Reject obligation
+│   ├── discharge.ts                 # Discharge obligation
+│   ├── status.ts                    # Read obligation / escrow status
+│   ├── transfer-holder.ts           # Transfer BoE holder
+│   ├── nominate-transfer-owner.ts   # Nominate BoE beneficiary
+│   ├── endorse-transfer-owner.ts    # Endorse BoE beneficiary change
+│   ├── transfer-owner-holder.ts     # Endorse full BoE transfer
+│   ├── return-to-issuer.ts          # Return BoE to issuer
+│   ├── accept-return-to-issuer.ts   # Accept returned BoE
+│   ├── reject-return-to-issuer.ts   # Reject returned BoE
+│   ├── reject-transfer-holder.ts    # Reject BoE holder transfer
+│   ├── reject-transfer-owner.ts     # Reject BoE owner transfer
+│   └── reject-transfer-owner-holder.ts  # Reject full BoE transfer
 ├── transaction/
 │   └── cancel.ts                    # Cancel a pending transaction
 ├── wallet/
 │   ├── create.ts                    # Create encrypted wallet
 │   ├── encrypt.ts                   # Encrypt private key to wallet
 │   └── decrypt.ts                   # Decrypt wallet file
+├── verify-obligation.ts             # Verify BoE via obligation pipeline
 └── w3c/
     ├── did.ts                       # Generate DID
     ├── key-pair.ts                  # Generate key pairs
@@ -1443,6 +1702,109 @@ src/commands/
         └── update.ts                # Update credential status list
     └── verify.ts                    # Verify W3C or OA document
 ```
+
+## Obligation Registry user guide
+
+User guide for electronic Bill of Exchange (BoE) / obligation flows with **`trustvc-cli`**.
+
+Classic transferable records (eBL / Token Registry + Title Escrow) use different commands. This section covers **only** Obligation Registry.
+
+For library / SDK details, see the TrustVC README [§7c Obligation Registry (BoE)](https://github.com/TrustVC/trustvc#c-obligation-registry-boe).
+
+### Who this is for
+
+Operators and integrators who:
+
+- Deploy an Obligation Registry on a supported network
+- Mint a signed BoE credential on-chain
+- Accept, reject, discharge, transfer, or return the obligation
+- Verify a BoE document
+
+You do **not** need to call the TypeScript SDK directly — the CLI wraps it with interactive prompts.
+
+### Before you start
+
+1. **Install the CLI** — `npm install -g @trustvc/trustvc-cli` or `npx @trustvc/trustvc-cli <command>`
+2. **Node.js 22+**
+3. **A wallet** — encrypted wallet file (recommended), private key, or key file
+4. **A signed BoE document** — W3C VC with `credentialStatus.obligationRegistry` (not `tokenRegistry`)
+5. **Network access** — select network in prompts, or set a custom RPC (e.g. `export SEPOLIA_RPC=…`)
+
+### Classic vs Obligation — pick the right commands
+
+| Task | Classic ETR | Obligation / BoE |
+|------|-------------|------------------|
+| Deploy registry | `token-registry deploy` | `obligation-registry deploy` |
+| Mint | `mint` / `token-registry mint` | `obligation-registry mint` |
+| Escrow actions | `title-escrow …` | `obligation-escrow …` |
+| Verify | `verify` | `verify-obligation` |
+
+Using classic commands on a BoE document will fail or skip obligation checks. Using obligation commands on a classic eBL document will fail extraction (missing `obligationRegistry`).
+
+### Typical workflow
+
+```
+1. Deploy Obligation Registry
+2. Put the registry address into your BoE credential status, then sign the credential
+3. Mint (issuer wallet)
+4. Accept or reject (holder) ──► optional transfers / discharge / return
+5. Verify with verify-obligation
+```
+
+Signing/building the VC is usually done with TrustVC library tools or your app (`ObligationDocumentBuilder`). The CLI focuses on **on-chain** steps and **verify**.
+
+### Step-by-step
+
+**1. Deploy** — `trustvc obligation-registry deploy` (network, name/symbol, optional factory reuse, wallet, dry-run).
+
+**2. Mint** — `trustvc obligation-registry mint` with a signed BoE JSON that already references your registry (registry, network, token ID, document ID are extracted).
+
+**3. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**.
+
+**4. Status** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, and termination reason.
+
+**5. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/return variants mirror `title-escrow`.
+
+**6. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted.
+
+**7. Return to issuer (optional)** — requires **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
+
+**8. Verify** — `trustvc verify-obligation` (not classic `verify`).
+
+### Who can run what
+
+| Action | Typical role |
+|--------|----------------|
+| `obligation-registry deploy` | Deployer / issuer org |
+| `obligation-registry mint` | Issuer (registry minter) |
+| `obligation-escrow accept` / `reject` | Holder (roles split) |
+| `obligation-escrow discharge` | Beneficiary |
+| Transfer / nominate / endorse | Current holder or beneficiary per Title Escrow–style rules |
+| `return-to-issuer` | Dual role (beneficiary == holder) |
+| `accept-return-to-issuer` / `reject-return-to-issuer` | Issuer |
+| `obligation-escrow status` | Anyone with network access + document |
+| `verify-obligation` | Anyone with the document (+ RPC when on-chain checks run) |
+
+### What the CLI reads from your document
+
+For mint, escrow, and related flows, the CLI extracts:
+
+- Network
+- `obligationRegistry` address
+- Token ID
+- Document ID (remark encryption key when remarks are set)
+
+If extraction fails with a message about classic transferable records / `tokenRegistry`, you are using the wrong document type or command family.
+
+### Things to know (not bugs)
+
+1. **Wrong command family** — BoE → `obligation-*` / `verify-obligation`. Classic eBL → `token-registry` / `title-escrow` / `verify`.
+2. **Accept / reject need split roles** — `beneficiary != holder`.
+3. **Return needs dual role** — `beneficiary == holder`.
+4. **`terminationReason` is not set by return alone** — set on reject / discharge / burn (accept-return).
+5. **Deploy + mint do not create the VC** — you still need a signed BoE file; mint only puts the token on-chain.
+
+Per-command prompts and outputs are in [Detailed Command Reference](#detailed-command-reference) above (`obligation-registry deploy`, `obligation-registry mint`, `obligation-escrow *`, `verify-obligation`).
 
 ## License
 

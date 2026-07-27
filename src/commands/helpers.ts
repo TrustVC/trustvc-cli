@@ -7,11 +7,14 @@ import {
   v4SupportInterfaceIds,
   v5SupportInterfaceIds,
   DocumentStore__factory,
+  obligationRegistryContracts,
 } from '@trustvc/trustvc';
 import { encrypt } from '@trustvc/trustvc';
 
 // Internal utilities
 import { ConnectedSigner } from '../utils';
+
+const { TrustVCToken__factory, ObligationEscrow__factory } = obligationRegistryContracts;
 
 // Contract factories from TrustVC v5
 const { TitleEscrow__factory, TradeTrustToken__factory, TDocDeployer__factory } = v5Contracts;
@@ -24,6 +27,11 @@ interface ConnectToTokenRegistryArgs {
 
 interface ConnectToTDocDeployerContractArgs {
   tDocDeployerContractAddress: string;
+  wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
+}
+
+interface ConnectToObligationRegistryArgs {
+  address: string;
   wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
 }
 
@@ -419,3 +427,69 @@ export async function waitForTransaction(tx: any | string, provider: Provider, c
     throw new Error('Provider required for transaction hash');
   }
 }
+
+/**
+ * Connects to a TrustVCToken (obligation registry) contract instance.
+ */
+export const connectToObligationRegistry = async ({
+  address,
+  wallet,
+}: ConnectToObligationRegistryArgs) => {
+  try {
+    signale.info(`Connecting to obligation registry at: ${address}`);
+    const registry = new ethers.Contract(address, TrustVCToken__factory.abi, wallet as any);
+    if (!registry) {
+      throw new Error(`Failed to connect to obligation registry at address: ${address}`);
+    }
+    signale.success(`Successfully connected to obligation registry`);
+    return registry;
+  } catch (error) {
+    signale.error(
+      `Error in connectToObligationRegistry: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
+  }
+};
+
+interface ConnectToObligationEscrowArgs {
+  tokenId: string;
+  address: string;
+  wallet: Wallet | HDNodeWallet | ConnectedSigner | Signer;
+}
+
+/**
+ * Resolves ObligationEscrow via ownerOf(tokenId) on the obligation registry and connects.
+ */
+export const connectToObligationEscrow = async ({
+  tokenId,
+  address,
+  wallet,
+}: ConnectToObligationEscrowArgs) => {
+  try {
+    signale.info(`Connecting to obligation registry at: ${address}`);
+    const registry = new ethers.Contract(address, TrustVCToken__factory.abi, wallet as any);
+
+    signale.info(`Fetching obligation escrow address for tokenId: ${tokenId}`);
+    const escrowAddress = await registry.ownerOf(tokenId);
+    signale.info(`Obligation escrow address: ${escrowAddress}`);
+
+    if (!escrowAddress || escrowAddress === ZeroAddress) {
+      throw new Error(
+        `Invalid obligation escrow address for tokenId: ${tokenId}. Address: ${escrowAddress}`,
+      );
+    }
+
+    signale.info(`Connecting to obligation escrow at: ${escrowAddress}`);
+    const escrow = new ethers.Contract(escrowAddress, ObligationEscrow__factory.abi, wallet as any);
+    if (!escrow) {
+      throw new Error(`Failed to connect to obligation escrow at address: ${escrowAddress}`);
+    }
+    signale.success(`Successfully connected to obligation escrow`);
+    return escrow;
+  } catch (error) {
+    signale.error(
+      `Error in connectToObligationEscrow: ${error instanceof Error ? error.message : String(error)}`,
+    );
+    throw error;
+  }
+};

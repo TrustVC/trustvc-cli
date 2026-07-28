@@ -10,7 +10,9 @@ import {
 import {
   getChainId,
   getDocumentData,
+  getObligationDocumentStatus,
   isDocumentRevokable,
+  isObligationRecord,
   isTransferableRecord,
   isWrappedV2Document,
   isWrappedV3Document,
@@ -25,7 +27,7 @@ import type { Provider as V5Provider } from '@ethersproject/providers';
 import { FragmentType } from '../types';
 
 export const command = 'verify';
-export const describe = 'Verify a document signed using w3c or OpenAttestation';
+export const describe = 'Verify a W3C or OpenAttestation document (ETR, BoE, or revocable VC)';
 
 export const handler = async () => {
   try {
@@ -69,6 +71,13 @@ export const verify = async (signedVC: SignedVerifiableCredential) => {
   logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_INTEGRITY, result));
   logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_STATUS, result));
   logResultStatus(getResultFromFragment(FragmentType.ISSUER_IDENTITY, result));
+
+  const obligationStatus = getObligationDocumentStatus(result);
+  if (obligationStatus) {
+    signale.info(
+      `Obligation document status: registry=${obligationStatus.obligationRegistry} status=${obligationStatus.status} terminationReason=${obligationStatus.terminationReason}`,
+    );
+  }
 };
 
 // ==== Helper Functions ====
@@ -80,8 +89,13 @@ const verifyW3CDocument = async (
 
   // To capture the console.warn from trustvc function
   const { result: isTransferable } = CaptureConsoleWarn(() => isTransferableRecord(signedVC));
+  const isObligation = isObligationRecord(signedVC);
   const isRevokable = isDocumentRevokable(signedVC);
-  const requiresNetwork = isTransferable || isRevokable;
+  const requiresNetwork = isTransferable || isObligation || isRevokable;
+
+  if (isObligation) {
+    signale.info('Verifying obligation / BoE document...');
+  }
 
   // If the document is not transferable or revokable, verify directly
   // To capture the console.warn from trustvc function
@@ -97,6 +111,12 @@ const verifyW3CDocument = async (
     }
   } catch (err: unknown) {
     signale.warn(`${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  const networkName = await promptNetworkSelection();
+  const provider = getSupportedNetwork(networkName).provider() as unknown as V5Provider;
+  if (provider) {
+    return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC, { provider }));
   }
 
   // Fallback: Verify without provider

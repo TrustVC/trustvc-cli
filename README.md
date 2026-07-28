@@ -241,8 +241,8 @@ trustvc obligation-escrow return-to-issuer
 trustvc obligation-escrow accept-return-to-issuer
 trustvc obligation-escrow reject-return-to-issuer
 
-# Verify via obligation pipeline (not classic verify)
-trustvc verify-obligation
+# Verify BoE or ETR documents (unified pipeline — auto-detects ObligationRecords)
+trustvc verify
 ```
 
 
@@ -277,7 +277,7 @@ trustvc verify-obligation
 - **Document Store**: Deploy document store contracts and use `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed contracts.
 - **Transaction Cancel**: Cancel a pending transaction by replacing it with a 0-value transaction to yourself (same nonce, higher gas price). Supports specifying by transaction hash or by nonce and gas price.
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
-- **Obligation Registry (BoE)**: Separate command trees for electronic Bill of Exchange flows — `obligation-registry` (deploy/mint), `obligation-escrow` (accept/reject/discharge, transfers, return), and `verify-obligation` (dedicated BoE verify pipeline). Do not use classic `token-registry` / `title-escrow` / `verify` for obligation documents. See [Obligation Registry user guide](#obligation-registry-user-guide).
+- **Obligation Registry (BoE)**: Separate command trees for electronic Bill of Exchange on-chain flows — `obligation-registry` (deploy/mint) and `obligation-escrow` (accept/reject/discharge, transfers, return). Use **`trustvc verify`** for both ETR and BoE documents (ObligationRecords vs TransferableRecords is auto-detected). Do not use classic `token-registry` / `title-escrow` for obligation documents. See [Obligation Registry user guide](#obligation-registry-user-guide).
 
 
 
@@ -349,7 +349,6 @@ trustvc verify-obligation
 |                      | `obligation-escrow accept-return-to-issuer`                                  | Accept returned BoE                                        |
 |                      | `obligation-escrow reject-return-to-issuer`                                  | Reject returned BoE                                        |
 |                      | `obligation-escrow reject-transfer-*`                                        | Reject BoE transfer requests                               |
-|                      | `[verify-obligation](#verify-obligation)`                                    | Verify BoE via obligation pipeline                         |
 
 
 
@@ -498,7 +497,9 @@ Creates `signed_vc.json` with cryptographic proof.
 
 #### verify
 
-Verifies a W3C or OA document using respective verification methods.
+Verifies a W3C or OA document using the unified TrustVC verification pipeline.
+
+Works for **classic ETR** (`tokenRegistry` → TransferableRecords fragment) and **BoE** (`obligationRegistry` → ObligationRecords fragment). When the document is an obligation record, the CLI also prints enriched on-chain status when available.
 
 **Usage:**
 
@@ -512,11 +513,11 @@ trustvc verify
 - [If network required but no network detected]: Select network
 
 **Output:**
-Verifies the document integrity, status, and issuer identity.
+Verifies document integrity, status, and issuer identity. For BoE documents, logs obligation registry status when the ObligationRecords fragment is VALID.
 
 **Supported Formats:**
 
-- W3C Verifiable Credential
+- W3C Verifiable Credential (ETR, BoE, revocable VDs)
 - OpenAttestation v2
 - OpenAttestation v3
 
@@ -1548,28 +1549,6 @@ Transaction receipt confirming the escrow action.
 
 
 
-#### verify-obligation
-
-Verifies a BoE / obligation document using the dedicated obligation verify pipeline (`verifyObligationDocument`).
-
-**Do not use** classic `verify` for BoE documents — it targets ETR / classic transferable records and will skip or mis-handle ObligationRecords.
-
-**Usage:**
-
-```sh
-trustvc verify-obligation
-```
-
-**Interactive Prompts:**
-
-- Path to signed BoE / obligation document
-- Network selection when needed for on-chain checks
-
-**Output:**
-Verification fragments and overall validity (VALID / INVALID / SKIPPED outcomes as applicable).
-
-
-
 ## Configuration
 
 
@@ -1686,7 +1665,6 @@ src/commands/
 │   ├── create.ts                    # Create encrypted wallet
 │   ├── encrypt.ts                   # Encrypt private key to wallet
 │   └── decrypt.ts                   # Decrypt wallet file
-├── verify-obligation.ts             # Verify BoE via obligation pipeline
 └── w3c/
     ├── did.ts                       # Generate DID
     ├── key-pair.ts                  # Generate key pairs
@@ -1736,7 +1714,7 @@ You do **not** need to call the TypeScript SDK directly — the CLI wraps it wit
 | Deploy registry | `token-registry deploy`        | `obligation-registry deploy` |
 | Mint            | `mint` / `token-registry mint` | `obligation-registry mint`   |
 | Escrow actions  | `title-escrow …`               | `obligation-escrow …`        |
-| Verify          | `verify`                       | `verify-obligation`          |
+| Verify          | `verify` (ETR and BoE)         | `verify` (same command)      |
 
 
 Using classic commands on a BoE document will fail or skip obligation checks. Using obligation commands on a classic eBL document will fail extraction (missing `obligationRegistry`).
@@ -1748,10 +1726,10 @@ Using classic commands on a BoE document will fail or skip obligation checks. Us
 2. Put the registry address into your BoE credential status, then sign the credential
 3. Mint (issuer wallet)
 4. Accept or reject (holder) ──► optional transfers / discharge / return
-5. Verify with verify-obligation
+5. Verify with `trustvc verify`
 ```
 
-Signing/building the VC is usually done with TrustVC library tools or your app (`ObligationDocumentBuilder`). The CLI focuses on **on-chain** steps and **verify**.
+Signing/building the VC is usually done with TrustVC library tools or your app (`DocumentBuilder` + `obligationRegistry`). The CLI focuses on **on-chain** steps and **verify**.
 
 ### Step-by-step
 
@@ -1769,7 +1747,7 @@ Signing/building the VC is usually done with TrustVC library tools or your app (
 
 **7. Return to issuer (optional)** — requires **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
 
-**8. Verify** — `trustvc verify-obligation` (not classic `verify`).
+**8. Verify** — `trustvc verify` (auto-detects BoE vs ETR).
 
 ### Who can run what
 
@@ -1784,7 +1762,7 @@ Signing/building the VC is usually done with TrustVC library tools or your app (
 | `return-to-issuer`                                    | Dual role (beneficiary == holder)                          |
 | `accept-return-to-issuer` / `reject-return-to-issuer` | Issuer                                                     |
 | `obligation-escrow status`                            | Anyone with network access + document                      |
-| `verify-obligation`                                   | Anyone with the document (+ RPC when on-chain checks run)  |
+| `verify`                                              | Anyone with the document (+ RPC when on-chain checks run)  |
 
 
 

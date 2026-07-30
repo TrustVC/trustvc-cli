@@ -34,7 +34,7 @@ export const dischargeHandler = async (args: BaseObligationEscrowCommand) => {
       populate: ({ escrow }, encryptedRemark) =>
         escrow.discharge.populateTransaction(encryptedRemark),
       sdk: dischargeObligationRegistry as any,
-      sdkParams: { tokenId: args.tokenId, remarks: args.remark },
+      sdkParams: { remarks: args.remark },
     });
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,

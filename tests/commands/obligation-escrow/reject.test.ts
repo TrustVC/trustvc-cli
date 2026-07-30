@@ -82,7 +82,7 @@ describe('obligation-escrow/reject', () => {
     });
     expect(runObligationEscrowTx as MockedFunction<any>).toHaveBeenCalledWith(
       expect.objectContaining({
-        sdkParams: expect.objectContaining({ tokenId: '0x1' }),
+        sdkParams: expect.objectContaining({ remarks: undefined }),
       }),
     );
   });

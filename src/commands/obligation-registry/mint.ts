@@ -134,7 +134,7 @@ const mintToObligationRegistry = async ({
     }
     const gasFees = await getGasFees({ provider: wallet.provider, ...rest });
     transaction = await mintObligationRegistry(
-      { obligationRegistry: address },
+      { obligationRegistryAddress: address },
       wallet,
       { beneficiaryAddress: beneficiary, holderAddress: holder, tokenId, remarks: remark },
       {
@@ -145,7 +145,7 @@ const mintToObligationRegistry = async ({
     );
   } else {
     transaction = await mintObligationRegistry(
-      { obligationRegistry: address },
+      { obligationRegistryAddress: address },
       wallet,
       { beneficiaryAddress: beneficiary, holderAddress: holder, tokenId, remarks: remark },
       { id: encryptionKey },

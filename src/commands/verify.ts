@@ -10,7 +10,6 @@ import {
 import {
   getChainId,
   getDocumentData,
-  getObligationDocumentStatus,
   isDocumentRevokable,
   isObligationRecord,
   isTransferableRecord,
@@ -25,6 +24,35 @@ import {
 import signale from 'signale';
 import type { Provider as V5Provider } from '@ethersproject/providers';
 import { FragmentType } from '../types';
+
+const OBLIGATION_RECORDS_FRAGMENT = 'ObligationRecords';
+
+type ObligationDocumentStatusInfo = {
+  obligationRegistry: string;
+  status?: number;
+  terminationReason?: number;
+};
+
+/** Extract obligation registry info from a VALID ObligationRecords verify fragment. */
+export const getObligationDocumentStatus = (
+  fragments: VerificationFragment[],
+): ObligationDocumentStatusInfo | null => {
+  const fragment = fragments.find((f) => f.name === OBLIGATION_RECORDS_FRAGMENT);
+  if (!fragment || fragment.status !== 'VALID') return null;
+
+  const data = (
+    fragment as {
+      data?: { obligationRegistry?: string; status?: number; terminationReason?: number };
+    }
+  ).data;
+  if (!data?.obligationRegistry) return null;
+
+  return {
+    obligationRegistry: data.obligationRegistry,
+    status: data.status,
+    terminationReason: data.terminationReason,
+  };
+};
 
 export const command = 'verify';
 export const describe = 'Verify a W3C or OpenAttestation document (ETR, BoE, or revocable VC)';
@@ -74,9 +102,14 @@ export const verify = async (signedVC: SignedVerifiableCredential) => {
 
   const obligationStatus = getObligationDocumentStatus(result);
   if (obligationStatus) {
-    signale.info(
-      `Obligation document status: registry=${obligationStatus.obligationRegistry} status=${obligationStatus.status} terminationReason=${obligationStatus.terminationReason}`,
-    );
+    const parts = [`registry=${obligationStatus.obligationRegistry}`];
+    if (obligationStatus.status !== undefined) {
+      parts.push(`status=${obligationStatus.status}`);
+    }
+    if (obligationStatus.terminationReason !== undefined) {
+      parts.push(`terminationReason=${obligationStatus.terminationReason}`);
+    }
+    signale.info(`Obligation document status: ${parts.join(' ')}`);
   }
 };
 

@@ -24,7 +24,9 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 
 This CLI leverages the TrustVC package:
 
-- `[@trustvc/trustvc](https://github.com/TrustVC/trustvc)` - Core library for W3C credentials, OpenAttestation, token registries, and blockchain operations
+- [`@trustvc/trustvc`](https://github.com/TrustVC/trustvc) — Core library for W3C credentials, OpenAttestation, token registries, Obligation Registry (BoE), and blockchain operations
+
+BoE on-chain helpers are imported from the **root** package (`mintObligationRegistry`, `acceptObligationRegistry`, …). Prefer those over any older `@trustvc/trustvc/obligation-registry` path.
 
 
 
@@ -1598,6 +1600,12 @@ If no environment variable is set, the CLI will use the default RPC endpoint for
 # Install dependencies
 npm install
 
+# (Optional) develop against a local @trustvc/trustvc build
+# From the trustvc repo:
+#   NODE_OPTIONS='--max-old-space-size=8192' npm run build && yalc publish
+# Then in this repo:
+#   yalc add @trustvc/trustvc && npm install
+
 # Build the project
 npm run build
 
@@ -1685,6 +1693,19 @@ Classic transferable records (eBL / Token Registry + Title Escrow) use different
 
 For library / SDK details, see the TrustVC README [§7c Obligation Registry (BoE)](https://github.com/TrustVC/trustvc#c-obligation-registry-boe).
 
+SDK imports use the **root** package with the `*ObligationRegistry` suffix (no clash with classic ETR helpers):
+
+```ts
+import {
+  mintObligationRegistry,
+  acceptObligationRegistry,
+  DocumentBuilder,
+  verifyDocument,
+} from '@trustvc/trustvc';
+```
+
+Build BoE credentials with `DocumentBuilder.obligationCredentialStatus({ obligationRegistry, chain, chainId, rpcProviderUrl })` (credential status uses `type: 'TransferableRecords'` plus an `obligationRegistry` field — not `tokenRegistry`). On-chain minting is separate via `obligation-registry mint` / `mintObligationRegistry`.
+
 ### Who this is for
 
 Operators and integrators who:
@@ -1737,13 +1758,13 @@ Signing/building the VC is usually done with TrustVC library tools or your app (
 
 **2. Mint** — `trustvc obligation-registry mint` with a signed BoE JSON that already references your registry (registry, network, token ID, document ID are extracted).
 
-**3. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**.
+**3. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Reject (and discharge) auto-burn the SBT on-chain in the same transaction.
 
 **4. Status** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, and termination reason.
 
 **5. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/return variants mirror `title-escrow`.
 
-**6. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted.
+**6. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (also auto-burns).
 
 **7. Return to issuer (optional)** — requires **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
 

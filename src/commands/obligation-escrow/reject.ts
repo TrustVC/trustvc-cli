@@ -33,7 +33,7 @@ export const rejectHandler = async (args: BaseObligationEscrowCommand) => {
       args,
       populate: ({ escrow }, encryptedRemark) => escrow.reject.populateTransaction(encryptedRemark),
       sdk: rejectObligationRegistry as any,
-      sdkParams: { tokenId: args.tokenId, remarks: args.remark },
+      sdkParams: { remarks: args.remark },
     });
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,

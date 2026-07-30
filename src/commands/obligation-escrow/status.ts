@@ -1,6 +1,6 @@
 import { error, info, success } from 'signale';
 import {
-  DocumentStatus,
+  ObligationDocumentStatus,
   ObligationEscrowTerminationReason,
   getObligationEscrowTerminationReason,
   getObligationRegistryStatus,
@@ -14,12 +14,11 @@ export const command = 'status';
 export const describe = 'Read BoE obligation escrow status / registration / termination reason';
 
 const STATUS_LABEL: Record<number, string> = {
-  [DocumentStatus.Issued]: 'Issued',
-  [DocumentStatus.Accepted]: 'Accepted',
-  [DocumentStatus.Rejected]: 'Rejected',
-  [DocumentStatus.Discharged]: 'Discharged',
+  [ObligationDocumentStatus.Issued]: 'Issued',
+  [ObligationDocumentStatus.Accepted]: 'Accepted',
+  [ObligationDocumentStatus.Rejected]: 'Rejected',
+  [ObligationDocumentStatus.Discharged]: 'Discharged',
 };
-
 const REASON_LABEL: Record<number, string> = {
   [ObligationEscrowTerminationReason.None]: 'None',
   [ObligationEscrowTerminationReason.ReturnToIssuer]: 'ReturnToIssuer',
@@ -43,7 +42,8 @@ export const statusHandler = async (args: BaseObligationEscrowCommand) => {
   try {
     const { obligationRegistryAddress, tokenId, network, ...rest } = args;
     const wallet = await getWalletOrSigner({ network, ...rest });
-    const opts = { obligationRegistry: obligationRegistryAddress };
+    // Escrow resolution uses contractOptions.tokenId (params.tokenId is API parity only).
+    const opts = { obligationRegistryAddress, tokenId };
 
     const status = await getObligationRegistryStatus(opts, wallet, { tokenId });
     const registered = await isObligationRegistryRegistered(opts, wallet, { tokenId });

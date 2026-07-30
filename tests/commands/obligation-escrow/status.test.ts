@@ -61,7 +61,7 @@ describe('obligation-escrow/status', () => {
       maxPriorityFeePerGasScale: 1,
     });
     expect(trustvc.getObligationRegistryStatus as MockedFunction<any>).toHaveBeenCalledWith(
-      { obligationRegistry: '0xRegistry' },
+      { obligationRegistryAddress: '0xRegistry', tokenId: '0x1' },
       expect.anything(),
       { tokenId: '0x1' },
     );

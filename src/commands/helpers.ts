@@ -7,17 +7,19 @@ import {
   v4SupportInterfaceIds,
   v5SupportInterfaceIds,
   DocumentStore__factory,
-  obligationRegistryContracts,
+  encrypt,
 } from '@trustvc/trustvc';
-import { encrypt } from '@trustvc/trustvc';
 
 // Internal utilities
 import { ConnectedSigner } from '../utils';
 
-const { TrustVCToken__factory, ObligationEscrow__factory } = obligationRegistryContracts;
-
-// Contract factories from TrustVC v5
-const { TitleEscrow__factory, TradeTrustToken__factory, TDocDeployer__factory } = v5Contracts;
+const {
+  TrustVCToken__factory,
+  ObligationEscrow__factory,
+  TitleEscrow__factory,
+  TradeTrustToken__factory,
+  TDocDeployer__factory,
+} = v5Contracts;
 
 // Interface for connectToTokenRegistry function arguments
 interface ConnectToTokenRegistryArgs {

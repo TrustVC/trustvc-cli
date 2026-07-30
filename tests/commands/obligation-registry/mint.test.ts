@@ -131,7 +131,7 @@ describe('obligation-registry/mint', () => {
     });
 
     expect(mintMock).toHaveBeenCalledWith(
-      { obligationRegistry: '0x71D28767662cB233F887aD2Bb65d048d760bA694' },
+      { obligationRegistryAddress: '0x71D28767662cB233F887aD2Bb65d048d760bA694' },
       expect.anything(),
       expect.objectContaining({
         beneficiaryAddress: '0xBeneficiary000000000000000000000000000001',

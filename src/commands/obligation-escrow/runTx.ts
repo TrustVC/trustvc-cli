@@ -21,7 +21,7 @@ type PopulateFn = (
 ) => Promise<any>;
 
 type SdkCall = (
-  contractOptions: { obligationRegistry: string; tokenId: string },
+  contractOptions: { obligationRegistryAddress: string; tokenId: string },
   wallet: any,
   params: Record<string, unknown>,
   txOptions: Record<string, unknown>,
@@ -63,7 +63,7 @@ export const runObligationEscrowTx = async (opts: {
     process.exit(0);
   }
 
-  const contractOptions = { obligationRegistry: obligationRegistryAddress, tokenId };
+  const contractOptions = { obligationRegistryAddress, tokenId };
   let transaction;
 
   if (canEstimateGasPrice(network)) {

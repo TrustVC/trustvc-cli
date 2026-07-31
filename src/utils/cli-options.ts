@@ -12,7 +12,8 @@ import { readDocumentFile } from './file-io';
 import { getTokenRegistryAddress, getTokenId, getChainId } from '@trustvc/trustvc';
 import fs from 'fs';
 import { getTokenRegistryVersion } from '../commands/helpers';
-import { getErrorMessage } from './index';
+import { getErrorMessage } from './formatting';
+import { isContractCallException } from './cli-errors';
 import { dryRunMode } from './dryRun';
 
 export interface NetworkOption {
@@ -572,7 +573,16 @@ export const performDryRunWithConfirmation = async ({
     info('\n✅ Proceeding with transaction...');
     return true;
   } catch (estimateError) {
-    error(`Gas estimation failed: ${getErrorMessage(estimateError)}`);
+    const message = getErrorMessage(estimateError);
+    // Definitive on-chain reverts will never succeed if broadcast — abort instead of
+    // offering "proceed anyway" (which only dumps a larger callStatic stack next).
+    if (isContractCallException(estimateError)) {
+      error(`Transaction would revert: ${message}`);
+      info('Transaction cancelled.');
+      return false;
+    }
+
+    error(`Gas estimation failed: ${message}`);
     const proceedAnyway = await confirm({
       message: 'Gas estimation failed. Do you want to proceed anyway?',
       default: false,

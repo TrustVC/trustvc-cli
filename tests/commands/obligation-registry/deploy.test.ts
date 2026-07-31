@@ -111,6 +111,16 @@ describe('obligation-registry/deploy', () => {
 
       expect(deployMock).toHaveBeenCalled();
       expect(address).toBe('0xRegistry');
+
+      const { success, info } = await import('signale');
+      expect(success).toHaveBeenCalledWith(
+        'Obligation registry My BoE Registry deployed at 0xRegistry',
+      );
+      expect(info).toHaveBeenCalledWith('ObligationEscrowFactory: 0xFactory');
+      expect(info).toHaveBeenCalledWith('Obligation Registry: 0xRegistry');
+      expect(info).toHaveBeenCalledWith(
+        'Use this Obligation Registry address as credentialStatus.obligationRegistry in your document before signing and minting.',
+      );
     });
   });
 

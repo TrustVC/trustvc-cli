@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { describeContractError, isContractCallException } from './cli-errors';
 
 export const addAddressPrefix = (address: string): string =>
   address.startsWith('0x') ? address : `0x${address}`;
@@ -33,11 +34,27 @@ const toErrorWithMessage = function (maybeError: unknown): ErrorWithMessage {
 export const extractErrorMessage = (error: unknown): string => toErrorWithMessage(error).message;
 
 export const getErrorMessage = function (error: unknown): string {
-  if (error instanceof Error) {
-    return 'reason' in error ? (error['reason'] as string) : error.message;
-  } else {
-    return extractErrorMessage(error);
+  // Prefer structured ethers / custom-error decoding over raw `reason` (often null).
+  if (isContractCallException(error)) {
+    return describeContractError(error);
   }
+
+  if (error instanceof Error) {
+    const reason =
+      'reason' in error && typeof (error as { reason?: unknown }).reason === 'string'
+        ? (error as { reason: string }).reason.trim()
+        : '';
+    if (reason) return reason;
+
+    // SDK may already wrap: "Pre-check for accept failed: OwnerHolderMustDiffer: ..."
+    if (/Pre-check .* failed:/i.test(error.message)) {
+      return describeContractError(error);
+    }
+
+    return error.message.split('\n')[0]!;
+  }
+
+  return describeContractError(error) || extractErrorMessage(error);
 };
 
 // Captures console.warn for a function to handle expected console.warn.

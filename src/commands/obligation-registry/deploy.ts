@@ -135,6 +135,10 @@ export const deployObligationRegistryContract = async ({
     const { hash } = result.receipt as unknown as TransactionReceipt;
     success(`Obligation registry ${registryName} deployed at ${result.obligationRegistry}`);
     info(`ObligationEscrowFactory: ${result.obligationEscrowFactoryAddress}`);
+    info(`Obligation Registry: ${result.obligationRegistry}`);
+    info(
+      `Use this Obligation Registry address as credentialStatus.obligationRegistry in your document before signing and minting.`,
+    );
     info(`Find more details at ${getEtherscanAddress({ network })}/tx/${hash}`);
     info(`Chain ID used: ${chainId}`);
 

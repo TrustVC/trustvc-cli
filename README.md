@@ -222,7 +222,8 @@ trustvc title-escrow reject-transfer-owner-holder
 # Deploy Obligation Registry (TrustVCToken + factory)
 trustvc obligation-registry deploy
 
-# Mint a BoE tokenId to obligationRegistry
+# Mint a BoE tokenId to obligationRegistry (sign first with w3c-sign)
+trustvc w3c-sign
 trustvc obligation-registry mint
 
 # Lifecycle
@@ -1412,7 +1413,7 @@ trustvc obligation-registry deploy
 - Dry-run confirmation before broadcasting
 
 **Output:**
-Deployed obligation registry (and factory) addresses plus transaction receipt.
+Deployed `ObligationEscrowFactory` and Obligation Registry addresses plus transaction receipt. Copy the Obligation Registry address into `credentialStatus.obligationRegistry` in your BoE document before signing and minting.
 
 
 
@@ -1422,15 +1423,18 @@ Mints a BoE tokenId to an Obligation Registry and creates the linked ObligationE
 
 **Do not use** classic `mint` / `token-registry mint` for BoE documents.
 
+**Before minting:** set `credentialStatus.obligationRegistry` to your deployed registry address, then sign the document with [`w3c-sign`](#w3c-sign). Mint only accepts a signed Verifiable Credential.
+
 **Usage:**
 
 ```sh
+trustvc w3c-sign
 trustvc obligation-registry mint
 ```
 
 **Interactive Prompts:**
 
-- Path to signed BoE / obligation document
+- Path to signed BoE / obligation document (output of `w3c-sign`)
   - *Network, obligationRegistry address, token ID, and document ID are extracted from the document*
 - Holder and beneficiary (drawer/drawee) addresses as required
 - Wallet/private key option
@@ -1716,7 +1720,7 @@ You do **not** need to call the TypeScript SDK directly — the CLI wraps it wit
 1. **Install the CLI** — `npm install -g @trustvc/trustvc-cli` or `npx @trustvc/trustvc-cli <command>`
 2. **Node.js 22+**
 3. **A wallet** — encrypted wallet file (recommended), private key, or key file
-4. **A signed BoE document** — W3C VC with `credentialStatus.obligationRegistry` (not `tokenRegistry`)
+4. **A signed BoE document** — set `credentialStatus.obligationRegistry`, then sign with `trustvc w3c-sign` (not `tokenRegistry`)
 5. **Network access** — select network in prompts, or set a custom RPC (e.g. `export SEPOLIA_RPC=…`)
 
 
@@ -1738,29 +1742,32 @@ Using classic commands on a BoE document will fail or skip obligation checks. Us
 
 ```
 1. Deploy Obligation Registry
-2. Put the registry address into your BoE credential status, then sign the credential
-3. Mint (issuer wallet)
-4. Accept or reject (holder) ──► optional transfers / discharge / return
-5. Verify with `trustvc verify`
+2. Put the registry address into your BoE credential status
+3. Sign the credential with `trustvc w3c-sign`
+4. Mint (issuer wallet)
+5. Accept or reject (holder) ──► optional transfers / discharge / return
+6. Verify with `trustvc verify`
 ```
 
-Signing/building the VC is usually done with TrustVC library tools or your app (`DocumentBuilder` + `obligationRegistry`). The CLI focuses on **on-chain** steps and **verify**.
+Signing/building the VC can also be done with TrustVC library tools or your app (`DocumentBuilder` + `obligationRegistry`). With the CLI, use `w3c-sign` before minting.
 
 ### Step-by-step
 
 **1. Deploy** — `trustvc obligation-registry deploy` (network, name/symbol, optional factory reuse, wallet, dry-run).
 
-**2. Mint** — `trustvc obligation-registry mint` with a signed BoE JSON that already references your registry (registry, network, token ID, document ID are extracted).
+**2. Sign** — put the deployed registry into `credentialStatus.obligationRegistry`, then run `trustvc w3c-sign` on the unsigned BoE JSON.
 
-**3. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Reject only sets status to Rejected; closing requires return-to-issuer afterward.
+**3. Mint** — `trustvc obligation-registry mint` with the signed BoE JSON from `w3c-sign` (registry, network, token ID, document ID are extracted).
 
-**4. Status** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, and termination reason.
+**4. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Reject only sets status to Rejected; closing requires return-to-issuer afterward.
 
-**5. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/return variants mirror `title-escrow`.
+**5. Status** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, and termination reason.
 
-**6. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (sets Discharged; does not burn).
+**6. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/return variants mirror `title-escrow`.
 
-**7. Return to issuer** — requires status **Rejected** or **Discharged** and **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
+**7. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (sets Discharged; does not burn).
+
+**8. Return to issuer** — requires status **Rejected** or **Discharged** and **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
 
 **8. Verify** — `trustvc verify` (auto-detects BoE vs ETR).
 

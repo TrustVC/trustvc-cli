@@ -1600,12 +1600,6 @@ If no environment variable is set, the CLI will use the default RPC endpoint for
 # Install dependencies
 npm install
 
-# (Optional) develop against a local @trustvc/trustvc build
-# From the trustvc repo:
-#   NODE_OPTIONS='--max-old-space-size=8192' npm run build && yalc publish
-# Then in this repo:
-#   yalc add @trustvc/trustvc && npm install
-
 # Build the project
 npm run build
 
@@ -1758,15 +1752,15 @@ Signing/building the VC is usually done with TrustVC library tools or your app (
 
 **2. Mint** — `trustvc obligation-registry mint` with a signed BoE JSON that already references your registry (registry, network, token ID, document ID are extracted).
 
-**3. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Reject (and discharge) auto-burn the SBT on-chain in the same transaction.
+**3. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Reject only sets status to Rejected; closing requires return-to-issuer afterward.
 
 **4. Status** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, and termination reason.
 
 **5. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/return variants mirror `title-escrow`.
 
-**6. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (also auto-burns).
+**6. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (sets Discharged; does not burn).
 
-**7. Return to issuer (optional)** — requires **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
+**7. Return to issuer** — requires status **Rejected** or **Discharged** and **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
 
 **8. Verify** — `trustvc verify` (auto-detects BoE vs ETR).
 

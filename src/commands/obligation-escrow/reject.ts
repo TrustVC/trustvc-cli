@@ -12,7 +12,7 @@ import { promptBaseObligationEscrowInputs } from './shared';
 import { runObligationEscrowTx } from './runTx';
 
 export const command = 'reject';
-export const describe = 'Holder rejects an issued BoE obligation (terminal Rejected)';
+export const describe = 'Holder rejects an issued BoE obligation (Issued → Rejected, burns)';
 
 export const handler = async (): Promise<void> => {
   try {

@@ -1419,7 +1419,7 @@ trustvc obligation-escrow accept
 
 **Interactive Prompts:**
 
-- Path to BoE / obligation documentverify
+- Path to BoE / obligation document
   - *Network, obligationRegistry, token ID, and document ID are extracted from the document*
 - Wallet/private key option
 - Remark (optional)
@@ -1429,7 +1429,7 @@ Transaction receipt confirming acceptance.
 
 #### obligation-escrow reject
 
-Rejects an obligation on the ObligationEscrow.
+Rejects an issued BoE obligation (Issued → Rejected). Burns the title (takes it out of circulation).
 
 **Usage:**
 
@@ -1444,11 +1444,11 @@ trustvc obligation-escrow reject
 - Remark (optional)
 
 **Output:**
-Transaction receipt confirming rejection.
+Transaction receipt confirming rejection (and burn).
 
 #### obligation-escrow discharge
 
-Discharges an accepted obligation on the ObligationEscrow.
+Discharges an accepted BoE obligation (Accepted → Discharged). Burns the title.
 
 **Usage:**
 
@@ -1463,7 +1463,7 @@ trustvc obligation-escrow discharge
 - Remark (optional)
 
 **Output:**
-Transaction receipt confirming discharge.
+Transaction receipt confirming discharge (and burn).
 
 #### obligation-escrow status
 
@@ -1487,7 +1487,7 @@ Obligation and escrow status fields from the chain.
 
 #### obligation-escrow transfer-holder
 
-Transfers the holder of a BoE obligation record. Transfer, nominate, endorse, return, and reject variants mirror `title-escrow` but operate on ObligationEscrow via `obligation-escrow <method>`.
+Transfers the holder of a BoE obligation record. Nominate, endorse, transfer-owner-holder, and reject-transfer variants mirror `title-escrow` but operate on ObligationEscrow via `obligation-escrow <method>`.
 
 **Usage:**
 
@@ -1495,7 +1495,6 @@ Transfers the holder of a BoE obligation record. Transfer, nominate, endorse, re
 trustvc obligation-escrow transfer-holder
 # Also:
 #   nominate-transfer-owner, endorse-transfer-owner, transfer-owner-holder
-#   return-to-issuer, accept-return-to-issuer, reject-return-to-issuer
 #   reject-transfer-holder, reject-transfer-owner, reject-transfer-owner-holder
 ```
 
@@ -1508,6 +1507,73 @@ trustvc obligation-escrow transfer-holder
 
 **Output:**
 Transaction receipt confirming the escrow action.
+
+#### obligation-escrow return-to-issuer
+
+Returns the BoE obligation to the issuer. Same rules as classic ETR: the connected wallet must be both the current beneficiary (owner) and the current holder.
+
+**Who Can Execute:**
+Both the **current holder** and **current beneficiary (owner)** must execute this together, or the entity that holds both roles.
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow return-to-issuer
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+  - *Network, obligationRegistry, token ID, and document ID are extracted from the document*
+- Wallet/private key option
+- Remark (optional)
+
+**Output:**
+Transaction receipt confirming return to issuer.
+
+#### obligation-escrow accept-return-to-issuer
+
+Accepts a returned BoE (issuer burn / shred).
+
+**Who Can Execute:**
+Only the **issuer** (wallet with accepter role on the obligation registry).
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow accept-return-to-issuer
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+- Wallet/private key option
+- Remark (optional)
+
+**Output:**
+Transaction receipt confirming acceptance (burn).
+
+#### obligation-escrow reject-return-to-issuer
+
+Rejects a returned BoE and restores it to escrow (issuer restore).
+
+**Who Can Execute:**
+Only the **issuer** (wallet with restorer role on the obligation registry).
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow reject-return-to-issuer
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+- Wallet/private key option
+- Remark (optional)
+
+**Output:**
+Transaction receipt confirming rejection (restore).
 
 ## Configuration
 
@@ -1699,7 +1765,7 @@ Using classic commands on a BoE document will fail or skip obligation checks. Us
 2. Put the registry address into your BoE credential status
 3. Sign the credential with `trustvc w3c-sign`
 4. Mint (issuer wallet)
-5. Accept or reject (holder) ──► optional transfers / discharge / return
+5. Accept or reject (holder) — or transfer / discharge / return as needed
 6. Verify with `trustvc verify`
 ```
 
@@ -1713,15 +1779,15 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 
 **3. Mint** — `trustvc obligation-registry mint` with the signed BoE JSON from `w3c-sign` (registry, network, token ID, document ID are extracted).
 
-**4. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Reject only sets status to Rejected; closing requires return-to-issuer afterward.
+**4. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Accept moves Issued → Accepted. Reject moves Issued → Rejected and burns the title.
 
 **5. Status** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, and termination reason.
 
-**6. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/return variants mirror `title-escrow`.
+**6. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/reject-transfer variants mirror `title-escrow`.
 
-**7. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (sets Discharged; does not burn).
+**7. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (sets Discharged and burns).
 
-**8. Return to issuer** — requires status **Rejected** or **Discharged** and **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
+**8. Return to issuer** — same as classic ETR: **beneficiary == holder**, then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn). No Rejected/Discharged status requirement.
 
 **9. Verify** — `trustvc verify` (auto-detects BoE vs ETR).
 
@@ -1735,7 +1801,7 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 | `obligation-escrow accept` / `reject`                 | Holder (roles split)                                       |
 | `obligation-escrow discharge`                         | Beneficiary                                                |
 | Transfer / nominate / endorse                         | Current holder or beneficiary per Title Escrow–style rules |
-| `return-to-issuer`                                    | Dual role (beneficiary == holder)                          |
+| `return-to-issuer`                                    | Dual role (beneficiary == holder), same as ETR             |
 | `accept-return-to-issuer` / `reject-return-to-issuer` | Issuer                                                     |
 | `obligation-escrow status`                            | Anyone with the document + wallet/private key (read-only)  |
 | `verify`                                              | Anyone with the document (+ RPC when on-chain checks run)  |

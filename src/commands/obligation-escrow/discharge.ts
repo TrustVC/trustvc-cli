@@ -12,7 +12,8 @@ import { promptBaseObligationEscrowInputs } from './shared';
 import { runObligationEscrowTx } from './runTx';
 
 export const command = 'discharge';
-export const describe = 'Beneficiary discharges an accepted BoE obligation (terminal Discharged)';
+export const describe =
+  'Beneficiary discharges an accepted BoE obligation (Accepted → Discharged, burns)';
 
 export const handler = async (): Promise<void> => {
   try {

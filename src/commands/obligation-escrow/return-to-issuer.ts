@@ -12,7 +12,7 @@ import { promptBaseObligationEscrowInputs } from './shared';
 import { runObligationEscrowTx } from './runTx';
 
 export const command = 'return-to-issuer';
-export const describe = 'Return a BoE obligation to the issuer (requires dual role)';
+export const describe = 'Return a BoE obligation to the issuer (dual role, same as classic ETR)';
 
 export const handler = async (): Promise<void> => {
   try {

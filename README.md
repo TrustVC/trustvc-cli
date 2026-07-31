@@ -24,11 +24,9 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 
 This CLI leverages the TrustVC package:
 
-- [`@trustvc/trustvc`](https://github.com/TrustVC/trustvc) — Core library for W3C credentials, OpenAttestation, token registries, Obligation Registry (BoE), and blockchain operations
+- `[@trustvc/trustvc](https://github.com/TrustVC/trustvc)` — Core library for W3C credentials, OpenAttestation, token registries, Obligation Registry (BoE), and blockchain operations
 
 BoE on-chain helpers are imported from the **root** package (`mintObligationRegistry`, `acceptObligationRegistry`, …). Prefer those over any older `@trustvc/trustvc/obligation-registry` path.
-
-
 
 ## Table of Contents
 
@@ -280,7 +278,7 @@ trustvc verify
 - **Document Store**: Deploy document store contracts and use `documentStoreIssue` and `documentStoreRevoke` to issue and revoke document hashes in deployed contracts.
 - **Transaction Cancel**: Cancel a pending transaction by replacing it with a 0-value transaction to yourself (same nonce, higher gas price). Supports specifying by transaction hash or by nonce and gas price.
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
-- **Obligation Registry (BoE)**: Separate command trees for electronic Bill of Exchange on-chain flows — `obligation-registry` (deploy/mint) and `obligation-escrow` (accept/reject/discharge, transfers, return). Use **`trustvc verify`** for both ETR and BoE documents (ObligationRecords vs TransferableRecords is auto-detected). Do not use classic `token-registry` / `title-escrow` for obligation documents. See [Obligation Registry user guide](#obligation-registry-user-guide).
+- **Obligation Registry (BoE)**: Separate command trees for electronic Bill of Exchange on-chain flows — `obligation-registry` (deploy/mint) and `obligation-escrow` (accept/reject/discharge, transfers, return). Use `trustvc verify` for both ETR and BoE documents (ObligationRecords vs TransferableRecords is auto-detected). Do not use classic `token-registry` / `title-escrow` for obligation documents. See [Obligation Registry user guide](#obligation-registry-user-guide).
 
 
 
@@ -377,6 +375,8 @@ All title-escrow, obligation-registry, obligation-escrow, token registry, docume
 
 ### Detailed Command Reference
 
+
+
 #### transaction cancel
 
 Cancels a pending transaction by replacing it with a 0-value transaction to yourself using the same nonce and a higher gas price (replace-by-fee). This action is irreversible.
@@ -423,8 +423,6 @@ trustvc transaction cancel \
 - A link to view the replacement transaction on the network’s block explorer (e.g. Etherscan).
 
 **Note:** If the pending transaction uses EIP-1559 (maxFeePerGas / maxPriorityFeePerGas), it has no legacy `gasPrice`. In that case, specify the transaction by **nonce and gas price** and set a gas price (in wei) for the replacement.
-
-
 
 #### key-pair-generation
 
@@ -496,8 +494,6 @@ trustvc w3c-sign
 **Output:**
 Creates `signed_vc.json` with cryptographic proof.
 
-
-
 #### verify
 
 Verifies a W3C or OA document using the unified TrustVC verification pipeline.
@@ -547,8 +543,6 @@ trustvc credential-status-create
 **Output:**
 Signed credential status list file.
 
-
-
 #### credential-status-update
 
 Updates an existing W3C credential status list to revoke or suspend credentials.
@@ -568,8 +562,6 @@ trustvc credential-status-update
 
 **Output:**
 Updated credential status list file.
-
-
 
 #### oa-sign
 
@@ -699,8 +691,6 @@ trustvc oa-decrypt
 
 Writes the decrypted Open Attestation document (raw OA v2/v3 or wrapped OA v2/v3) to the specified path. Fails if the key is wrong or the file is not a valid encrypted OA document.
 
-
-
 #### mint
 
 Mints a document hash (tokenId) to a token registry smart contract.
@@ -828,8 +818,6 @@ trustvc document-store issue
 **Output:**
 Transaction receipt confirming the hash issuance.
 
-
-
 #### document-store revoke
 
 Revokes a document hash from a deployed document store.
@@ -847,8 +835,6 @@ trustvc document-store revoke
 
 **Output:**
 Transaction receipt confirming the hash revocation.
-
-
 
 #### document-store grant-role
 
@@ -1125,8 +1111,6 @@ trustvc title-escrow transfer-holder
 **Output:**
 Transaction receipt confirming holder transfer.
 
-
-
 #### title-escrow nominate-transfer-owner
 
 Nominates a new beneficiary (owner) for the transferable record.
@@ -1155,8 +1139,6 @@ trustvc title-escrow nominate-transfer-owner
 **Output:**
 Transaction receipt confirming beneficiary nomination.
 
-
-
 #### title-escrow endorse-transfer-owner
 
 Endorses the change of beneficiary (owner) for the transferable record.
@@ -1184,8 +1166,6 @@ trustvc title-escrow endorse-transfer-owner
 
 **Output:**
 Transaction receipt confirming beneficiary endorsement.
-
-
 
 #### title-escrow transfer-owner-holder
 
@@ -1216,8 +1196,6 @@ trustvc title-escrow transfer-owner-holder
 **Output:**
 Transaction receipt confirming full ownership transfer.
 
-
-
 #### title-escrow return-to-issuer
 
 Returns the transferable record to the issuer.
@@ -1244,8 +1222,6 @@ trustvc title-escrow return-to-issuer
 
 **Output:**
 Transaction receipt confirming document return.
-
-
 
 #### title-escrow accept-return-to-issuer
 
@@ -1274,8 +1250,6 @@ trustvc title-escrow accept-return-to-issuer
 **Output:**
 Transaction receipt confirming acceptance.
 
-
-
 #### title-escrow reject-return-to-issuer
 
 Rejects a returned transferable record (issuer action).
@@ -1302,8 +1276,6 @@ trustvc title-escrow reject-return-to-issuer
 
 **Output:**
 Transaction receipt confirming rejection.
-
-
 
 #### title-escrow reject-transfer-holder
 
@@ -1332,8 +1304,6 @@ trustvc title-escrow reject-transfer-holder
 **Output:**
 Transaction receipt confirming rejection.
 
-
-
 #### title-escrow reject-transfer-owner
 
 Rejects a beneficiary transfer request.
@@ -1360,8 +1330,6 @@ trustvc title-escrow reject-transfer-owner
 
 **Output:**
 Transaction receipt confirming rejection.
-
-
 
 #### title-escrow reject-transfer-owner-holder
 
@@ -1390,8 +1358,6 @@ trustvc title-escrow reject-transfer-owner-holder
 **Output:**
 Transaction receipt confirming rejection.
 
-
-
 #### obligation-registry deploy
 
 Deploys an Obligation Registry (`TrustVCToken` + `ObligationEscrowFactory`) for electronic Bill of Exchange (BoE) flows.
@@ -1415,15 +1381,13 @@ trustvc obligation-registry deploy
 **Output:**
 Deployed `ObligationEscrowFactory` and Obligation Registry addresses plus transaction receipt. Copy the Obligation Registry address into `credentialStatus.obligationRegistry` in your BoE document before signing and minting.
 
-
-
 #### obligation-registry mint
 
 Mints a BoE tokenId to an Obligation Registry and creates the linked ObligationEscrow.
 
 **Do not use** classic `mint` / `token-registry mint` for BoE documents.
 
-**Before minting:** set `credentialStatus.obligationRegistry` to your deployed registry address, then sign the document with [`w3c-sign`](#w3c-sign). Mint only accepts a signed Verifiable Credential.
+**Before minting:** set `credentialStatus.obligationRegistry` to your deployed registry address, then sign the document with `[w3c-sign](#w3c-sign)`. Mint only accepts a signed Verifiable Credential.
 
 **Usage:**
 
@@ -1443,8 +1407,6 @@ trustvc obligation-registry mint
 **Output:**
 Transaction receipt confirming mint.
 
-
-
 #### obligation-escrow accept
 
 Accepts an obligation on the ObligationEscrow (drawee acceptance).
@@ -1457,15 +1419,13 @@ trustvc obligation-escrow accept
 
 **Interactive Prompts:**
 
-- Path to BoE / obligation document
+- Path to BoE / obligation documentverify
   - *Network, obligationRegistry, token ID, and document ID are extracted from the document*
 - Wallet/private key option
 - Remark (optional)
 
 **Output:**
 Transaction receipt confirming acceptance.
-
-
 
 #### obligation-escrow reject
 
@@ -1486,8 +1446,6 @@ trustvc obligation-escrow reject
 **Output:**
 Transaction receipt confirming rejection.
 
-
-
 #### obligation-escrow discharge
 
 Discharges an accepted obligation on the ObligationEscrow.
@@ -1507,8 +1465,6 @@ trustvc obligation-escrow discharge
 **Output:**
 Transaction receipt confirming discharge.
 
-
-
 #### obligation-escrow status
 
 Reads on-chain obligation / escrow status for a BoE document (read-only; no wallet required for the status call itself beyond network connectivity).
@@ -1526,8 +1482,6 @@ trustvc obligation-escrow status
 
 **Output:**
 Obligation and escrow status fields from the chain.
-
-
 
 #### obligation-escrow transfer-holder
 
@@ -1552,8 +1506,6 @@ trustvc obligation-escrow transfer-holder
 
 **Output:**
 Transaction receipt confirming the escrow action.
-
-
 
 ## Configuration
 

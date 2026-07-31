@@ -44,14 +44,17 @@ export const extractObligationDocumentInfo = async (
   }
   if (!tokenId) {
     throw new Error('Document does not contain a valid token ID');
+  if (!obligationRegistry) {
+    throw new Error('Document does not contain a valid obligationRegistry address');
+  }
+  if (!tokenId) {
+    throw new Error('Document does not contain a valid token ID');
   }
   if (!chainId) {
     throw new Error('Document does not contain a valid chain ID');
   }
-  if (!(chainId in SUPPORTED_CHAINS)) {
-    throw new Error(
-      `Unsupported chain ID in obligation document: ${chainId}. Use a BoE document on a supported network.`,
-    );
+  if (!SUPPORTED_CHAINS[chainId]) {
+    throw new Error(`Document references unsupported chain ID: ${chainId}`);
   }
 
   const network = SUPPORTED_CHAINS[chainId].name;

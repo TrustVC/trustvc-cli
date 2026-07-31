@@ -35,6 +35,7 @@ export const acceptHandler = async (args: BaseObligationEscrowCommand) => {
       sdk: acceptObligationRegistry as any,
       sdkParams: { remarks: args.remark },
     });
+    if (!transaction) return;
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,
       args.network as NetworkCmdName,
@@ -45,5 +46,6 @@ export const acceptHandler = async (args: BaseObligationEscrowCommand) => {
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

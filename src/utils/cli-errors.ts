@@ -76,6 +76,12 @@ const REVERT_SELECTOR_TO_NAME: Record<string, string> = {
 
 const UNKNOWN_CUSTOM_ERROR = /unknown custom error/i;
 
+/** Solidity custom errors are PascalCase identifiers (e.g. OwnerHolderMustDiffer). */
+const SOLIDITY_CUSTOM_ERROR_NAME = /^[A-Z][A-Za-z0-9_]*$/;
+
+const isKnownRevertName = (label: string): boolean =>
+  label in KNOWN_REVERT_MESSAGES || Object.values(REVERT_SELECTOR_TO_NAME).includes(label);
+
 type EthersCallException = {
   reason?: unknown;
   shortMessage?: unknown;
@@ -99,6 +105,27 @@ const normalizeLabel = (raw: string): string | undefined => {
   // Drop leading junk like ": OwnerHolderMustDiffer" or parentheses wrappers
   const ident = cleaned.match(/([A-Za-z][A-Za-z0-9_]*)/);
   return ident?.[1];
+};
+
+/** Labels after generic "failed:" — only known reverts or Solidity-shaped names. */
+const acceptFailedSuffixLabel = (raw: string): string | undefined => {
+  const label = normalizeLabel(raw);
+  if (!label) return undefined;
+  if (isKnownRevertName(label) || SOLIDITY_CUSTOM_ERROR_NAME.test(label)) return label;
+  return undefined;
+};
+
+const labelFromWrappedMessage = (message: string): string | undefined => {
+  const fromContract = message.match(/Contract reverted with\s+([A-Za-z0-9_]+)/);
+  if (fromContract?.[1]) {
+    const label = normalizeLabel(fromContract[1]);
+    if (label) return label;
+  }
+  const fromFailed = message.match(/failed:\s*([A-Za-z0-9_]+)/);
+  if (fromFailed?.[1]) {
+    return acceptFailedSuffixLabel(fromFailed[1]);
+  }
+  return undefined;
 };
 
 const collectPossibleData = (err: EthersCallException): string[] => {
@@ -132,10 +159,12 @@ export function extractContractRevertLabel(error: unknown): string | undefined {
   const err = asEthersError(error);
   if (!err) {
     if (error instanceof Error) {
-      const fromMessage = error.message.match(
-        /(?:execution reverted:\s*|Contract reverted with\s*|failed:\s*)([A-Za-z0-9_]+)/,
-      );
-      return fromMessage?.[1] ? normalizeLabel(fromMessage[1]) : undefined;
+      const fromExec = error.message.match(/execution reverted:\s*([A-Za-z0-9_]+)/);
+      if (fromExec?.[1]) {
+        const label = normalizeLabel(fromExec[1]);
+        if (label) return label;
+      }
+      return labelFromWrappedMessage(error.message);
     }
     return undefined;
   }
@@ -172,11 +201,8 @@ export function extractContractRevertLabel(error: unknown): string | undefined {
       const label = normalizeLabel(custom[1]);
       if (label) return label;
     }
-    const wrapped = err.message.match(/(?:Contract reverted with\s*|failed:\s*)([A-Za-z0-9_]+)/);
-    if (wrapped?.[1]) {
-      const label = normalizeLabel(wrapped[1]);
-      if (label) return label;
-    }
+    const wrapped = labelFromWrappedMessage(err.message);
+    if (wrapped) return wrapped;
   }
 
   return undefined;

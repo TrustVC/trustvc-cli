@@ -48,6 +48,11 @@ export const extractObligationDocumentInfo = async (
   if (!chainId) {
     throw new Error('Document does not contain a valid chain ID');
   }
+  if (!(chainId in SUPPORTED_CHAINS)) {
+    throw new Error(
+      `Unsupported chain ID in obligation document: ${chainId}. Use a BoE document on a supported network.`,
+    );
+  }
 
   const network = SUPPORTED_CHAINS[chainId].name;
   const documentId = document.id || 'N/A';

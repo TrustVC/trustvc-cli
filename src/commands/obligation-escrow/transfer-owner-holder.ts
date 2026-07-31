@@ -1,29 +1,21 @@
-import { error, info, success } from 'signale';
+import { info, success } from 'signale';
 import { transferOwnersObligationRegistry } from '@trustvc/trustvc';
 import { ObligationEscrowEndorseTransferOfOwnersCommand } from '../../types';
 import {
   displayTransactionPrice,
-  getErrorMessage,
   getEtherscanAddress,
   NetworkCmdName,
   promptAddress,
   TransactionReceiptFees,
 } from '../../utils';
-import { promptBaseObligationEscrowInputs } from './shared';
+import { promptBaseObligationEscrowInputs, runObligationEscrowCommand } from './shared';
 import { runObligationEscrowTx } from './runTx';
 
 export const command = 'transfer-owner-holder';
 export const describe = 'Transfer both beneficiary and holder of a BoE obligation';
 
-export const handler = async (): Promise<void> => {
-  try {
-    const answers = await promptForInputs();
-    if (!answers) return;
-    await transferOwnersHandler(answers);
-  } catch (err: unknown) {
-    error(err instanceof Error ? err.message : String(err));
-  }
-};
+export const handler = async (): Promise<void> =>
+  runObligationEscrowCommand(promptForInputs, transferOwnersHandler);
 
 export const promptForInputs =
   async (): Promise<ObligationEscrowEndorseTransferOfOwnersCommand> => {
@@ -36,30 +28,27 @@ export const promptForInputs =
 export const transferOwnersHandler = async (
   args: ObligationEscrowEndorseTransferOfOwnersCommand,
 ) => {
-  try {
-    info(
-      `Transferring owners of obligation ${args.tokenId} to owner ${args.newOwner} / holder ${args.newHolder}`,
-    );
-    const transaction = await runObligationEscrowTx({
-      args,
-      populate: ({ escrow }, encryptedRemark) =>
-        escrow.transferOwners.populateTransaction(args.newOwner, args.newHolder, encryptedRemark),
-      sdk: transferOwnersObligationRegistry as any,
-      sdkParams: {
-        newBeneficiaryAddress: args.newOwner,
-        newHolderAddress: args.newHolder,
-        remarks: args.remark,
-      },
-    });
-    displayTransactionPrice(
-      transaction as unknown as TransactionReceiptFees,
-      args.network as NetworkCmdName,
-    );
-    success(`Owners transferred`);
-    info(
-      `Find more details at ${getEtherscanAddress({ network: args.network })}/tx/${transaction.hash}`,
-    );
-  } catch (e) {
-    error(getErrorMessage(e));
-  }
+  info(
+    `Transferring owners of obligation ${args.tokenId} to owner ${args.newOwner} / holder ${args.newHolder}`,
+  );
+  const transaction = await runObligationEscrowTx({
+    args,
+    populate: ({ escrow }, encryptedRemark) =>
+      escrow.transferOwners.populateTransaction(args.newOwner, args.newHolder, encryptedRemark),
+    sdk: transferOwnersObligationRegistry as any,
+    sdkParams: {
+      newBeneficiaryAddress: args.newOwner,
+      newHolderAddress: args.newHolder,
+      remarks: args.remark,
+    },
+  });
+  if (!transaction) return;
+  displayTransactionPrice(
+    transaction as unknown as TransactionReceiptFees,
+    args.network as NetworkCmdName,
+  );
+  success(`Owners transferred`);
+  info(
+    `Find more details at ${getEtherscanAddress({ network: args.network })}/tx/${transaction.hash}`,
+  );
 };

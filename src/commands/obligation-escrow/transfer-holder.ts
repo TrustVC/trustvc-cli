@@ -44,6 +44,7 @@ export const changeHolderHandler = async (args: ObligationEscrowTransferHolderCo
       sdk: transferHolderObligationRegistry as any,
       sdkParams: { holderAddress: args.newHolder, remarks: args.remark },
     });
+    if (!transaction) return;
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,
       args.network as NetworkCmdName,
@@ -54,5 +55,6 @@ export const changeHolderHandler = async (args: ObligationEscrowTransferHolderCo
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

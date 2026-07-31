@@ -1467,7 +1467,7 @@ Transaction receipt confirming discharge.
 
 #### obligation-escrow status
 
-Reads on-chain obligation / escrow status for a BoE document (read-only; no wallet required for the status call itself beyond network connectivity).
+Reads on-chain obligation / escrow status for a BoE document. The CLI still prompts for a wallet or private key (same base inputs as other `obligation-escrow` commands) so it can attach a network provider via `getWalletOrSigner`.
 
 **Usage:**
 
@@ -1478,7 +1478,9 @@ trustvc obligation-escrow status
 **Interactive Prompts:**
 
 - Path to BoE / obligation document
-  - *Network, obligationRegistry, and token ID are extracted from the document*
+- Wallet/private key option
+- Remark (optional)
+- *Network, obligationRegistry, and token ID are extracted from the document*
 
 **Output:**
 Obligation and escrow status fields from the chain.
@@ -1641,7 +1643,7 @@ User guide for electronic Bill of Exchange (BoE) / obligation flows with `trustv
 
 Classic transferable records (eBL / Token Registry + Title Escrow) use different commands. This section covers **only** Obligation Registry.
 
-For library / SDK details, see the TrustVC README [§7c Obligation Registry (BoE)](https://github.com/TrustVC/trustvc#c-obligation-registry-boe).
+For library / SDK details, see the TrustVC README [§7c Obligation Registry (BoE)](https://github.com/TrustVC/trustvc/blob/beta/README.md#c-obligation-registry-boe) (on the `beta` branch; not yet on `main`).
 
 SDK imports use the **root** package with the `*ObligationRegistry` suffix (no clash with classic ETR helpers):
 
@@ -1692,7 +1694,7 @@ Using classic commands on a BoE document will fail or skip obligation checks. Us
 
 ### Typical workflow
 
-```
+```text
 1. Deploy Obligation Registry
 2. Put the registry address into your BoE credential status
 3. Sign the credential with `trustvc w3c-sign`
@@ -1721,7 +1723,7 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 
 **8. Return to issuer** — requires status **Rejected** or **Discharged** and **beneficiary == holder**; then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn).
 
-**8. Verify** — `trustvc verify` (auto-detects BoE vs ETR).
+**9. Verify** — `trustvc verify` (auto-detects BoE vs ETR).
 
 ### Who can run what
 
@@ -1735,7 +1737,7 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 | Transfer / nominate / endorse                         | Current holder or beneficiary per Title Escrow–style rules |
 | `return-to-issuer`                                    | Dual role (beneficiary == holder)                          |
 | `accept-return-to-issuer` / `reject-return-to-issuer` | Issuer                                                     |
-| `obligation-escrow status`                            | Anyone with network access + document                      |
+| `obligation-escrow status`                            | Anyone with the document + wallet/private key (read-only)  |
 | `verify`                                              | Anyone with the document (+ RPC when on-chain checks run)  |
 
 

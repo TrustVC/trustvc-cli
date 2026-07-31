@@ -1,9 +1,11 @@
+import { error } from 'signale';
 import {
   promptWalletSelection,
   promptAndReadDocument,
   promptRemark,
   extractObligationDocumentInfo,
   verifyDocumentSignature,
+  getErrorMessage,
 } from '../../utils';
 import { BaseObligationEscrowCommand } from '../../types';
 
@@ -37,4 +39,22 @@ export const promptBaseObligationEscrowInputs = async (): Promise<BaseObligation
     return { ...baseResult, key } as BaseObligationEscrowCommand;
   }
   return baseResult as BaseObligationEscrowCommand;
+};
+
+/**
+ * Runs prompt → command with shared failure logging and non-zero exit on error.
+ * Prompt cancellation (falsy answers) returns without setting exitCode.
+ */
+export const runObligationEscrowCommand = async <TArgs>(
+  promptForInputs: () => Promise<TArgs | null | undefined>,
+  commandHandler: (args: TArgs) => Promise<void>,
+): Promise<void> => {
+  try {
+    const answers = await promptForInputs();
+    if (!answers) return;
+    await commandHandler(answers);
+  } catch (e) {
+    error(getErrorMessage(e));
+    process.exitCode = 1;
+  }
 };

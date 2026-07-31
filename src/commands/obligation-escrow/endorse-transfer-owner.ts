@@ -41,6 +41,7 @@ export const endorseHandler = async (args: ObligationEscrowNominateBeneficiaryCo
       sdk: transferBeneficiaryObligationRegistry as any,
       sdkParams: { newBeneficiaryAddress: args.newBeneficiary, remarks: args.remark },
     });
+    if (!transaction) return;
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,
       args.network as NetworkCmdName,
@@ -51,5 +52,6 @@ export const endorseHandler = async (args: ObligationEscrowNominateBeneficiaryCo
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

@@ -53,4 +53,15 @@ describe('contract revert error formatting', () => {
     );
     expect(getErrorMessage(wrapped)).toMatch(/OwnerHolderMustDiffer:/);
   });
+
+  it('rejects generic failed: suffixes that are not contract reverts', () => {
+    const preprocessing = new Error('SDK preprocessing failed: badInput');
+    expect(extractContractRevertLabel(preprocessing)).toBeUndefined();
+    expect(isContractCallException(preprocessing)).toBe(false);
+  });
+
+  it('preserves Contract reverted with labels', () => {
+    const wrapped = new Error('Contract reverted with OwnerHolderMustDiffer');
+    expect(extractContractRevertLabel(wrapped)).toBe('OwnerHolderMustDiffer');
+  });
 });

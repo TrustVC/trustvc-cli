@@ -36,6 +36,7 @@ export const rejectTransferOwnerHandler = async (args: BaseObligationEscrowComma
       sdk: rejectTransferBeneficiaryObligationRegistry as any,
       sdkParams: { remarks: args.remark },
     });
+    if (!transaction) return;
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,
       args.network as NetworkCmdName,
@@ -46,5 +47,6 @@ export const rejectTransferOwnerHandler = async (args: BaseObligationEscrowComma
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

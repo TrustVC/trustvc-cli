@@ -1,4 +1,4 @@
-import { error, info, success } from 'signale';
+import { info, success } from 'signale';
 import {
   ObligationDocumentStatus,
   ObligationEscrowTerminationReason,
@@ -7,8 +7,8 @@ import {
   isObligationRegistryRegistered,
 } from '@trustvc/trustvc';
 import { BaseObligationEscrowCommand } from '../../types';
-import { getErrorMessage, getWalletOrSigner } from '../../utils';
-import { promptBaseObligationEscrowInputs } from './shared';
+import { getWalletOrSigner } from '../../utils';
+import { promptBaseObligationEscrowInputs, runObligationEscrowCommand } from './shared';
 
 export const command = 'status';
 export const describe = 'Read BoE obligation escrow status / registration / termination reason';
@@ -26,34 +26,23 @@ const REASON_LABEL: Record<number, string> = {
   [ObligationEscrowTerminationReason.Discharged]: 'Discharged',
 };
 
-export const handler = async (): Promise<void> => {
-  try {
-    const answers = await promptForInputs();
-    if (!answers) return;
-    await statusHandler(answers);
-  } catch (err: unknown) {
-    error(err instanceof Error ? err.message : String(err));
-  }
-};
+export const handler = async (): Promise<void> =>
+  runObligationEscrowCommand(promptForInputs, statusHandler);
 
 export const promptForInputs = promptBaseObligationEscrowInputs;
 
 export const statusHandler = async (args: BaseObligationEscrowCommand) => {
-  try {
-    const { obligationRegistryAddress, tokenId, network, ...rest } = args;
-    const wallet = await getWalletOrSigner({ network, ...rest });
-    // Escrow resolution uses contractOptions.tokenId (params.tokenId is API parity only).
-    const opts = { obligationRegistryAddress, tokenId };
+  const { obligationRegistryAddress, tokenId, network, ...rest } = args;
+  const wallet = await getWalletOrSigner({ network, ...rest });
+  // Escrow resolution uses contractOptions.tokenId (params.tokenId is API parity only).
+  const opts = { obligationRegistryAddress, tokenId };
 
-    const status = await getObligationRegistryStatus(opts, wallet, { tokenId });
-    const registered = await isObligationRegistryRegistered(opts, wallet, { tokenId });
-    const reason = await getObligationEscrowTerminationReason(opts, wallet, { tokenId });
+  const status = await getObligationRegistryStatus(opts, wallet, { tokenId });
+  const registered = await isObligationRegistryRegistered(opts, wallet, { tokenId });
+  const reason = await getObligationEscrowTerminationReason(opts, wallet, { tokenId });
 
-    success(`Obligation ${tokenId} on ${obligationRegistryAddress}`);
-    info(`  Status: ${STATUS_LABEL[status] ?? status} (${status})`);
-    info(`  Registered: ${registered}`);
-    info(`  Termination reason: ${REASON_LABEL[reason] ?? reason} (${reason})`);
-  } catch (e) {
-    error(getErrorMessage(e));
-  }
+  success(`Obligation ${tokenId} on ${obligationRegistryAddress}`);
+  info(`  Status: ${STATUS_LABEL[status] ?? status} (${status})`);
+  info(`  Registered: ${registered}`);
+  info(`  Termination reason: ${REASON_LABEL[reason] ?? reason} (${reason})`);
 };

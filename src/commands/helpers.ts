@@ -440,7 +440,12 @@ export const connectToObligationRegistry = async ({
   try {
     signale.info(`Connecting to obligation registry at: ${address}`);
     const registry = new ethers.Contract(address, TrustVCToken__factory.abi, wallet as any);
-    if (!registry) {
+    const provider = wallet.provider;
+    if (!provider) {
+      throw new Error('Wallet provider is required to validate the obligation registry contract');
+    }
+    const code = await provider.getCode(address);
+    if (!code || code === '0x') {
       throw new Error(`Failed to connect to obligation registry at address: ${address}`);
     }
     signale.success(`Successfully connected to obligation registry`);
@@ -483,7 +488,12 @@ export const connectToObligationEscrow = async ({
 
     signale.info(`Connecting to obligation escrow at: ${escrowAddress}`);
     const escrow = new ethers.Contract(escrowAddress, ObligationEscrow__factory.abi, wallet as any);
-    if (!escrow) {
+    const provider = wallet.provider;
+    if (!provider) {
+      throw new Error('Wallet provider is required to validate the obligation escrow contract');
+    }
+    const code = await provider.getCode(escrowAddress);
+    if (!code || code === '0x') {
       throw new Error(`Failed to connect to obligation escrow at address: ${escrowAddress}`);
     }
     signale.success(`Successfully connected to obligation escrow`);

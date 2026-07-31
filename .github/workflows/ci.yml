@@ -3,6 +3,9 @@ name: CI
 # Same checks for PRs targeting main or beta (and for pushes to those branches).
 on:
   push:
+    branches:
+      - main
+      - beta
   pull_request:
     branches:
       - main

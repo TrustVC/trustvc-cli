@@ -2,7 +2,7 @@
   "branches": [
     "main",
     {
-      "name": "beta-boe",
+      "name": "beta",
       "prerelease": "beta",
       "channel": "beta"
     }
@@ -16,7 +16,12 @@
         "changelogFile": "CHANGELOG.md"
       }
     ],
-    "@semantic-release/npm",
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": true
+      }
+    ],
     [
       "@semantic-release/git",
       {

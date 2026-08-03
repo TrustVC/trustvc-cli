@@ -137,6 +137,11 @@ const resolveFallbackProvider = async (
   networkOverride?: string,
 ): Promise<V5Provider | undefined> => {
   if (networkOverride) {
+    if (!Object.prototype.hasOwnProperty.call(supportedNetwork, networkOverride)) {
+      throw new Error(
+        `Unsupported network "${networkOverride}". Valid options: ${Object.keys(supportedNetwork).join(', ')}`,
+      );
+    }
     return getSupportedNetwork(networkOverride).provider() as unknown as V5Provider;
   }
 

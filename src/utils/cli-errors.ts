@@ -102,9 +102,10 @@ const normalizeLabel = (raw: string): string | undefined => {
   if (!cleaned || UNKNOWN_CUSTOM_ERROR.test(cleaned) || cleaned === '(unknown custom error)') {
     return undefined;
   }
-  // Only accept a full-string identifier (e.g. OwnerHolderMustDiffer), not the first
-  // word of free-text reasons — those fall through to describeContractError.
-  if (/^[A-Za-z][A-Za-z0-9_]*$/.test(cleaned)) {
+  // Only accept a full-string PascalCase Solidity custom-error identifier (e.g.
+  // OwnerHolderMustDiffer), not lowercase/free-text reasons — those fall through
+  // to describeContractError.
+  if (SOLIDITY_CUSTOM_ERROR_NAME.test(cleaned)) {
     return cleaned;
   }
   return undefined;

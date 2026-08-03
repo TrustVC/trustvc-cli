@@ -163,6 +163,10 @@ const mintToTokenRegistry = async ({
     },
   });
 
+  // null = definitive dry-run revert; false = user cancel — do not exit(0)
+  if (shouldProceed === null) {
+    process.exit(1);
+  }
   if (!shouldProceed) {
     process.exit(0);
   }

@@ -1,9 +1,8 @@
-import { error, info, success } from 'signale';
+import { info, success } from 'signale';
 import { rejectTransferBeneficiaryObligationRegistry } from '@trustvc/trustvc';
 import { BaseObligationEscrowCommand } from '../../types';
 import {
   displayTransactionPrice,
-  getErrorMessage,
   getEtherscanAddress,
   NetworkCmdName,
   TransactionReceiptFees,
@@ -20,26 +19,21 @@ export const handler = async (): Promise<void> =>
 export const promptForInputs = promptBaseObligationEscrowInputs;
 
 export const rejectTransferOwnerHandler = async (args: BaseObligationEscrowCommand) => {
-  try {
-    info(`Rejecting beneficiary transfer for obligation ${args.tokenId}`);
-    const transaction = await runObligationEscrowTx({
-      args,
-      populate: ({ escrow }, encryptedRemark) =>
-        escrow.rejectTransferBeneficiary.populateTransaction(encryptedRemark),
-      sdk: rejectTransferBeneficiaryObligationRegistry as any,
-      sdkParams: { remarks: args.remark },
-    });
-    if (!transaction) return;
-    displayTransactionPrice(
-      transaction as unknown as TransactionReceiptFees,
-      args.network as NetworkCmdName,
-    );
-    success(`Beneficiary transfer rejected`);
-    info(
-      `Find more details at ${getEtherscanAddress({ network: args.network })}/tx/${transaction.hash}`,
-    );
-  } catch (e) {
-    error(getErrorMessage(e));
-    process.exitCode = 1;
-  }
+  info(`Rejecting beneficiary transfer for obligation ${args.tokenId}`);
+  const transaction = await runObligationEscrowTx({
+    args,
+    populate: ({ escrow }, encryptedRemark) =>
+      escrow.rejectTransferBeneficiary.populateTransaction(encryptedRemark),
+    sdk: rejectTransferBeneficiaryObligationRegistry as any,
+    sdkParams: { remarks: args.remark },
+  });
+  if (!transaction) return;
+  displayTransactionPrice(
+    transaction as unknown as TransactionReceiptFees,
+    args.network as NetworkCmdName,
+  );
+  success(`Beneficiary transfer rejected`);
+  info(
+    `Find more details at ${getEtherscanAddress({ network: args.network })}/tx/${transaction.hash}`,
+  );
 };

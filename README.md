@@ -342,13 +342,13 @@ trustvc verify
 |                      | `[obligation-escrow discharge](#obligation-escrow-discharge)`                | Discharge obligation                                       |
 |                      | `[obligation-escrow status](#obligation-escrow-status)`                      | Read obligation / escrow status                            |
 |                      | `[obligation-escrow transfer-holder](#obligation-escrow-transfer-holder)`    | Transfer BoE holder                                        |
-|                      | `obligation-escrow nominate-transfer-owner`                                  | Nominate BoE beneficiary                                   |
-|                      | `obligation-escrow endorse-transfer-owner`                                   | Endorse BoE beneficiary change                             |
-|                      | `obligation-escrow transfer-owner-holder`                                    | Endorse full BoE ownership transfer                        |
-|                      | `obligation-escrow return-to-issuer`                                         | Return BoE to issuer                                       |
-|                      | `obligation-escrow accept-return-to-issuer`                                  | Accept returned BoE                                        |
-|                      | `obligation-escrow reject-return-to-issuer`                                  | Reject returned BoE                                        |
-|                      | `obligation-escrow reject-transfer-*`                                        | Reject BoE transfer requests                               |
+|                      | `[obligation-escrow nominate-transfer-owner](#title-escrow-nominate-transfer-owner)` | Nominate BoE beneficiary                            |
+|                      | `[obligation-escrow endorse-transfer-owner](#title-escrow-endorse-transfer-owner)`   | Endorse BoE beneficiary change                      |
+|                      | `[obligation-escrow transfer-owner-holder](#title-escrow-transfer-owner-holder)`     | Endorse full BoE ownership transfer                 |
+|                      | `[obligation-escrow return-to-issuer](#obligation-escrow-return-to-issuer)`  | Return BoE to issuer                                       |
+|                      | `[obligation-escrow accept-return-to-issuer](#obligation-escrow-accept-return-to-issuer)` | Accept returned BoE                            |
+|                      | `[obligation-escrow reject-return-to-issuer](#obligation-escrow-reject-return-to-issuer)` | Reject returned BoE                            |
+|                      | `[obligation-escrow reject-transfer-*](#title-escrow-reject-transfer-holder)` | Reject BoE transfer requests                              |
 
 
 
@@ -1690,14 +1690,14 @@ src/commands/
 │   ├── create.ts                    # Create encrypted wallet
 │   ├── encrypt.ts                   # Encrypt private key to wallet
 │   └── decrypt.ts                   # Decrypt wallet file
-└── w3c/
-    ├── did.ts                       # Generate DID
-    ├── key-pair.ts                  # Generate key pairs
-    ├── sign.ts                      # Sign W3C credentials
-    └── credentialStatus/
-        ├── create.ts                # Create credential status list
-        └── update.ts                # Update credential status list
-    └── verify.ts                    # Verify W3C or OA document
+├── w3c/
+│   ├── did.ts                       # Generate DID
+│   ├── key-pair.ts                  # Generate key pairs
+│   ├── sign.ts                      # Sign W3C credentials
+│   └── credentialStatus/
+│       ├── create.ts                # Create credential status list
+│       └── update.ts                # Update credential status list
+└── verify.ts                        # Verify W3C or OA document
 ```
 
 

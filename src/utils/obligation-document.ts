@@ -55,7 +55,12 @@ export const extractObligationDocumentInfo = async (
   }
 
   const network = SUPPORTED_CHAINS[chainId].name;
-  const documentId = document.id || 'N/A';
+  if (!document.id) {
+    throw new Error(
+      'Document does not contain a valid document ID (required as the remark encryption key)',
+    );
+  }
+  const documentId = document.id;
 
   info(`Extracted from obligation document:`);
   info(`  Network: ${network} (Chain ID: ${chainId})`);

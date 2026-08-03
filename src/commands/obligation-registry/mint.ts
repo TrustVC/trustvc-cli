@@ -132,7 +132,7 @@ const mintToObligationRegistry = async ({
     return null;
   }
   if (!shouldProceed) {
-    return null;
+    throw new Error('Mint transaction was not submitted.');
   }
 
   let transaction;

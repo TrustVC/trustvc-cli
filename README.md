@@ -1535,7 +1535,7 @@ Transaction receipt confirming return to issuer.
 Accepts a returned BoE (issuer burn / shred).
 
 **Who Can Execute:**
-Only the **issuer** (wallet with accepter role on the obligation registry).
+The connected wallet must hold the **accepter** role on the obligation registry (issuer burn / shred).
 
 **Usage:**
 
@@ -1557,7 +1557,7 @@ Transaction receipt confirming acceptance (burn).
 Rejects a returned BoE and restores it to escrow (issuer restore).
 
 **Who Can Execute:**
-Only the **issuer** (wallet with restorer role on the obligation registry).
+The connected wallet must hold the **restorer** role on the obligation registry (restore the BoE to escrow).
 
 **Usage:**
 
@@ -1786,7 +1786,7 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 
 **7. Discharge (optional)** — `trustvc obligation-escrow discharge` by **beneficiary** after Accepted (sets Discharged and burns).
 
-**8. Return to issuer** — same as classic ETR: **beneficiary == holder**, then issuer runs `reject-return-to-issuer` (restore) or `accept-return-to-issuer` (burn). No Rejected/Discharged status requirement.
+**8. Return to issuer** — same as classic ETR: **beneficiary == holder**, then a wallet with registry **restorer** runs `reject-return-to-issuer` (restore) or with **accepter** runs `accept-return-to-issuer` (burn / shred). No Rejected/Discharged status requirement.
 
 **9. Verify** — `trustvc verify` (auto-detects BoE vs ETR).
 
@@ -1801,7 +1801,8 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 | `obligation-escrow discharge`                         | Beneficiary                                                |
 | Transfer / nominate / endorse                         | Current holder or beneficiary per Title Escrow–style rules |
 | `return-to-issuer`                                    | Dual role (beneficiary == holder), same as ETR             |
-| `accept-return-to-issuer` / `reject-return-to-issuer` | Issuer                                                     |
+| `accept-return-to-issuer`                             | Connected wallet with registry **accepter** role (burn / shred) |
+| `reject-return-to-issuer`                             | Connected wallet with registry **restorer** role (restore) |
 | `obligation-escrow status`                            | Anyone with the document + wallet/private key (read-only)  |
 | `verify`                                              | Anyone with the document (+ RPC when on-chain checks run)  |
 

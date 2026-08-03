@@ -18,8 +18,9 @@ export const describe = 'Transfer the holder of a BoE obligation record';
 export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, changeHolderHandler);
 
-export const promptForInputs = async (): Promise<ObligationEscrowTransferHolderCommand> => {
+export const promptForInputs = async (): Promise<ObligationEscrowTransferHolderCommand | null> => {
   const base = await promptBaseObligationEscrowInputs();
+  if (!base) return null;
   const newHolder = await promptAddress('new holder', 'new holder');
   return { ...base, newHolder } as ObligationEscrowTransferHolderCommand;
 };

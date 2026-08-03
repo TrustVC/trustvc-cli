@@ -18,8 +18,9 @@ export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, transferOwnersHandler);
 
 export const promptForInputs =
-  async (): Promise<ObligationEscrowEndorseTransferOfOwnersCommand> => {
+  async (): Promise<ObligationEscrowEndorseTransferOfOwnersCommand | null> => {
     const base = await promptBaseObligationEscrowInputs();
+    if (!base) return null;
     const newOwner = await promptAddress('new beneficiary', 'new owner');
     const newHolder = await promptAddress('new holder', 'new holder');
     return { ...base, newOwner, newHolder } as ObligationEscrowEndorseTransferOfOwnersCommand;

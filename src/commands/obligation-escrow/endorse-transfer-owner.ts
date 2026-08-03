@@ -18,11 +18,13 @@ export const describe = 'Endorse / transfer beneficiary (owner) of a BoE obligat
 export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, endorseHandler);
 
-export const promptForInputs = async (): Promise<ObligationEscrowNominateBeneficiaryCommand> => {
-  const base = await promptBaseObligationEscrowInputs();
-  const newBeneficiary = await promptAddress('new beneficiary', 'endorsed owner');
-  return { ...base, newBeneficiary } as ObligationEscrowNominateBeneficiaryCommand;
-};
+export const promptForInputs =
+  async (): Promise<ObligationEscrowNominateBeneficiaryCommand | null> => {
+    const base = await promptBaseObligationEscrowInputs();
+    if (!base) return null;
+    const newBeneficiary = await promptAddress('new beneficiary', 'endorsed owner');
+    return { ...base, newBeneficiary } as ObligationEscrowNominateBeneficiaryCommand;
+  };
 
 export const endorseHandler = async (args: ObligationEscrowNominateBeneficiaryCommand) => {
   try {

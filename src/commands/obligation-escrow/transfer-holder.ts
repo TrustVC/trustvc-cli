@@ -18,9 +18,8 @@ export const describe = 'Transfer the holder of a BoE obligation record';
 export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, changeHolderHandler);
 
-export const promptForInputs = async (): Promise<ObligationEscrowTransferHolderCommand | null> => {
+export const promptForInputs = async (): Promise<ObligationEscrowTransferHolderCommand> => {
   const base = await promptBaseObligationEscrowInputs();
-  if (!base) return null;
   const newHolder = await promptAddress('new holder', 'new holder');
   return { ...base, newHolder } as ObligationEscrowTransferHolderCommand;
 };
@@ -38,7 +37,6 @@ export const changeHolderHandler = async (args: ObligationEscrowTransferHolderCo
       sdk: transferHolderObligationRegistry as any,
       sdkParams: { holderAddress: args.newHolder, remarks: args.remark },
     });
-    if (!transaction) return;
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,
       args.network as NetworkCmdName,
@@ -49,6 +47,5 @@ export const changeHolderHandler = async (args: ObligationEscrowTransferHolderCo
     );
   } catch (e) {
     error(getErrorMessage(e));
-    process.exitCode = 1;
   }
 };

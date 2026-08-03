@@ -18,13 +18,11 @@ export const describe = 'Endorse / transfer beneficiary (owner) of a BoE obligat
 export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, endorseHandler);
 
-export const promptForInputs =
-  async (): Promise<ObligationEscrowNominateBeneficiaryCommand | null> => {
-    const base = await promptBaseObligationEscrowInputs();
-    if (!base) return null;
-    const newBeneficiary = await promptAddress('new beneficiary', 'endorsed owner');
-    return { ...base, newBeneficiary } as ObligationEscrowNominateBeneficiaryCommand;
-  };
+export const promptForInputs = async (): Promise<ObligationEscrowNominateBeneficiaryCommand> => {
+  const base = await promptBaseObligationEscrowInputs();
+  const newBeneficiary = await promptAddress('new beneficiary', 'endorsed owner');
+  return { ...base, newBeneficiary } as ObligationEscrowNominateBeneficiaryCommand;
+};
 
 export const endorseHandler = async (args: ObligationEscrowNominateBeneficiaryCommand) => {
   try {
@@ -36,7 +34,6 @@ export const endorseHandler = async (args: ObligationEscrowNominateBeneficiaryCo
       sdk: transferBeneficiaryObligationRegistry as any,
       sdkParams: { newBeneficiaryAddress: args.newBeneficiary, remarks: args.remark },
     });
-    if (!transaction) return;
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,
       args.network as NetworkCmdName,
@@ -47,6 +44,5 @@ export const endorseHandler = async (args: ObligationEscrowNominateBeneficiaryCo
     );
   } catch (e) {
     error(getErrorMessage(e));
-    process.exitCode = 1;
   }
 };

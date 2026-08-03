@@ -33,7 +33,6 @@ export const handler = async (): Promise<void> => {
     await mintObligationToken(answers);
   } catch (err: unknown) {
     error(err instanceof Error ? err.message : String(err));
-    process.exitCode = 1;
   }
 };
 
@@ -83,7 +82,6 @@ export const mintObligationToken = async (args: ObligationRegistryMintCommand) =
       ...args,
       tokenId: addAddressPrefix(args.tokenId),
     });
-    if (!transaction) return;
 
     displayTransactionPrice(transaction as any, args.network as NetworkCmdName);
     success(
@@ -95,7 +93,6 @@ export const mintObligationToken = async (args: ObligationRegistryMintCommand) =
     return args.address;
   } catch (e) {
     error(getErrorMessage(e));
-    process.exitCode = 1;
   }
 };
 
@@ -108,7 +105,7 @@ const mintToObligationRegistry = async ({
   encryptionKey,
   network,
   ...rest
-}: ObligationRegistryMintCommand): Promise<TransactionReceipt | null> => {
+}: ObligationRegistryMintCommand): Promise<TransactionReceipt> => {
   const wallet = await getWalletOrSigner({ network, ...rest });
 
   const shouldProceed = await performDryRunWithConfirmation({
@@ -126,13 +123,8 @@ const mintToObligationRegistry = async ({
     },
   });
 
-  // null = definitive dry-run revert; false = user cancel — do not process.exit(0)
-  if (shouldProceed === null) {
-    process.exitCode = 1;
-    return null;
-  }
   if (!shouldProceed) {
-    return null;
+    process.exit(0);
   }
 
   let transaction;

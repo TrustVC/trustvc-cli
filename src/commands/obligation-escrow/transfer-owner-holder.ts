@@ -18,9 +18,8 @@ export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, transferOwnersHandler);
 
 export const promptForInputs =
-  async (): Promise<ObligationEscrowEndorseTransferOfOwnersCommand | null> => {
+  async (): Promise<ObligationEscrowEndorseTransferOfOwnersCommand> => {
     const base = await promptBaseObligationEscrowInputs();
-    if (!base) return null;
     const newOwner = await promptAddress('new beneficiary', 'new owner');
     const newHolder = await promptAddress('new holder', 'new holder');
     return { ...base, newOwner, newHolder } as ObligationEscrowEndorseTransferOfOwnersCommand;
@@ -43,7 +42,6 @@ export const transferOwnersHandler = async (
       remarks: args.remark,
     },
   });
-  if (!transaction) return;
   displayTransactionPrice(
     transaction as unknown as TransactionReceiptFees,
     args.network as NetworkCmdName,

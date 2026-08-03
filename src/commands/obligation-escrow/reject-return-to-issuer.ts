@@ -28,7 +28,6 @@ export const rejectReturnedHandler = async (args: BaseObligationEscrowCommand) =
     sdk: rejectReturnedObligationRegistry as any,
     sdkParams: { tokenId: args.tokenId, remarks: args.remark },
   });
-  if (!transaction) return;
   displayTransactionPrice(
     transaction as unknown as TransactionReceiptFees,
     args.network as NetworkCmdName,

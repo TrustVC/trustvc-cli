@@ -35,7 +35,7 @@ export const runObligationEscrowTx = async (opts: {
   populate: PopulateFn;
   sdk: SdkCall;
   sdkParams: Record<string, unknown>;
-}): Promise<TransactionReceipt | null> => {
+}): Promise<TransactionReceipt> => {
   const { args, populate, sdk, sdkParams } = opts;
   const { obligationRegistryAddress, tokenId, remark, encryptionKey, network, ...rest } = args;
   const wallet = await getWalletOrSigner({ network, ...rest });
@@ -59,12 +59,8 @@ export const runObligationEscrowTx = async (opts: {
     },
   });
 
-  if (shouldProceed === null) {
-    process.exitCode = 1;
-    return null;
-  }
   if (!shouldProceed) {
-    return null;
+    process.exit(0);
   }
 
   const contractOptions = { obligationRegistryAddress, tokenId };

@@ -29,7 +29,6 @@ export const handler = async (): Promise<void> => {
     await deployObligationRegistryContract(answers);
   } catch (err: unknown) {
     error(err instanceof Error ? err.message : String(err));
-    process.exitCode = 1;
   }
 };
 
@@ -113,7 +112,7 @@ export const deployObligationRegistryContract = async ({
 
     // Dry-run only when the registry deploy tx can be populated (factory address known).
     // When the factory is deployed first, skip estimation and report fees from the receipt.
-    let shouldProceed: boolean | null = true;
+    let shouldProceed = true;
     if (escrowFactoryAddress) {
       shouldProceed = await performDryRunWithConfirmation({
         network,
@@ -137,12 +136,8 @@ export const deployObligationRegistryContract = async ({
       );
     }
 
-    if (shouldProceed === null) {
-      process.exitCode = 1;
-      return null;
-    }
     if (!shouldProceed) {
-      return null;
+      process.exit(0);
     }
 
     info(`Deploying obligation registry ${registryName}`);
@@ -167,6 +162,5 @@ export const deployObligationRegistryContract = async ({
     return result.obligationRegistry;
   } catch (e) {
     error(getErrorMessage(e));
-    process.exitCode = 1;
   }
 };

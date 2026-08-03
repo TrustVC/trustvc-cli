@@ -12,8 +12,7 @@ import { readDocumentFile } from './file-io';
 import { getTokenRegistryAddress, getTokenId, getChainId } from '@trustvc/trustvc';
 import fs from 'fs';
 import { getTokenRegistryVersion } from '../commands/helpers';
-import { getErrorMessage } from './formatting';
-import { isContractCallException } from './cli-errors';
+import { getErrorMessage } from './index';
 import { dryRunMode } from './dryRun';
 
 export interface NetworkOption {
@@ -535,8 +534,7 @@ export const shouldRunDryRun = (network: string): boolean => {
 
 /**
  * Performs automatic dry run for specified networks with gas estimation and user confirmation
- * Uses the existing dryRunMode function for comprehensive display.
- * @returns `true` to proceed, `false` if the user cancelled, `null` if dry-run hit a definitive revert
+ * Uses the existing dryRunMode function for comprehensive display
  */
 export const performDryRunWithConfirmation = async ({
   network,
@@ -544,7 +542,7 @@ export const performDryRunWithConfirmation = async ({
 }: {
   network: string;
   getTransactionCallback: () => Promise<any>;
-}): Promise<boolean | null> => {
+}): Promise<boolean> => {
   if (!shouldRunDryRun(network)) {
     return true; // Proceed without dry run for other networks
   }
@@ -574,16 +572,7 @@ export const performDryRunWithConfirmation = async ({
     info('\n✅ Proceeding with transaction...');
     return true;
   } catch (estimateError) {
-    const message = getErrorMessage(estimateError);
-    // Definitive on-chain reverts will never succeed if broadcast — abort instead of
-    // offering "proceed anyway" (which only dumps a larger callStatic stack next).
-    if (isContractCallException(estimateError)) {
-      error(`Transaction would revert: ${message}`);
-      info('Transaction cancelled.');
-      return null;
-    }
-
-    error(`Gas estimation failed: ${message}`);
+    error(`Gas estimation failed: ${getErrorMessage(estimateError)}`);
     const proceedAnyway = await confirm({
       message: 'Gas estimation failed. Do you want to proceed anyway?',
       default: false,

@@ -28,7 +28,6 @@ export const dischargeHandler = async (args: BaseObligationEscrowCommand) => {
     sdk: dischargeObligationRegistry as any,
     sdkParams: { remarks: args.remark },
   });
-  if (!transaction) return;
   displayTransactionPrice(
     transaction as unknown as TransactionReceiptFees,
     args.network as NetworkCmdName,

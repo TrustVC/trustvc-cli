@@ -30,7 +30,6 @@ export const acceptReturnedHandler = async (args: BaseObligationEscrowCommand) =
       sdk: acceptReturnedObligationRegistry as any,
       sdkParams: { tokenId: args.tokenId, remarks: args.remark },
     });
-    if (!transaction) return;
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,
       args.network as NetworkCmdName,
@@ -41,6 +40,5 @@ export const acceptReturnedHandler = async (args: BaseObligationEscrowCommand) =
     );
   } catch (e) {
     error(getErrorMessage(e));
-    process.exitCode = 1;
   }
 };

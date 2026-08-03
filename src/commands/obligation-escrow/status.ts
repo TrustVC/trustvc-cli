@@ -14,7 +14,7 @@ import {
   promptAndReadDocument,
   verifyDocumentSignature,
 } from '../../utils';
-import { runObligationEscrowCommand, isPromptCancellation } from './shared';
+import { runObligationEscrowCommand } from './shared';
 
 export const command = 'status';
 export const describe = 'Read BoE obligation escrow status / registration / termination reason';
@@ -41,22 +41,15 @@ export type ObligationEscrowStatusCommand = Pick<
 export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, statusHandler);
 
-export const promptForInputs = async (): Promise<ObligationEscrowStatusCommand | null> => {
-  try {
-    const document = await promptAndReadDocument();
-    await verifyDocumentSignature(document);
-    const { obligationRegistry, tokenId, network } = await extractObligationDocumentInfo(document);
-    return {
-      network,
-      obligationRegistryAddress: obligationRegistry,
-      tokenId,
-    };
-  } catch (err) {
-    if (isPromptCancellation(err)) {
-      return null;
-    }
-    throw err;
-  }
+export const promptForInputs = async (): Promise<ObligationEscrowStatusCommand> => {
+  const document = await promptAndReadDocument();
+  await verifyDocumentSignature(document);
+  const { obligationRegistry, tokenId, network } = await extractObligationDocumentInfo(document);
+  return {
+    network,
+    obligationRegistryAddress: obligationRegistry,
+    tokenId,
+  };
 };
 
 export const statusHandler = async (args: ObligationEscrowStatusCommand) => {

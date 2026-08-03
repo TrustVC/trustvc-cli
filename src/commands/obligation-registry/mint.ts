@@ -94,6 +94,7 @@ export const mintObligationToken = async (args: ObligationRegistryMintCommand) =
     );
     return args.address;
   } catch (e) {
+  } catch (e) {
     error(getErrorMessage(e));
     process.exitCode = 1;
   }

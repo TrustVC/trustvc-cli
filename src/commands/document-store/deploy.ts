@@ -133,24 +133,15 @@ export const deployDocumentStoreContract = async ({
       },
     });
 
-    // null = definitive dry-run revert → exit 1; false = user cancellation → exit 0
-    if (shouldProceed === null) {
-      process.exit(1);
-    }
     if (!shouldProceed) {
       process.exit(0);
     }
 
     info(`Deploying document store ${storeName}`);
 
-    const transaction = await deployDocumentStore(
-      storeName,
-      owner,
-      wallet as unknown as Parameters<typeof deployDocumentStore>[2],
-      {
-        chainId: getSupportedNetwork(network).networkId as unknown as CHAIN_ID,
-      },
-    );
+    const transaction = await deployDocumentStore(storeName, owner, wallet, {
+      chainId: getSupportedNetwork(network).networkId as unknown as CHAIN_ID,
+    });
 
     displayTransactionPrice(
       transaction as unknown as TransactionReceiptFees,

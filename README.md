@@ -1688,7 +1688,7 @@ src/commands/
 │   ├── create.ts                    # Create encrypted wallet
 │   ├── encrypt.ts                   # Encrypt private key to wallet
 │   └── decrypt.ts                   # Decrypt wallet file
-├── verify.ts                        # Verify W3C or OA document (`src/commands/verify.ts`)
+├── verify.ts                        # Verify W3C, OA, ETR, and BoE documents (unified pipeline)
 └── w3c/
     ├── did.ts                       # Generate DID
     ├── key-pair.ts                  # Generate key pairs

@@ -197,6 +197,9 @@ export const transferOwners = async ({
     },
   });
 
+  if (shouldProceed === null) {
+    process.exit(1);
+  }
   if (!shouldProceed) {
     process.exit(0);
   }

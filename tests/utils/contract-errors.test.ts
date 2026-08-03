@@ -74,4 +74,15 @@ describe('contract revert error formatting', () => {
     expect(extractContractRevertLabel(freeText)).toBeUndefined();
     expect(describeContractError(freeText)).toBe('insufficient funds for gas * price + value');
   });
+
+  it('does not treat lowercase single-word reasons as Solidity custom errors', () => {
+    const timeout = Object.assign(new Error('timeout'), {
+      code: 'CALL_EXCEPTION',
+      reason: 'timeout',
+      shortMessage: 'timeout',
+    });
+    expect(extractContractRevertLabel(timeout)).toBeUndefined();
+    expect(describeContractError(timeout)).toBe('timeout');
+    expect(describeContractError(timeout)).not.toMatch(/Contract reverted with timeout/);
+  });
 });

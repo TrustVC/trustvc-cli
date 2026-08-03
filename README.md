@@ -1690,14 +1690,14 @@ src/commands/
 │   ├── create.ts                    # Create encrypted wallet
 │   ├── encrypt.ts                   # Encrypt private key to wallet
 │   └── decrypt.ts                   # Decrypt wallet file
-├── w3c/
-│   ├── did.ts                       # Generate DID
-│   ├── key-pair.ts                  # Generate key pairs
-│   ├── sign.ts                      # Sign W3C credentials
-│   └── credentialStatus/
-│       ├── create.ts                # Create credential status list
-│       └── update.ts                # Update credential status list
-└── verify.ts                        # Verify W3C or OA document
+├── verify.ts                        # Verify W3C or OA document (`src/commands/verify.ts`)
+└── w3c/
+    ├── did.ts                       # Generate DID
+    ├── key-pair.ts                  # Generate key pairs
+    ├── sign.ts                      # Sign W3C credentials
+    └── credentialStatus/
+        ├── create.ts                # Create credential status list
+        └── update.ts                # Update credential status list
 ```
 
 

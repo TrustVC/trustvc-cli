@@ -43,7 +43,10 @@ vi.mock('../../../src/utils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/utils')>();
   return {
     ...actual,
-    getWalletOrSigner: vi.fn().mockResolvedValue({ provider: {} }),
+    getSupportedNetwork: vi.fn().mockReturnValue({
+      provider: () => ({ mock: 'provider' }),
+      networkId: 80002,
+    }),
     getErrorMessage: (e: unknown) => (e instanceof Error ? e.message : String(e)),
   };
 });
@@ -51,18 +54,16 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 describe('obligation-escrow/status', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('reads status, registration, and termination reason', async () => {
+  it('reads status via network provider without a wallet', async () => {
     const trustvc = await import('@trustvc/trustvc');
     await statusHandler({
       network: NetworkCmdName.Amoy,
       obligationRegistryAddress: '0xRegistry',
       tokenId: '0x1',
-      key: '0xabc',
-      maxPriorityFeePerGasScale: 1,
     });
     expect(trustvc.getObligationRegistryStatus as MockedFunction<any>).toHaveBeenCalledWith(
       { obligationRegistryAddress: '0xRegistry', tokenId: '0x1' },
-      expect.anything(),
+      { provider: { mock: 'provider' } },
       { tokenId: '0x1' },
     );
     expect(trustvc.isObligationRegistryRegistered).toHaveBeenCalled();

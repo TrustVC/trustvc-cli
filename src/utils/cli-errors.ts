@@ -111,11 +111,11 @@ const normalizeLabel = (raw: string): string | undefined => {
   return undefined;
 };
 
-/** Labels after generic "failed:" — only known reverts or Solidity-shaped names. */
+/** Labels after generic "failed:" — only known on-chain revert names. */
 const acceptFailedSuffixLabel = (raw: string): string | undefined => {
   const label = normalizeLabel(raw);
   if (!label) return undefined;
-  if (isKnownRevertName(label) || SOLIDITY_CUSTOM_ERROR_NAME.test(label)) return label;
+  if (isKnownRevertName(label)) return label;
   return undefined;
 };
 

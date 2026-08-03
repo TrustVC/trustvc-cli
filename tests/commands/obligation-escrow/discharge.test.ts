@@ -83,10 +83,14 @@ describe('obligation-escrow/discharge', () => {
       key: '0xabc',
       maxPriorityFeePerGasScale: 1,
     });
-    expect(runObligationEscrowTx as MockedFunction<any>).toHaveBeenCalledWith(
+    expect(runObligationEscrowTx as MockedFunction<any>).toHaveBeenCalled();
+    const callArgs = (runObligationEscrowTx as MockedFunction<any>).mock.calls[0][0];
+    expect(callArgs).toEqual(
       expect.objectContaining({
-        sdkParams: expect.objectContaining({ remarks: undefined }),
+        sdkParams: expect.any(Object),
       }),
     );
+    expect(Object.prototype.hasOwnProperty.call(callArgs.sdkParams, 'remarks')).toBe(true);
+    expect(callArgs.sdkParams.remarks).toBeUndefined();
   });
 });

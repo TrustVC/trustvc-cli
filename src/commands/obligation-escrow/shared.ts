@@ -10,7 +10,7 @@ import {
 import { BaseObligationEscrowCommand } from '../../types';
 
 /** @inquirer/prompts rejects with ExitPromptError when the user cancels (e.g. Ctrl+C). */
-const isPromptCancellation = (err: unknown): boolean =>
+export const isPromptCancellation = (err: unknown): boolean =>
   typeof err === 'object' &&
   err !== null &&
   'name' in err &&

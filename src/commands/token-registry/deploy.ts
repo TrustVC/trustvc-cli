@@ -207,7 +207,7 @@ export const deployTokenRegistryContract = async ({
       },
     });
 
-    // null = definitive dry-run revert; false = user cancel — do not exit(0)
+    // null = definitive dry-run revert → exit 1; false = user cancellation → exit 0
     if (shouldProceed === null) {
       process.exit(1);
     }

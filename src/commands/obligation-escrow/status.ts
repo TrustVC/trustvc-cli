@@ -6,9 +6,15 @@ import {
   getObligationRegistryStatus,
   isObligationRegistryRegistered,
 } from '@trustvc/trustvc';
+import { Signer } from 'ethers';
 import { BaseObligationEscrowCommand } from '../../types';
-import { getWalletOrSigner } from '../../utils';
-import { promptBaseObligationEscrowInputs, runObligationEscrowCommand } from './shared';
+import {
+  extractObligationDocumentInfo,
+  getSupportedNetwork,
+  promptAndReadDocument,
+  verifyDocumentSignature,
+} from '../../utils';
+import { runObligationEscrowCommand, isPromptCancellation } from './shared';
 
 export const command = 'status';
 export const describe = 'Read BoE obligation escrow status / registration / termination reason';
@@ -26,20 +32,43 @@ const REASON_LABEL: Record<number, string> = {
   [ObligationEscrowTerminationReason.Discharged]: 'Discharged',
 };
 
+/** Read-only status inputs — document only; no wallet or remark. */
+export type ObligationEscrowStatusCommand = Pick<
+  BaseObligationEscrowCommand,
+  'network' | 'obligationRegistryAddress' | 'tokenId'
+>;
+
 export const handler = async (): Promise<void> =>
   runObligationEscrowCommand(promptForInputs, statusHandler);
 
-export const promptForInputs = promptBaseObligationEscrowInputs;
+export const promptForInputs = async (): Promise<ObligationEscrowStatusCommand | null> => {
+  try {
+    const document = await promptAndReadDocument();
+    await verifyDocumentSignature(document);
+    const { obligationRegistry, tokenId, network } = await extractObligationDocumentInfo(document);
+    return {
+      network,
+      obligationRegistryAddress: obligationRegistry,
+      tokenId,
+    };
+  } catch (err) {
+    if (isPromptCancellation(err)) {
+      return null;
+    }
+    throw err;
+  }
+};
 
-export const statusHandler = async (args: BaseObligationEscrowCommand) => {
-  const { obligationRegistryAddress, tokenId, network, ...rest } = args;
-  const wallet = await getWalletOrSigner({ network, ...rest });
-  // Escrow resolution uses contractOptions.tokenId (params.tokenId is API parity only).
+export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
+  const { obligationRegistryAddress, tokenId, network } = args;
+  // SDK view readers only need signer.provider; use network RPC (no signing key).
+  const provider = getSupportedNetwork(network).provider();
+  const readOnlySigner = { provider } as unknown as Signer;
   const opts = { obligationRegistryAddress, tokenId };
 
-  const status = await getObligationRegistryStatus(opts, wallet, { tokenId });
-  const registered = await isObligationRegistryRegistered(opts, wallet, { tokenId });
-  const reason = await getObligationEscrowTerminationReason(opts, wallet, { tokenId });
+  const status = await getObligationRegistryStatus(opts, readOnlySigner, { tokenId });
+  const registered = await isObligationRegistryRegistered(opts, readOnlySigner, { tokenId });
+  const reason = await getObligationEscrowTerminationReason(opts, readOnlySigner, { tokenId });
 
   success(`Obligation ${tokenId} on ${obligationRegistryAddress}`);
   info(`  Status: ${STATUS_LABEL[status] ?? status} (${status})`);

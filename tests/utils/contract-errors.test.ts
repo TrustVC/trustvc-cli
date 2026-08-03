@@ -60,6 +60,13 @@ describe('contract revert error formatting', () => {
     expect(isContractCallException(preprocessing)).toBe(false);
   });
 
+  it('rejects PascalCase failed: suffixes that are not known reverts', () => {
+    const preprocessing = new Error('SDK preprocessing failed: BadInput');
+    expect(extractContractRevertLabel(preprocessing)).toBeUndefined();
+    expect(isContractCallException(preprocessing)).toBe(false);
+    expect(getErrorMessage(preprocessing)).toBe('SDK preprocessing failed: BadInput');
+  });
+
   it('preserves Contract reverted with labels', () => {
     const wrapped = new Error('Contract reverted with OwnerHolderMustDiffer');
     expect(extractContractRevertLabel(wrapped)).toBe('OwnerHolderMustDiffer');

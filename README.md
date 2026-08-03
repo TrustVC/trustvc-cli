@@ -342,13 +342,13 @@ trustvc verify
 |                      | `[obligation-escrow discharge](#obligation-escrow-discharge)`                | Discharge obligation                                       |
 |                      | `[obligation-escrow status](#obligation-escrow-status)`                      | Read obligation / escrow status                            |
 |                      | `[obligation-escrow transfer-holder](#obligation-escrow-transfer-holder)`    | Transfer BoE holder                                        |
-|                      | `[obligation-escrow nominate-transfer-owner](#title-escrow-nominate-transfer-owner)` | Nominate BoE beneficiary                            |
-|                      | `[obligation-escrow endorse-transfer-owner](#title-escrow-endorse-transfer-owner)`   | Endorse BoE beneficiary change                      |
-|                      | `[obligation-escrow transfer-owner-holder](#title-escrow-transfer-owner-holder)`     | Endorse full BoE ownership transfer                 |
+|                      | `[obligation-escrow nominate-transfer-owner](#obligation-escrow-transfer-holder)` | Nominate BoE beneficiary                            |
+|                      | `[obligation-escrow endorse-transfer-owner](#obligation-escrow-transfer-holder)`   | Endorse BoE beneficiary change                      |
+|                      | `[obligation-escrow transfer-owner-holder](#obligation-escrow-transfer-holder)`     | Endorse full BoE ownership transfer                 |
 |                      | `[obligation-escrow return-to-issuer](#obligation-escrow-return-to-issuer)`  | Return BoE to issuer                                       |
 |                      | `[obligation-escrow accept-return-to-issuer](#obligation-escrow-accept-return-to-issuer)` | Accept returned BoE                            |
 |                      | `[obligation-escrow reject-return-to-issuer](#obligation-escrow-reject-return-to-issuer)` | Reject returned BoE                            |
-|                      | `[obligation-escrow reject-transfer-*](#title-escrow-reject-transfer-holder)` | Reject BoE transfer requests                              |
+|                      | `[obligation-escrow reject-transfer-*](#obligation-escrow-transfer-holder)` | Reject BoE transfer requests                              |
 
 
 
@@ -359,7 +359,7 @@ trustvc verify
 
 ### Wallet/Private Key Options
 
-All title-escrow, obligation-registry, obligation-escrow, token registry, document-store, and transaction commands require a wallet or private key to sign transactions. You can provide your private key in one of the following ways:
+Commands that submit transactions (title-escrow, obligation-registry, obligation-escrow write actions, token registry, document-store, and transaction) require a wallet or private key to sign. Read-only `obligation-escrow status` does not — it uses the network RPC/provider from the document (override with `{NETWORK}_RPC` if needed). You can provide your private key in one of the following ways:
 
 **Select wallet/private key option:**
 
@@ -1466,7 +1466,7 @@ Transaction receipt confirming discharge (and burn).
 
 #### obligation-escrow status
 
-Reads on-chain obligation / escrow status for a BoE document. The CLI still prompts for a wallet or private key (same base inputs as other `obligation-escrow` commands) so it can attach a network provider via `getWalletOrSigner`.
+Reads on-chain obligation / escrow status for a BoE document. This is read-only: no wallet or private key is requested. The CLI attaches the default network RPC/provider for the document’s chain (or `{NETWORK}_RPC` when set).
 
 **Usage:**
 
@@ -1477,8 +1477,6 @@ trustvc obligation-escrow status
 **Interactive Prompts:**
 
 - Path to BoE / obligation document
-- Wallet/private key option
-- Remark (optional)
 - *Network, obligationRegistry, and token ID are extracted from the document*
 
 **Output:**
@@ -1803,7 +1801,7 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 | `return-to-issuer`                                    | Dual role (beneficiary == holder), same as ETR             |
 | `accept-return-to-issuer`                             | Connected wallet with registry **accepter** role (burn / shred) |
 | `reject-return-to-issuer`                             | Connected wallet with registry **restorer** role (restore) |
-| `obligation-escrow status`                            | Anyone with the document + wallet/private key (read-only)  |
+| `obligation-escrow status`                            | Anyone with the document (read-only RPC; no signing key)   |
 | `verify`                                              | Anyone with the document (+ RPC when on-chain checks run)  |
 
 

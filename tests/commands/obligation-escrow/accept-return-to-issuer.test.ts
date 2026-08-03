@@ -94,7 +94,8 @@ describe('obligation-escrow/accept-return-to-issuer', () => {
 
   it('promptForInputs uses shared obligation prompts', async () => {
     const result = await promptForInputs();
-    expect(result.obligationRegistryAddress).toBe('0xRegistry');
+    expect(result).not.toBeNull();
+    expect(result!.obligationRegistryAddress).toBe('0xRegistry');
   });
 
   it('dry-run populates burn() on the registry contract, not the escrow', async () => {

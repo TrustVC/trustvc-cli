@@ -94,7 +94,6 @@ export const mintObligationToken = async (args: ObligationRegistryMintCommand) =
     );
     return args.address;
   } catch (e) {
-  } catch (e) {
     error(getErrorMessage(e));
     process.exitCode = 1;
   }
@@ -133,7 +132,7 @@ const mintToObligationRegistry = async ({
     return null;
   }
   if (!shouldProceed) {
-    throw new Error('Mint transaction was not submitted.');
+    return null;
   }
 
   let transaction;

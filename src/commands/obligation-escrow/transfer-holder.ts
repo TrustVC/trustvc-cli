@@ -9,21 +9,14 @@ import {
   promptAddress,
   TransactionReceiptFees,
 } from '../../utils';
-import { promptBaseObligationEscrowInputs } from './shared';
+import { promptBaseObligationEscrowInputs, runObligationEscrowCommand } from './shared';
 import { runObligationEscrowTx } from './runTx';
 
 export const command = 'transfer-holder';
 export const describe = 'Transfer the holder of a BoE obligation record';
 
-export const handler = async (): Promise<void> => {
-  try {
-    const answers = await promptForInputs();
-    if (!answers) return;
-    await changeHolderHandler(answers);
-  } catch (err: unknown) {
-    error(err instanceof Error ? err.message : String(err));
-  }
-};
+export const handler = async (): Promise<void> =>
+  runObligationEscrowCommand(promptForInputs, changeHolderHandler);
 
 export const promptForInputs = async (): Promise<ObligationEscrowTransferHolderCommand> => {
   const base = await promptBaseObligationEscrowInputs();

@@ -535,7 +535,8 @@ export const shouldRunDryRun = (network: string): boolean => {
 
 /**
  * Performs automatic dry run for specified networks with gas estimation and user confirmation
- * Uses the existing dryRunMode function for comprehensive display
+ * Uses the existing dryRunMode function for comprehensive display.
+ * @returns `true` to proceed, `false` if the user cancelled, `null` if dry-run hit a definitive revert
  */
 export const performDryRunWithConfirmation = async ({
   network,
@@ -543,7 +544,7 @@ export const performDryRunWithConfirmation = async ({
 }: {
   network: string;
   getTransactionCallback: () => Promise<any>;
-}): Promise<boolean> => {
+}): Promise<boolean | null> => {
   if (!shouldRunDryRun(network)) {
     return true; // Proceed without dry run for other networks
   }
@@ -579,7 +580,7 @@ export const performDryRunWithConfirmation = async ({
     if (isContractCallException(estimateError)) {
       error(`Transaction would revert: ${message}`);
       info('Transaction cancelled.');
-      return false;
+      return null;
     }
 
     error(`Gas estimation failed: ${message}`);

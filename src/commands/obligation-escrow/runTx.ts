@@ -59,6 +59,10 @@ export const runObligationEscrowTx = async (opts: {
     },
   });
 
+  if (shouldProceed === null) {
+    process.exitCode = 1;
+    return null;
+  }
   if (!shouldProceed) {
     return null;
   }

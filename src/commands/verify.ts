@@ -1,4 +1,5 @@
 import { input } from '@inquirer/prompts';
+import { Argv } from 'yargs';
 import {
   getSupportedNetwork,
   getSupportedNetworkNameFromId,
@@ -6,6 +7,7 @@ import {
   CaptureConsoleWarnAsync,
   CaptureConsoleWarn,
   promptNetworkSelection,
+  supportedNetwork,
 } from '../utils';
 import {
   getChainId,
@@ -33,6 +35,10 @@ type ObligationDocumentStatusInfo = {
   terminationReason?: number;
 };
 
+type VerifyOptions = {
+  network?: string;
+};
+
 /** Extract obligation registry info from a VALID ObligationRecords verify fragment. */
 export const getObligationDocumentStatus = (
   fragments: VerificationFragment[],
@@ -57,12 +63,20 @@ export const getObligationDocumentStatus = (
 export const command = 'verify';
 export const describe = 'Verify a W3C or OpenAttestation document (ETR, BoE, or revocable VC)';
 
-export const handler = async () => {
+export const builder = (yargs: Argv): Argv =>
+  yargs.option('network', {
+    alias: 'n',
+    choices: Object.keys(supportedNetwork),
+    description: 'Network provider when document chain lookup fails (skips interactive selection)',
+    demandOption: false,
+  });
+
+export const handler = async (argv: { network?: string }) => {
   try {
     const signedVC = await promptQuestions();
     if (!signedVC) return;
 
-    await verify(signedVC);
+    await verify(signedVC, { network: argv.network });
   } catch (err: unknown) {
     signale.error(err instanceof Error ? err.message : String(err));
   }
@@ -85,12 +99,12 @@ export const promptQuestions = async (): Promise<SignedVerifiableCredential> => 
   return signedVC;
 };
 
-export const verify = async (signedVC: SignedVerifiableCredential) => {
+export const verify = async (signedVC: SignedVerifiableCredential, options: VerifyOptions = {}) => {
   const isOpenAttestation = isWrappedV2Document(signedVC) || isWrappedV3Document(signedVC);
 
   const { result, warnings } = isOpenAttestation
-    ? { result: await verifyOpenAttestationDocument(signedVC), warnings: null }
-    : await verifyW3CDocument(signedVC);
+    ? { result: await verifyOpenAttestationDocument(signedVC, options), warnings: null }
+    : await verifyW3CDocument(signedVC, options);
 
   if (warnings) {
     handleExpiredCredentialWarning(warnings);
@@ -115,8 +129,31 @@ export const verify = async (signedVC: SignedVerifiableCredential) => {
 
 // ==== Helper Functions ====
 
+/**
+ * Resolve a network provider when document chain lookup fails.
+ * Prefers --network, then interactive prompt on TTY, otherwise no provider.
+ */
+const resolveFallbackProvider = async (
+  networkOverride?: string,
+): Promise<V5Provider | undefined> => {
+  if (networkOverride) {
+    return getSupportedNetwork(networkOverride).provider() as unknown as V5Provider;
+  }
+
+  if (process.stdin.isTTY) {
+    const networkName = await promptNetworkSelection();
+    return getSupportedNetwork(networkName).provider() as unknown as V5Provider;
+  }
+
+  signale.warn(
+    'No network could be resolved from the document and this session is non-interactive. Verifying without a provider. Pass --network to select one.',
+  );
+  return undefined;
+};
+
 const verifyW3CDocument = async (
   signedVC: SignedVerifiableCredential,
+  options: VerifyOptions = {},
 ): Promise<{ result: VerificationFragment[]; warnings: unknown[][] }> => {
   signale.info('Verifying W3C document...');
 
@@ -146,8 +183,7 @@ const verifyW3CDocument = async (
     signale.warn(`${err instanceof Error ? err.message : String(err)}`);
   }
 
-  const networkName = await promptNetworkSelection();
-  const provider = getSupportedNetwork(networkName).provider() as unknown as V5Provider;
+  const provider = await resolveFallbackProvider(options.network);
   if (provider) {
     return await CaptureConsoleWarnAsync(() => verifyDocument(signedVC, { provider }));
   }
@@ -158,6 +194,7 @@ const verifyW3CDocument = async (
 
 const verifyOpenAttestationDocument = async (
   signedVC: WrappedOrSignedOpenAttestationDocument,
+  options: VerifyOptions = {},
 ): Promise<VerificationFragment[]> => {
   signale.info('Verifying OpenAttestation document...');
 
@@ -168,10 +205,9 @@ const verifyOpenAttestationDocument = async (
   // If the document is not transferable or revokable, verify directly
   if (!requiresNetwork) return await verifyDocument(signedVC);
 
-  // If chainId is not found, prompt for network selection
+  // If chainId is not found, prefer --network / TTY prompt / no-provider fallback
   if (requiresNetwork && !chainId) {
-    const networkName = await promptNetworkSelection();
-    const provider = getSupportedNetwork(networkName).provider() as unknown as V5Provider;
+    const provider = await resolveFallbackProvider(options.network);
     if (provider) return await verifyDocument(signedVC, { provider });
   }
 

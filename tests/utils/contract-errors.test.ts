@@ -64,4 +64,14 @@ describe('contract revert error formatting', () => {
     const wrapped = new Error('Contract reverted with OwnerHolderMustDiffer');
     expect(extractContractRevertLabel(wrapped)).toBe('OwnerHolderMustDiffer');
   });
+
+  it('does not extract a label from multi-word free-text reasons', () => {
+    const freeText = Object.assign(new Error('execution reverted'), {
+      code: 'CALL_EXCEPTION',
+      reason: 'insufficient funds for gas * price + value',
+      shortMessage: 'insufficient funds for gas * price + value',
+    });
+    expect(extractContractRevertLabel(freeText)).toBeUndefined();
+    expect(describeContractError(freeText)).toBe('insufficient funds for gas * price + value');
+  });
 });

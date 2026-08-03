@@ -8,21 +8,14 @@ import {
   NetworkCmdName,
   TransactionReceiptFees,
 } from '../../utils';
-import { promptBaseObligationEscrowInputs } from './shared';
+import { promptBaseObligationEscrowInputs, runObligationEscrowCommand } from './shared';
 import { runObligationEscrowTx } from './runTx';
 
 export const command = 'reject-return-to-issuer';
 export const describe = 'Issuer rejects a returned BoE obligation (restore to escrow)';
 
-export const handler = async (): Promise<void> => {
-  try {
-    const answers = await promptForInputs();
-    if (!answers) return;
-    await rejectReturnedHandler(answers);
-  } catch (err: unknown) {
-    error(err instanceof Error ? err.message : String(err));
-  }
-};
+export const handler = async (): Promise<void> =>
+  runObligationEscrowCommand(promptForInputs, rejectReturnedHandler);
 
 export const promptForInputs = promptBaseObligationEscrowInputs;
 

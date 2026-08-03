@@ -102,9 +102,12 @@ const normalizeLabel = (raw: string): string | undefined => {
   if (!cleaned || UNKNOWN_CUSTOM_ERROR.test(cleaned) || cleaned === '(unknown custom error)') {
     return undefined;
   }
-  // Drop leading junk like ": OwnerHolderMustDiffer" or parentheses wrappers
-  const ident = cleaned.match(/([A-Za-z][A-Za-z0-9_]*)/);
-  return ident?.[1];
+  // Only accept a full-string identifier (e.g. OwnerHolderMustDiffer), not the first
+  // word of free-text reasons — those fall through to describeContractError.
+  if (/^[A-Za-z][A-Za-z0-9_]*$/.test(cleaned)) {
+    return cleaned;
+  }
+  return undefined;
 };
 
 /** Labels after generic "failed:" — only known reverts or Solidity-shaped names. */
@@ -157,15 +160,9 @@ const labelFromRevertData = (err: EthersCallException): string | undefined => {
 
 export function extractContractRevertLabel(error: unknown): string | undefined {
   const err = asEthersError(error);
+  // Error instances are objects, so asEthersError always succeeds for them —
+  // free-text Error.message is handled below via err.message / labelFromWrappedMessage.
   if (!err) {
-    if (error instanceof Error) {
-      const fromExec = error.message.match(/execution reverted:\s*([A-Za-z0-9_]+)/);
-      if (fromExec?.[1]) {
-        const label = normalizeLabel(fromExec[1]);
-        if (label) return label;
-      }
-      return labelFromWrappedMessage(error.message);
-    }
     return undefined;
   }
 
@@ -212,9 +209,6 @@ export function extractContractRevertLabel(error: unknown): string | undefined {
 export function isContractCallException(error: unknown): boolean {
   const err = asEthersError(error);
   if (!err) {
-    if (error instanceof Error && /Pre-check .* failed:/i.test(error.message)) {
-      return Boolean(extractContractRevertLabel(error));
-    }
     return false;
   }
   if (err.code === 'CALL_EXCEPTION') return true;

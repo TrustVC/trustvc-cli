@@ -1,6 +1,7 @@
 import { error, info, success } from 'signale';
-import { CHAIN_ID, deployObligationRegistry } from '@trustvc/trustvc';
+import { CHAIN_ID, deployObligationRegistry, v5Contracts } from '@trustvc/trustvc';
 import { input, confirm } from '@inquirer/prompts';
+import { ethers } from 'ethers';
 import {
   displayTransactionPrice,
   getErrorMessage,
@@ -28,6 +29,7 @@ export const handler = async (): Promise<void> => {
     await deployObligationRegistryContract(answers);
   } catch (err: unknown) {
     error(err instanceof Error ? err.message : String(err));
+    process.exitCode = 1;
   }
 };
 
@@ -109,18 +111,38 @@ export const deployObligationRegistryContract = async ({
     const wallet = await getWalletOrSigner({ network, ...rest });
     const chainId = supportedNetwork[network as NetworkCmdName].networkId;
 
-    const shouldProceed = await performDryRunWithConfirmation({
-      network,
-      getTransactionCallback: async () => ({
-        to: await wallet.getAddress(),
-        data: '0x',
-        from: await wallet.getAddress(),
-        value: 0n,
-      }),
-    });
+    // Dry-run only when the registry deploy tx can be populated (factory address known).
+    // When the factory is deployed first, skip estimation and report fees from the receipt.
+    let shouldProceed: boolean | null = true;
+    if (escrowFactoryAddress) {
+      shouldProceed = await performDryRunWithConfirmation({
+        network,
+        getTransactionCallback: async () => {
+          const factory = new ethers.ContractFactory(
+            v5Contracts.TrustVCToken__factory.abi,
+            v5Contracts.TrustVCToken__factory.bytecode,
+            wallet as ethers.ContractRunner,
+          );
+          const tx = await factory.getDeployTransaction(
+            registryName,
+            registrySymbol,
+            escrowFactoryAddress,
+          );
+          return { ...tx, from: await wallet.getAddress() };
+        },
+      });
+    } else {
+      info(
+        'Skipping dry-run gas estimate: ObligationEscrowFactory will be deployed first. Fees will be shown from the receipt.',
+      );
+    }
 
+    if (shouldProceed === null) {
+      process.exitCode = 1;
+      return null;
+    }
     if (!shouldProceed) {
-      process.exit(0);
+      return null;
     }
 
     info(`Deploying obligation registry ${registryName}`);
@@ -145,5 +167,6 @@ export const deployObligationRegistryContract = async ({
     return result.obligationRegistry;
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

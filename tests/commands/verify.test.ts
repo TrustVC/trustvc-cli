@@ -1,7 +1,7 @@
 import * as prompts from '@inquirer/prompts';
 import fs from 'node:fs';
 import path from 'node:path';
-import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import { promptQuestions, verify } from '../../src/commands/verify';
 import { SignedVerifiableCredential } from '@trustvc/trustvc';
 import {
@@ -237,6 +237,12 @@ describe('verify', () => {
       signaleSuccessMock = (signale.default as any).success;
       signaleErrorMock = (signale.default as any).error;
       signaleWarnMock = (signale.default as any).warn;
+      // Fixture tests exercise the interactive fallback path.
+      Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: undefined, configurable: true });
     });
 
     type TestCase = {
@@ -330,6 +336,35 @@ describe('verify', () => {
       expect(signaleErrorMock).toHaveBeenCalledWith(
         'DOCUMENT_STATUS: ERROR - An error has occurred.',
       );
+    });
+
+    it('should not prompt for network in non-TTY when chain lookup fails', async () => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true });
+      const utils = await import('../../src/utils');
+      const filePath = path.resolve(
+        process.cwd(),
+        'tests/fixtures/verify/oa/3.0/oa_dns_txt_token_registry_no_network_field_stability_v3.json',
+      );
+      const signedVC = utils.readJsonFile<SignedVerifiableCredential>(filePath, 'document');
+
+      await expect(verify(signedVC)).resolves.toBeUndefined();
+
+      expect(prompts.select).not.toHaveBeenCalled();
+      expect(signaleWarnMock).toHaveBeenCalledWith(expect.stringContaining('non-interactive'));
+    });
+
+    it('should prefer --network over prompting when chain lookup fails', async () => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+      const utils = await import('../../src/utils');
+      const filePath = path.resolve(
+        process.cwd(),
+        'tests/fixtures/verify/oa/3.0/oa_dns_txt_token_registry_no_network_field_stability_v3.json',
+      );
+      const signedVC = utils.readJsonFile<SignedVerifiableCredential>(filePath, 'document');
+
+      await expect(verify(signedVC, { network: 'stability' })).resolves.toBeUndefined();
+
+      expect(prompts.select).not.toHaveBeenCalled();
     });
   });
 });

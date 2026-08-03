@@ -8,21 +8,14 @@ import {
   NetworkCmdName,
   TransactionReceiptFees,
 } from '../../utils';
-import { promptBaseObligationEscrowInputs } from './shared';
+import { promptBaseObligationEscrowInputs, runObligationEscrowCommand } from './shared';
 import { runObligationEscrowTx } from './runTx';
 
 export const command = 'reject-transfer-owner';
 export const describe = 'Reject a pending beneficiary transfer on a BoE obligation';
 
-export const handler = async (): Promise<void> => {
-  try {
-    const answers = await promptForInputs();
-    if (!answers) return;
-    await rejectTransferOwnerHandler(answers);
-  } catch (err: unknown) {
-    error(err instanceof Error ? err.message : String(err));
-  }
-};
+export const handler = async (): Promise<void> =>
+  runObligationEscrowCommand(promptForInputs, rejectTransferOwnerHandler);
 
 export const promptForInputs = promptBaseObligationEscrowInputs;
 

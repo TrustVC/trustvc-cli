@@ -49,11 +49,11 @@ BoE on-chain helpers are imported from the **root** package (`mintObligationRegi
 
 ## Prerequisites
 
-- **Node.js 22+** — Download from [nodejs.org](https://nodejs.org) or use [nvm](https://github.com/nvm-sh/nvm):
+- **Node.js 22.19.5+** — Download from [nodejs.org](https://nodejs.org) or use [nvm](https://github.com/nvm-sh/nvm):
 
 ```sh
-nvm install 22
-nvm use 22
+nvm install 22.19.5
+nvm use 22.19.5
 ```
 
 
@@ -305,7 +305,6 @@ trustvc verify
 |                      | `[oa-decrypt](#oa-decrypt)`                                                  | Decrypt an OA document encrypted with oa-encrypt           |
 | **Token Registry**   | `[mint](#mint)`                                                              | Mint tokens to blockchain registries                       |
 |                      | `[token-registry deploy](#token-registry-deploy)`                            | Deploy token registry contracts                            |
-|                      | `[mint](#mint)`                                                              | Mint tokens to blockchain registries                       |
 |                      | `token-registry mint`                                                        | Alternative: `mint`                                        |
 | **Document Store**   | `[document-store deploy](#document-store-deploy)`                            | Deploy document store contracts                            |
 |                      | `[document-store issue](#document-store-issue)`                              | Issue document hashes                                      |
@@ -1513,7 +1512,7 @@ Transaction receipt confirming the escrow action.
 Returns the BoE obligation to the issuer. Same rules as classic ETR: the connected wallet must be both the current beneficiary (owner) and the current holder.
 
 **Who Can Execute:**
-Both the **current holder** and **current beneficiary (owner)** must execute this together, or the entity that holds both roles.
+One wallet holding **both** the current beneficiary (owner) and current holder roles (`beneficiary == holder`). The CLI signs with a single wallet; there is no separate holder/beneficiary co-signature flow.
 
 **Usage:**
 
@@ -1738,7 +1737,7 @@ You do **not** need to call the TypeScript SDK directly — the CLI wraps it wit
 ### Before you start
 
 1. **Install the CLI** — `npm install -g @trustvc/trustvc-cli` or `npx @trustvc/trustvc-cli <command>`
-2. **Node.js 22+**
+2. **Node.js 22.19.5+**
 3. **A wallet** — encrypted wallet file (recommended), private key, or key file
 4. **A signed BoE document** — set `credentialStatus.obligationRegistry`, then sign with `trustvc w3c-sign` (not `tokenRegistry`)
 5. **Network access** — select network in prompts, or set a custom RPC (e.g. `export SEPOLIA_RPC=…`)

@@ -67,7 +67,9 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 describe('obligation-escrow/discharge', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('promptForInputs uses shared obligation prompts', async () => {
     const result = await promptForInputs();
@@ -84,7 +86,9 @@ describe('obligation-escrow/discharge', () => {
       maxPriorityFeePerGasScale: 1,
     });
     expect(runObligationEscrowTx as MockedFunction<any>).toHaveBeenCalled();
-    const callArgs = (runObligationEscrowTx as MockedFunction<any>).mock.calls[0][0];
+    const callArgs = (runObligationEscrowTx as MockedFunction<any>).mock.calls[0][0] as {
+      sdkParams: Record<string, unknown>;
+    };
     expect(callArgs).toEqual(
       expect.objectContaining({
         sdkParams: expect.any(Object),

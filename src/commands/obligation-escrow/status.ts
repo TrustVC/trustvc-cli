@@ -13,6 +13,7 @@ import {
   getSupportedNetwork,
   promptAndReadDocument,
   verifyDocumentSignature,
+  toSdkSigner,
 } from '../../utils';
 import { runObligationEscrowCommand } from './shared';
 
@@ -59,9 +60,13 @@ export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
   const readOnlySigner = { provider } as unknown as Signer;
   const opts = { obligationRegistryAddress, tokenId };
 
-  const status = await getObligationRegistryStatus(opts, readOnlySigner, { tokenId });
-  const registered = await isObligationRegistryRegistered(opts, readOnlySigner, { tokenId });
-  const reason = await getObligationEscrowTerminationReason(opts, readOnlySigner, { tokenId });
+  const status = await getObligationRegistryStatus(opts, toSdkSigner(readOnlySigner), { tokenId });
+  const registered = await isObligationRegistryRegistered(opts, toSdkSigner(readOnlySigner), {
+    tokenId,
+  });
+  const reason = await getObligationEscrowTerminationReason(opts, toSdkSigner(readOnlySigner), {
+    tokenId,
+  });
 
   success(`Obligation ${tokenId} on ${obligationRegistryAddress}`);
   info(`  Status: ${STATUS_LABEL[status] ?? status} (${status})`);

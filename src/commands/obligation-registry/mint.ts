@@ -16,6 +16,7 @@ import {
   promptAddress,
   performDryRunWithConfirmation,
   verifyDocumentSignature,
+  toSdkSigner,
 } from '../../utils';
 import { connectToObligationRegistry, validateAndEncryptRemark } from '../helpers';
 import { TransactionReceipt } from 'ethers';
@@ -135,7 +136,7 @@ const mintToObligationRegistry = async ({
     const gasFees = await getGasFees({ provider: wallet.provider, ...rest });
     transaction = await mintObligationRegistry(
       { obligationRegistryAddress: address },
-      wallet,
+      toSdkSigner(wallet),
       { beneficiaryAddress: beneficiary, holderAddress: holder, tokenId, remarks: remark },
       {
         id: encryptionKey,
@@ -146,7 +147,7 @@ const mintToObligationRegistry = async ({
   } else {
     transaction = await mintObligationRegistry(
       { obligationRegistryAddress: address },
-      wallet,
+      toSdkSigner(wallet),
       { beneficiaryAddress: beneficiary, holderAddress: holder, tokenId, remarks: remark },
       { id: encryptionKey },
     );

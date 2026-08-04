@@ -70,7 +70,9 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 describe('obligation-escrow/transfer-owner-holder', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('promptForInputs includes newOwner and newHolder', async () => {
     const result = await promptForInputs();

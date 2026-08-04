@@ -64,7 +64,9 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 describe('obligation-escrow/accept', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('promptForInputs uses shared obligation prompts', async () => {
     const result = await promptForInputs();

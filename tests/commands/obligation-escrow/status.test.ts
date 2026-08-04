@@ -52,7 +52,9 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 describe('obligation-escrow/status', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('reads status via network provider without a wallet', async () => {
     const trustvc = await import('@trustvc/trustvc');

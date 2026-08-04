@@ -67,7 +67,9 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 describe('obligation-escrow/endorse-transfer-owner', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('promptForInputs includes newBeneficiary', async () => {
     const result = await promptForInputs();

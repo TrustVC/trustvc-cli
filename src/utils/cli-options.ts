@@ -61,9 +61,7 @@ export const isRpcUrlOption = (option: any): option is RpcUrlOption => {
 };
 
 export type WalletOrSignerOption =
-  | Partial<PrivateKeyOption>
-  | Partial<AwsKmsSignerOption>
-  | Partial<WalletOption>;
+  Partial<PrivateKeyOption> | Partial<AwsKmsSignerOption> | Partial<WalletOption>;
 
 export interface GasPriceScale {
   maxPriorityFeePerGasScale: number;

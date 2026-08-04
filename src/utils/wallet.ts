@@ -27,6 +27,20 @@ export type ConnectedSigner = Signer & {
   readonly privateKey?: never;
 };
 
+/** Wallet/signer shapes produced by this CLI (`ethers@6`). */
+export type CliSigner = Signer | Wallet | ConnectedSigner | HDNodeWallet;
+
+/**
+ * TrustVC types Signer as `ethers` (v5) | `ethersV6` (aliased v6).
+ * The CLI's direct `ethers@6` install is a different package path than `ethersV6`,
+ * so TypeScript rejects assignability (private fields on Network/Provider) even
+ * though the runtime objects are fine. Cast at SDK boundaries only.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type SdkSigner = any;
+
+export const toSdkSigner = (signer: CliSigner | Signer): SdkSigner => signer;
+
 export const getPrivateKey = ({ keyFile, key }: PrivateKeyOption): string | undefined => {
   if (key) {
     signale.warn(
@@ -45,9 +59,10 @@ export const getWalletOrSigner = async ({
   ...options
 }: WalletOrSignerOption &
   Partial<NetworkOption> &
-  Partial<RpcUrlOption> & { progress?: (progress: number) => void; password?: string }): Promise<
-  Signer | Wallet | ConnectedSigner | HDNodeWallet
-> => {
+  Partial<RpcUrlOption> & {
+    progress?: (progress: number) => void;
+    password?: string;
+  }): Promise<CliSigner> => {
   // Use custom RPC URL if provided, otherwise use the default network provider
   const provider = isRpcUrlOption(options)
     ? new JsonRpcProvider(options.rpcUrl)
@@ -81,7 +96,6 @@ export const getWalletOrSigner = async ({
   //     keyId: options.kmsKeyId,
   //     sessionToken: options.sessionToken,
   //   };
-
   //   const signer = new AwsKmsSigner(kmsCredentials).connect(provider);
   //   if (signer.provider) return signer as ConnectedSigner;
   //   throw new Error('Unable to attach the provider to the kms signer');

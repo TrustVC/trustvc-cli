@@ -52,7 +52,9 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 describe('obligation-escrow/return-to-issuer', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('returnToIssuerHandler invokes runObligationEscrowTx', async () => {
     const { runObligationEscrowTx } = await import('../../../src/commands/obligation-escrow/runTx');

@@ -67,7 +67,9 @@ vi.mock('../../../src/utils', async (importOriginal) => {
 });
 
 describe('obligation-escrow/transfer-holder', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it('promptForInputs includes newHolder', async () => {
     const result = await promptForInputs();

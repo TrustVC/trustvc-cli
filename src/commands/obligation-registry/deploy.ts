@@ -14,6 +14,7 @@ import {
   performDryRunWithConfirmation,
   promptAddress,
   supportedNetwork,
+  toSdkSigner,
 } from '../../utils';
 import { TransactionReceipt } from 'ethers';
 
@@ -142,10 +143,15 @@ export const deployObligationRegistryContract = async ({
 
     info(`Deploying obligation registry ${registryName}`);
 
-    const result = await deployObligationRegistry(registryName, registrySymbol, wallet, {
-      chainId: getSupportedNetwork(network).networkId as unknown as CHAIN_ID,
-      escrowFactoryAddress,
-    });
+    const result = await deployObligationRegistry(
+      registryName,
+      registrySymbol,
+      toSdkSigner(wallet),
+      {
+        chainId: getSupportedNetwork(network).networkId as unknown as CHAIN_ID,
+        escrowFactoryAddress,
+      },
+    );
 
     displayTransactionPrice(result.receipt as any, network as NetworkCmdName);
 

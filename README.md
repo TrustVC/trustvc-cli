@@ -1734,7 +1734,7 @@ You do **not** need to call the TypeScript SDK directly — the CLI wraps it wit
 
 ### Before you start
 
-1. **Install the CLI** — `npm install -g @trustvc/trustvc-cli` or `npx @trustvc/trustvc-cli <command>`
+1. **Install the CLI** — `npm install -g `@trustvc/trustvc-cli`@beta` or `npx `@trustvc/trustvc-cli`@beta <command>`
 2. **Node.js 22.19.5+**
 3. **A wallet** — encrypted wallet file (recommended), private key, or key file
 4. **A signed BoE document** — set `credentialStatus.obligationRegistry`, then sign with `trustvc w3c-sign` (not `tokenRegistry`)

@@ -57,7 +57,7 @@ export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
   const { obligationRegistryAddress, tokenId, network } = args;
   // SDK view readers only need signer.provider; use network RPC (no signing key).
   const provider = getSupportedNetwork(network).provider();
-  const readOnlySigner = { provider } as unknown as Signer;
+  const readOnlySigner = new VoidSigner(ZeroAddress, provider);
   const opts = { obligationRegistryAddress, tokenId };
 
   const status = await getObligationRegistryStatus(opts, toSdkSigner(readOnlySigner), { tokenId });

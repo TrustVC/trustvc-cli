@@ -75,7 +75,7 @@ export const promptForInputs = async (): Promise<DeployObligationRegistryCommand
   });
 
   const escrowFactoryAddress = reuseFactory
-    ? await promptAddress('ObligationEscrowFactory', 'optional', true)
+    ? (await promptAddress('ObligationEscrowFactory', 'optional', true)) || undefined
     : undefined;
 
   const { encryptedWalletPath, key, keyFile } = await promptWalletSelection();

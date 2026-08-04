@@ -5,7 +5,7 @@ import {
   getChainId,
   isObligationRecord,
 } from '@trustvc/trustvc';
-import { SUPPORTED_CHAINS, CHAIN_ID } from './networks';
+import { SUPPORTED_CHAINS, CHAIN_ID, getSupportedNetworkNameFromId } from './networks';
 
 /**
  * Extracts obligation / BoE document fields. Fails for classic ETR (tokenRegistry-only) docs.
@@ -54,7 +54,8 @@ export const extractObligationDocumentInfo = async (
     );
   }
 
-  const network = SUPPORTED_CHAINS[chainId].name;
+  // Map library chain names (e.g. matic) to NetworkCmdName keys (e.g. pol)
+  const network = getSupportedNetworkNameFromId(Number(chainId));
   if (!document.id) {
     throw new Error(
       'Document does not contain a valid document ID (required as the remark encryption key)',

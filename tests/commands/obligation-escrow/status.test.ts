@@ -65,7 +65,7 @@ describe('obligation-escrow/status', () => {
     });
     expect(trustvc.getObligationRegistryStatus as MockedFunction<any>).toHaveBeenCalledWith(
       { obligationRegistryAddress: '0xRegistry', tokenId: '0x1' },
-      { provider: { mock: 'provider' } },
+      expect.objectContaining({ provider: { mock: 'provider' } }),
       { tokenId: '0x1' },
     );
     expect(trustvc.isObligationRegistryRegistered).toHaveBeenCalled();

@@ -6,7 +6,7 @@ import {
   getObligationRegistryStatus,
   isObligationRegistryRegistered,
 } from '@trustvc/trustvc';
-import { Signer } from 'ethers';
+import { VoidSigner, ZeroAddress } from 'ethers';
 import { BaseObligationEscrowCommand } from '../../types';
 import {
   extractObligationDocumentInfo,

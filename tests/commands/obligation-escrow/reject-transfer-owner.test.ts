@@ -50,6 +50,7 @@ vi.mock('../../../src/commands/obligation-escrow/shared', () => ({
     key: '0xabc',
     maxPriorityFeePerGasScale: 1,
   }),
+  runObligationEscrowCommand: vi.fn(),
 }));
 
 vi.mock('../../../src/commands/obligation-escrow/runTx', () => ({

@@ -289,66 +289,66 @@ trustvc verify
 ### Available Commands
 
 
-| Category             | Command                                                                      | Description                                                |
-| -------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **W3C Credentials**  | `[key-pair-generation](#key-pair-generation)`                                | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
-|                      | `[did-web](#did-web)`                                                        | Create did:web identifiers from key pairs                  |
-|                      | `[w3c-sign](#w3c-sign)`                                                      | Sign W3C verifiable credentials                            |
-|                      | `[verify](#verify)`                                                          | Verify W3C verifiable credentials                          |
-|                      | `[credential-status-create](#credential-status-create)`                      | Create credential status lists                             |
-|                      | `[credential-status-update](#credential-status-update)`                      | Update credential status (revoke/suspend)                  |
-| **OpenAttestation**  | `[oa-sign](#oa-sign)`                                                        | Sign OpenAttestation v2/v3 documents                       |
-|                      | `[verify](#verify)`                                                          | Verify OpenAttestation documents                           |
-|                      | `[oa-wrap](#oa-wrap)`                                                        | Wrap OpenAttestation documents                             |
-|                      | `[oa-unwrap](#oa-unwrap)`                                                    | Unwrap OpenAttestation documents                           |
-|                      | `[oa-encrypt](#oa-encrypt)`                                                  | Encrypt an OA document for safe sharing and storage        |
-|                      | `[oa-decrypt](#oa-decrypt)`                                                  | Decrypt an OA document encrypted with oa-encrypt           |
-| **Token Registry**   | `[mint](#mint)`                                                              | Mint tokens to blockchain registries                       |
-|                      | `[token-registry deploy](#token-registry-deploy)`                            | Deploy token registry contracts                            |
-|                      | `token-registry mint`                                                        | Alternative: `mint`                                        |
-| **Document Store**   | `[document-store deploy](#document-store-deploy)`                            | Deploy document store contracts                            |
-|                      | `[document-store issue](#document-store-issue)`                              | Issue document hashes                                      |
-|                      | `[document-store revoke](#document-store-revoke)`                            | Revoke document hashes                                     |
-|                      | `[document-store grant-role](#document-store-grant-role)`                    | Grant roles to accounts                                    |
-|                      | `[document-store revoke-role](#document-store-revoke-role)`                  | Revoke roles from accounts                                 |
-|                      | `[document-store transfer-ownership](#document-store-transfer-ownership)`    | Transfer document store ownership                          |
-| **Transaction**      | `[transaction cancel](#transaction-cancel)`                                  | Cancel a pending transaction                               |
-| **Wallet**           | `[wallet create](#wallet-create)`                                            | Create a new encrypted wallet file                         |
-|                      | `[wallet encrypt](#wallet-encrypt)`                                          | Encrypt a wallet using a private key                       |
-|                      | `[wallet decrypt](#wallet-decrypt)`                                          | Decrypt an encrypted wallet file                           |
-| **Title Escrow**     | `[transfer-holder](#title-escrow-transfer-holder)`                           | Transfer document holder                                   |
-|                      | `title-escrow transfer-holder`                                               | Alternative: `transfer-holder`                             |
-|                      | `[nominate-transfer-owner](#title-escrow-nominate-transfer-owner)`           | Nominate new beneficiary                                   |
-|                      | `title-escrow nominate-transfer-owner`                                       | Alternative: `nominate-transfer-owner`                     |
-|                      | `[endorse-transfer-owner](#title-escrow-endorse-transfer-owner)`             | Endorse beneficiary change                                 |
-|                      | `title-escrow endorse-transfer-owner`                                        | Alternative: `endorse-transfer-owner`                      |
-|                      | `[transfer-owner-holder](#title-escrow-transfer-owner-holder)`               | Endorse full ownership transfer                            |
-|                      | `title-escrow transfer-owner-holder`                                         | Alternative: `transfer-owner-holder`                       |
-|                      | `[return-to-issuer](#title-escrow-return-to-issuer)`                         | Return document to issuer                                  |
-|                      | `title-escrow return-to-issuer`                                              | Alternative: `return-to-issuer`                            |
-|                      | `[accept-return-to-issuer](#title-escrow-accept-return-to-issuer)`           | Accept returned document                                   |
-|                      | `title-escrow accept-return-to-issuer`                                       | Alternative: `accept-return-to-issuer`                     |
-|                      | `[reject-return-to-issuer](#title-escrow-reject-return-to-issuer)`           | Reject returned document                                   |
-|                      | `title-escrow reject-return-to-issuer`                                       | Alternative: `reject-return-to-issuer`                     |
-|                      | `[reject-transfer-holder](#title-escrow-reject-transfer-holder)`             | Reject holder transfer                                     |
-|                      | `title-escrow reject-transfer-holder`                                        | Alternative: `reject-transfer-holder`                      |
-|                      | `[reject-transfer-owner](#title-escrow-reject-transfer-owner)`               | Reject owner transfer                                      |
-|                      | `[reject-transfer-owner-holder](#title-escrow-reject-transfer-owner-holder)` | Reject full transfer                                       |
-|                      | `title-escrow reject-transfer-owner-holder`                                  | Alternative: `reject-transfer-owner-holder`                |
-| **Obligation / BoE** | `[obligation-registry deploy](#obligation-registry-deploy)`                  | Deploy Obligation Registry                                 |
-|                      | `[obligation-registry mint](#obligation-registry-mint)`                      | Mint BoE token to obligationRegistry                       |
-|                      | `[obligation-escrow accept](#obligation-escrow-accept)`                      | Accept obligation                                          |
-|                      | `[obligation-escrow reject](#obligation-escrow-reject)`                      | Reject obligation                                          |
-|                      | `[obligation-escrow discharge](#obligation-escrow-discharge)`                | Discharge obligation                                       |
-|                      | `[obligation-escrow status](#obligation-escrow-status)`                      | Read obligation / escrow status                            |
-|                      | `[obligation-escrow transfer-holder](#obligation-escrow-transfer-holder)`    | Transfer BoE holder                                        |
-|                      | `[obligation-escrow nominate-transfer-owner](#obligation-escrow-transfer-holder)` | Nominate BoE beneficiary                            |
-|                      | `[obligation-escrow endorse-transfer-owner](#obligation-escrow-transfer-holder)`   | Endorse BoE beneficiary change                      |
-|                      | `[obligation-escrow transfer-owner-holder](#obligation-escrow-transfer-holder)`     | Endorse full BoE ownership transfer                 |
-|                      | `[obligation-escrow return-to-issuer](#obligation-escrow-return-to-issuer)`  | Return BoE to issuer                                       |
-|                      | `[obligation-escrow accept-return-to-issuer](#obligation-escrow-accept-return-to-issuer)` | Accept returned BoE                            |
-|                      | `[obligation-escrow reject-return-to-issuer](#obligation-escrow-reject-return-to-issuer)` | Reject returned BoE                            |
-|                      | `[obligation-escrow reject-transfer-*](#obligation-escrow-transfer-holder)` | Reject BoE transfer requests                              |
+| Category             | Command                                                                                   | Description                                                |
+| -------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **W3C Credentials**  | `[key-pair-generation](#key-pair-generation)`                                             | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
+|                      | `[did-web](#did-web)`                                                                     | Create did:web identifiers from key pairs                  |
+|                      | `[w3c-sign](#w3c-sign)`                                                                   | Sign W3C verifiable credentials                            |
+|                      | `[verify](#verify)`                                                                       | Verify W3C verifiable credentials                          |
+|                      | `[credential-status-create](#credential-status-create)`                                   | Create credential status lists                             |
+|                      | `[credential-status-update](#credential-status-update)`                                   | Update credential status (revoke/suspend)                  |
+| **OpenAttestation**  | `[oa-sign](#oa-sign)`                                                                     | Sign OpenAttestation v2/v3 documents                       |
+|                      | `[verify](#verify)`                                                                       | Verify OpenAttestation documents                           |
+|                      | `[oa-wrap](#oa-wrap)`                                                                     | Wrap OpenAttestation documents                             |
+|                      | `[oa-unwrap](#oa-unwrap)`                                                                 | Unwrap OpenAttestation documents                           |
+|                      | `[oa-encrypt](#oa-encrypt)`                                                               | Encrypt an OA document for safe sharing and storage        |
+|                      | `[oa-decrypt](#oa-decrypt)`                                                               | Decrypt an OA document encrypted with oa-encrypt           |
+| **Token Registry**   | `[mint](#mint)`                                                                           | Mint tokens to blockchain registries                       |
+|                      | `[token-registry deploy](#token-registry-deploy)`                                         | Deploy token registry contracts                            |
+|                      | `token-registry mint`                                                                     | Alternative: `mint`                                        |
+| **Document Store**   | `[document-store deploy](#document-store-deploy)`                                         | Deploy document store contracts                            |
+|                      | `[document-store issue](#document-store-issue)`                                           | Issue document hashes                                      |
+|                      | `[document-store revoke](#document-store-revoke)`                                         | Revoke document hashes                                     |
+|                      | `[document-store grant-role](#document-store-grant-role)`                                 | Grant roles to accounts                                    |
+|                      | `[document-store revoke-role](#document-store-revoke-role)`                               | Revoke roles from accounts                                 |
+|                      | `[document-store transfer-ownership](#document-store-transfer-ownership)`                 | Transfer document store ownership                          |
+| **Transaction**      | `[transaction cancel](#transaction-cancel)`                                               | Cancel a pending transaction                               |
+| **Wallet**           | `[wallet create](#wallet-create)`                                                         | Create a new encrypted wallet file                         |
+|                      | `[wallet encrypt](#wallet-encrypt)`                                                       | Encrypt a wallet using a private key                       |
+|                      | `[wallet decrypt](#wallet-decrypt)`                                                       | Decrypt an encrypted wallet file                           |
+| **Title Escrow**     | `[transfer-holder](#title-escrow-transfer-holder)`                                        | Transfer document holder                                   |
+|                      | `title-escrow transfer-holder`                                                            | Alternative: `transfer-holder`                             |
+|                      | `[nominate-transfer-owner](#title-escrow-nominate-transfer-owner)`                        | Nominate new beneficiary                                   |
+|                      | `title-escrow nominate-transfer-owner`                                                    | Alternative: `nominate-transfer-owner`                     |
+|                      | `[endorse-transfer-owner](#title-escrow-endorse-transfer-owner)`                          | Endorse beneficiary change                                 |
+|                      | `title-escrow endorse-transfer-owner`                                                     | Alternative: `endorse-transfer-owner`                      |
+|                      | `[transfer-owner-holder](#title-escrow-transfer-owner-holder)`                            | Endorse full ownership transfer                            |
+|                      | `title-escrow transfer-owner-holder`                                                      | Alternative: `transfer-owner-holder`                       |
+|                      | `[return-to-issuer](#title-escrow-return-to-issuer)`                                      | Return document to issuer                                  |
+|                      | `title-escrow return-to-issuer`                                                           | Alternative: `return-to-issuer`                            |
+|                      | `[accept-return-to-issuer](#title-escrow-accept-return-to-issuer)`                        | Accept returned document                                   |
+|                      | `title-escrow accept-return-to-issuer`                                                    | Alternative: `accept-return-to-issuer`                     |
+|                      | `[reject-return-to-issuer](#title-escrow-reject-return-to-issuer)`                        | Reject returned document                                   |
+|                      | `title-escrow reject-return-to-issuer`                                                    | Alternative: `reject-return-to-issuer`                     |
+|                      | `[reject-transfer-holder](#title-escrow-reject-transfer-holder)`                          | Reject holder transfer                                     |
+|                      | `title-escrow reject-transfer-holder`                                                     | Alternative: `reject-transfer-holder`                      |
+|                      | `[reject-transfer-owner](#title-escrow-reject-transfer-owner)`                            | Reject owner transfer                                      |
+|                      | `[reject-transfer-owner-holder](#title-escrow-reject-transfer-owner-holder)`              | Reject full transfer                                       |
+|                      | `title-escrow reject-transfer-owner-holder`                                               | Alternative: `reject-transfer-owner-holder`                |
+| **Obligation / BoE** | `[obligation-registry deploy](#obligation-registry-deploy)`                               | Deploy Obligation Registry                                 |
+|                      | `[obligation-registry mint](#obligation-registry-mint)`                                   | Mint BoE token to obligationRegistry                       |
+|                      | `[obligation-escrow accept](#obligation-escrow-accept)`                                   | Accept obligation                                          |
+|                      | `[obligation-escrow reject](#obligation-escrow-reject)`                                   | Reject obligation                                          |
+|                      | `[obligation-escrow discharge](#obligation-escrow-discharge)`                             | Discharge obligation                                       |
+|                      | `[obligation-escrow status](#obligation-escrow-status)`                                   | Read obligation / escrow status                            |
+|                      | `[obligation-escrow transfer-holder](#obligation-escrow-transfer-holder)`                 | Transfer BoE holder                                        |
+|                      | `[obligation-escrow nominate-transfer-owner](#obligation-escrow-transfer-holder)`         | Nominate BoE beneficiary                                   |
+|                      | `[obligation-escrow endorse-transfer-owner](#obligation-escrow-transfer-holder)`          | Endorse BoE beneficiary change                             |
+|                      | `[obligation-escrow transfer-owner-holder](#obligation-escrow-transfer-holder)`           | Endorse full BoE ownership transfer                        |
+|                      | `[obligation-escrow return-to-issuer](#obligation-escrow-return-to-issuer)`               | Return BoE to issuer                                       |
+|                      | `[obligation-escrow accept-return-to-issuer](#obligation-escrow-accept-return-to-issuer)` | Accept returned BoE                                        |
+|                      | `[obligation-escrow reject-return-to-issuer](#obligation-escrow-reject-return-to-issuer)` | Reject returned BoE                                        |
+|                      | `[obligation-escrow reject-transfer-*](#obligation-escrow-transfer-holder)`               | Reject BoE transfer requests                               |
 
 
 
@@ -1706,7 +1706,7 @@ User guide for electronic Bill of Exchange (BoE) / obligation flows with `trustv
 
 Classic transferable records (eBL / Token Registry + Title Escrow) use different commands. This section covers **only** Obligation Registry.
 
-For library / SDK details, see the TrustVC README [§7c Obligation Registry (BoE)](https://github.com/TrustVC/trustvc/blob/beta/README.md#c-obligation-registry-boe) (on the `beta` branch; not yet on `main`).
+For library / SDK details, see the TrustVC README [§7c Obligation Registry (BoE)](https://github.com/TrustVC/trustvc/blob/main/README.md#c-obligation-registry-boe).
 
 SDK imports use the **root** package with the `*ObligationRegistry` suffix (no clash with classic ETR helpers):
 
@@ -1734,7 +1734,7 @@ You do **not** need to call the TypeScript SDK directly — the CLI wraps it wit
 
 ### Before you start
 
-1. **Install the CLI** — `npm install -g `@trustvc/trustvc-cli`@beta` or `npx `@trustvc/trustvc-cli`@beta <command>`
+1. **Install the CLI** — `npm install -g @trustvc/trustvc-cli` or `npx @trustvc/trustvc-cli <command>`
 2. **Node.js 22.19.5+**
 3. **A wallet** — encrypted wallet file (recommended), private key, or key file
 4. **A signed BoE document** — set `credentialStatus.obligationRegistry`, then sign with `trustvc w3c-sign` (not `tokenRegistry`)
@@ -1791,18 +1791,18 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 ### Who can run what
 
 
-| Action                                                | Typical role                                               |
-| ----------------------------------------------------- | ---------------------------------------------------------- |
-| `obligation-registry deploy`                          | Deployer / issuer org                                      |
-| `obligation-registry mint`                            | Issuer (registry minter)                                   |
-| `obligation-escrow accept` / `reject`                 | Holder (roles split)                                       |
-| `obligation-escrow discharge`                         | Beneficiary                                                |
-| Transfer / nominate / endorse                         | Current holder or beneficiary per Title Escrow–style rules |
-| `return-to-issuer`                                    | Dual role (beneficiary == holder), same as ETR             |
-| `accept-return-to-issuer`                             | Connected wallet with registry **accepter** role (burn / shred) |
-| `reject-return-to-issuer`                             | Connected wallet with registry **restorer** role (restore) |
-| `obligation-escrow status`                            | Anyone with the document (read-only RPC; no signing key)   |
-| `verify`                                              | Anyone with the document (+ RPC when on-chain checks run)  |
+| Action                                | Typical role                                                    |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `obligation-registry deploy`          | Deployer / issuer org                                           |
+| `obligation-registry mint`            | Issuer (registry minter)                                        |
+| `obligation-escrow accept` / `reject` | Holder (roles split)                                            |
+| `obligation-escrow discharge`         | Beneficiary                                                     |
+| Transfer / nominate / endorse         | Current holder or beneficiary per Title Escrow–style rules      |
+| `return-to-issuer`                    | Dual role (beneficiary == holder), same as ETR                  |
+| `accept-return-to-issuer`             | Connected wallet with registry **accepter** role (burn / shred) |
+| `reject-return-to-issuer`             | Connected wallet with registry **restorer** role (restore)      |
+| `obligation-escrow status`            | Anyone with the document (read-only RPC; no signing key)        |
+| `verify`                              | Anyone with the document (+ RPC when on-chain checks run)       |
 
 
 

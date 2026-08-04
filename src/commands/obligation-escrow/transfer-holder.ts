@@ -47,5 +47,6 @@ export const changeHolderHandler = async (args: ObligationEscrowTransferHolderCo
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

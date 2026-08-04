@@ -232,6 +232,8 @@ describe('verify', () => {
       return 'none';
     };
 
+    const originalStdinIsTTYDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+
     beforeEach(async () => {
       const signale = await import('signale');
       signaleSuccessMock = (signale.default as any).success;
@@ -242,7 +244,11 @@ describe('verify', () => {
     });
 
     afterEach(() => {
-      Object.defineProperty(process.stdin, 'isTTY', { value: undefined, configurable: true });
+      if (originalStdinIsTTYDescriptor) {
+        Object.defineProperty(process.stdin, 'isTTY', originalStdinIsTTYDescriptor);
+      } else {
+        delete (process.stdin as { isTTY?: boolean }).isTTY;
+      }
     });
 
     type TestCase = {
@@ -365,6 +371,24 @@ describe('verify', () => {
       await expect(verify(signedVC, { network: 'stability' })).resolves.toBeUndefined();
 
       expect(prompts.select).not.toHaveBeenCalled();
+    });
+
+    it('should use --network when document has a non-empty unsupported chain ID', async () => {
+      Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+      const utils = await import('../../src/utils');
+      const filePath = path.resolve(
+        process.cwd(),
+        'tests/fixtures/verify/oa/3.0/signed_wrapped_oa_dns_txt_token_registry_v3.json',
+      );
+      const signedVC = utils.readJsonFile<SignedVerifiableCredential>(filePath, 'document') as any;
+      signedVC.network = { ...signedVC.network, chainId: '999999' };
+
+      await expect(verify(signedVC, { network: 'stability' })).resolves.toBeUndefined();
+
+      expect(prompts.select).not.toHaveBeenCalled();
+      expect(signaleWarnMock).toHaveBeenCalledWith(expect.stringContaining('999999'));
+      // Override provider was used (verification continued past chain-resolution failure)
+      expect(signaleSuccessMock).toHaveBeenCalled();
     });
   });
 });

@@ -40,5 +40,6 @@ export const acceptReturnedHandler = async (args: BaseObligationEscrowCommand) =
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

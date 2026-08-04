@@ -55,5 +55,6 @@ export const runObligationEscrowCommand = async <TArgs>(
     await commandHandler(answers);
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

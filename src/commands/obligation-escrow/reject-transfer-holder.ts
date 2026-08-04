@@ -39,5 +39,6 @@ export const rejectTransferHolderHandler = async (args: BaseObligationEscrowComm
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

@@ -77,18 +77,25 @@ describe('Obligation record (BoE) — Sepolia testnet verify', () => {
 
     it('SEPOLIA_RPC env var overrides the default Infura provider for Sepolia', async () => {
       const customRpc = 'https://sepolia.example.com/rpc';
+      const originalSepoliaRpc = process.env.SEPOLIA_RPC;
       process.env.SEPOLIA_RPC = customRpc;
 
-      const { getSupportedNetwork, NetworkCmdName } = await import('../../src/utils/networks');
-      const { JsonRpcProvider } = await import('ethers');
-      const provider = getSupportedNetwork(NetworkCmdName.Sepolia).provider();
+      try {
+        const { getSupportedNetwork, NetworkCmdName } = await import('../../src/utils/networks');
+        const { JsonRpcProvider } = await import('ethers');
+        const provider = getSupportedNetwork(NetworkCmdName.Sepolia).provider();
 
-      delete process.env.SEPOLIA_RPC;
-
-      expect(provider).toBeInstanceOf(JsonRpcProvider);
-      expect((provider as any)._getConnection?.().url ?? (provider as any).connection?.url).toBe(
-        customRpc,
-      );
+        expect(provider).toBeInstanceOf(JsonRpcProvider);
+        expect((provider as any)._getConnection?.().url ?? (provider as any).connection?.url).toBe(
+          customRpc,
+        );
+      } finally {
+        if (originalSepoliaRpc === undefined) {
+          delete process.env.SEPOLIA_RPC;
+        } else {
+          process.env.SEPOLIA_RPC = originalSepoliaRpc;
+        }
+      }
     });
   });
 });

@@ -44,5 +44,6 @@ export const nominateHandler = async (args: ObligationEscrowNominateBeneficiaryC
     );
   } catch (e) {
     error(getErrorMessage(e));
+    process.exitCode = 1;
   }
 };

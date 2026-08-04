@@ -205,27 +205,27 @@ const verifyOpenAttestationDocument = async (
 
   checkExpiration(signedVC);
   const requiresNetwork = isTransferableRecord(signedVC) || isDocumentRevokable(signedVC);
-  const chainId = getChainId(signedVC);
 
   // If the document is not transferable or revokable, verify directly
   if (!requiresNetwork) return await verifyDocument(signedVC);
 
-  // If chainId is not found, prefer --network / TTY prompt / no-provider fallback
-  if (requiresNetwork && !chainId) {
-    const provider = await resolveFallbackProvider(options.network);
-    if (provider) return await verifyDocument(signedVC, { provider });
-  }
-
   try {
-    const chainName = getSupportedNetworkNameFromId(Number(chainId));
-    const network = getSupportedNetwork(chainName);
-    const provider = network.provider() as unknown as V5Provider;
-    if (provider) return await verifyDocument(signedVC, { provider });
+    const chainId = getChainId(signedVC);
+    if (chainId) {
+      const chainName = getSupportedNetworkNameFromId(Number(chainId));
+      const network = getSupportedNetwork(chainName);
+      const provider = network.provider() as unknown as V5Provider;
+      if (provider) return await verifyDocument(signedVC, { provider });
+    }
   } catch (err: unknown) {
     signale.warn(`${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // Fallback: Verify without provider
+  // Prefer --network / TTY prompt when chain lookup fails or returns no provider
+  const provider = await resolveFallbackProvider(options.network);
+  if (provider) return await verifyDocument(signedVC, { provider });
+
+  // Fallback: Verify without provider only when no override can be resolved
   return await verifyDocument(signedVC);
 };
 

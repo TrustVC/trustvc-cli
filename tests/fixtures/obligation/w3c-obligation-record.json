@@ -1,0 +1,54 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/credentials/v2",
+    "https://w3id.org/security/data-integrity/v2",
+    "https://trustvc.io/context/transferable-records-context.json",
+    "https://trustvc.io/context/bill-of-exchange.json"
+  ],
+  "type": ["VerifiableCredential"],
+  "issuer": "did:web:trustvc.github.io:did:1",
+  "id": "urn:uuid:obligation-test-doc-id",
+  "credentialStatus": {
+    "type": "TransferableRecords",
+    "tokenNetwork": {
+      "chain": "MATIC",
+      "chainId": "80002"
+    },
+    "obligationRegistry": "0x71D28767662cB233F887aD2Bb65d048d760bA694",
+    "tokenId": "23f719b016c88ba1ef2e10c0718d7d0f0026b1dc6e219629f81e2f0f811c4e3e"
+  },
+  "credentialSubject": {
+    "electronicDocumentIdentifier": "urn:uuid:obligation-test-doc-id",
+    "referenceNumber": "BOE-TEST-001",
+    "amountInFigures": "128500.00",
+    "amountInWords": "One hundred twenty-eight thousand five hundred United States Dollars only",
+    "currencyCode": "USD",
+    "blDate": "2026-06-28",
+    "placeOfIssue": "Singapore",
+    "dateOfIssue": "2026-07-06",
+    "tenor": "At 90 days sight",
+    "payee": "Meridian Commodities Pte Ltd",
+    "drawnUnder": "Documentary Credit No. LC-TEST-2026-88341 / Invoice No. INV-TEST-2026-0456 / B/L No. BL-TEST-2026-0781",
+    "drawnUnderDate": "2026-06-15",
+    "issuedBy": "DBS Bank Ltd",
+    "drawee": {
+      "name": "Fairview Industries Inc.",
+      "address": "1201 Market Street, Suite 900, Wilmington, DE 19801, USA",
+      "authorisedSignatoryName": "James R. Carter",
+      "signature": ""
+    },
+    "drawer": {
+      "name": "Meridian Commodities Pte Ltd",
+      "address": "8 Marina Boulevard, #24-01, Singapore 018981",
+      "authorisedSignatoryName": "Wei Ling Tan",
+      "signature": ""
+    }
+  },
+  "proof": {
+    "type": "DataIntegrityProof",
+    "cryptosuite": "ecdsa-sd-2023",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:web:trustvc.github.io:did:1#multikey-1",
+    "proofValue": "uTEST"
+  }
+}

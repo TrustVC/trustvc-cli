@@ -30,3 +30,6 @@ export * from './dryRun';
 
 // Document Verification
 export * from './document-verification';
+
+// Obligation / BoE document helpers
+export * from './obligation-document';

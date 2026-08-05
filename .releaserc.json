@@ -1,5 +1,12 @@
 {
-  "branches": ["main"],
+  "branches": [
+    "main",
+    {
+      "name": "beta",
+      "prerelease": "beta",
+      "channel": "beta"
+    }
+  ],
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
@@ -9,7 +16,12 @@
         "changelogFile": "CHANGELOG.md"
       }
     ],
-    "@semantic-release/npm",
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": true
+      }
+    ],
     [
       "@semantic-release/git",
       {

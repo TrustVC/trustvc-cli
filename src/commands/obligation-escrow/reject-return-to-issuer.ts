@@ -1,0 +1,39 @@
+import { info, success } from 'signale';
+import { rejectReturnedObligationRegistry } from '@trustvc/trustvc';
+import { BaseObligationEscrowCommand } from '../../types';
+import {
+  displayTransactionPrice,
+  getEtherscanAddress,
+  NetworkCmdName,
+  TransactionReceiptFees,
+} from '../../utils';
+import { promptBaseObligationEscrowInputs, runObligationEscrowCommand } from './shared';
+import { runObligationEscrowTx } from './runTx';
+
+export const command = 'reject-return-to-issuer';
+export const describe = 'Issuer rejects a returned BoE obligation (restore to escrow)';
+
+export const handler = async (): Promise<void> =>
+  runObligationEscrowCommand(promptForInputs, rejectReturnedHandler);
+
+export const promptForInputs = promptBaseObligationEscrowInputs;
+
+export const rejectReturnedHandler = async (args: BaseObligationEscrowCommand) => {
+  info(`Rejecting returned obligation ${args.tokenId} (restore)`);
+  const transaction = await runObligationEscrowTx({
+    args,
+    // rejectReturned restores the title, which lives on the TrustVCToken registry, not the escrow.
+    populate: ({ registry }, encryptedRemark) =>
+      registry.restore.populateTransaction(args.tokenId, encryptedRemark),
+    sdk: rejectReturnedObligationRegistry as any,
+    sdkParams: { tokenId: args.tokenId, remarks: args.remark },
+  });
+  displayTransactionPrice(
+    transaction as unknown as TransactionReceiptFees,
+    args.network as NetworkCmdName,
+  );
+  success(`Return rejected (restored to escrow)`);
+  info(
+    `Find more details at ${getEtherscanAddress({ network: args.network })}/tx/${transaction.hash}`,
+  );
+};

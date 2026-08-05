@@ -5,6 +5,7 @@ wellknown.json
 credentialStatus.json
 signed_vc.json
 raw_vc.json
+decrypted.json
 
 # Dependencies
 node_modules/

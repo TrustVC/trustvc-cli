@@ -102,6 +102,39 @@ export type TitleEscrowNominateBeneficiaryCommand = BaseTitleEscrowCommand & {
   newBeneficiary: string;
 };
 
+export type ObligationRegistryMintCommand = NetworkOption &
+  Partial<RpcUrlOption> &
+  WalletOrSignerOption &
+  GasPriceScale & {
+    address: string;
+    beneficiary: string;
+    holder: string;
+    tokenId: string;
+    remark?: string;
+    encryptionKey?: string;
+  };
+
+export type BaseObligationEscrowCommand = NetworkAndWalletSignerOption &
+  GasPriceScale & {
+    obligationRegistryAddress: string;
+    tokenId: string;
+    remark?: string;
+    encryptionKey?: string;
+  };
+
+export type ObligationEscrowTransferHolderCommand = BaseObligationEscrowCommand & {
+  newHolder: string;
+};
+
+export type ObligationEscrowEndorseTransferOfOwnersCommand = BaseObligationEscrowCommand & {
+  newHolder: string;
+  newOwner: string;
+};
+
+export type ObligationEscrowNominateBeneficiaryCommand = BaseObligationEscrowCommand & {
+  newBeneficiary: string;
+};
+
 export type EncryptWalletCommand = PrivateKeyOption & {
   outputFile: string;
 };

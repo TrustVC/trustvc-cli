@@ -1,6 +1,5 @@
 name: CI
 
-# Same checks for PRs targeting main or beta (and for pushes to those branches).
 on:
   push:
   pull_request:

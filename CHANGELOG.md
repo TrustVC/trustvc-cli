@@ -1,3 +1,10 @@
+# [1.2.0-beta.1](https://github.com/TrustVC/trustvc-cli/compare/v1.1.0...v1.2.0-beta.1) (2026-08-05)
+
+
+### Features
+
+* boe and integration testing ([#31](https://github.com/TrustVC/trustvc-cli/issues/31)) ([feb0829](https://github.com/TrustVC/trustvc-cli/commit/feb08299315a8b16b372fa35cdf8a4db8b313b2b))
+
 # [1.1.0](https://github.com/TrustVC/trustvc-cli/compare/v1.0.1...v1.1.0) (2026-06-11)
 
 

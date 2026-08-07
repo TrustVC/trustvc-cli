@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/TrustVC/trustvc-cli/compare/v1.1.0...v1.2.0) (2026-08-07)
+
+
+### Bug Fixes
+
+* address PR review on the Verifiable Presentation feature ([6fb893c](https://github.com/TrustVC/trustvc-cli/commit/6fb893c63ca282580e1ca258d613dcaf4ec79c95))
+
+
+### Features
+
+* add W3C Verifiable Presentation signing ([5065c4f](https://github.com/TrustVC/trustvc-cli/commit/5065c4fdebc1b375809c2d741e90ff6ba36731f7))
+
 # [1.1.0](https://github.com/TrustVC/trustvc-cli/compare/v1.0.1...v1.1.0) (2026-06-11)
 
 

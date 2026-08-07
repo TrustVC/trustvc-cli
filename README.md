@@ -8,6 +8,7 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
 - ✅ **W3C Verifiable Credentials**: Sign, verify and manage W3C verifiable credentials
+- ✅ **W3C Verifiable Presentations**: Present credentials as a holder and verify presentations
 - ✅ **OpenAttestation**: Sign, verify, wrap/unwrap, and encrypt/decrypt OpenAttestation v2/v3 documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Document Store**: Deploy and manage document store contracts
@@ -76,7 +77,10 @@ trustvc did-web
 # Sign a W3C verifiable credential
 trustvc w3c-sign
 
-# Verify a W3C document
+# Present credential(s) you hold as a Verifiable Presentation
+trustvc vp-sign
+
+# Verify a W3C credential or presentation
 trustvc verify
 
 # Create a credential status list
@@ -202,6 +206,15 @@ trustvc title-escrow reject-transfer-owner-holder
 
 - **Credential Status**: Provides commands to create and update W3C credential status lists for managing credential revocation and suspension.
 
+- **Verifiable Presentations**: Uses `signW3CPresentation` to let a holder bundle and present their own credentials; presentations are verified by the same `verify` command as every other document. TrustVC enforces the presentation policies, so the CLI cannot disable them:
+  - **Holder binding** — the signing key's DID must equal the presentation `holder` and every `credentialSubject.id`. The issuer is independent: a credential issued by another party is fine.
+  - **Mandatory expiry** — every presentation carries a `validUntil`; `vp-sign` always asks for one.
+  - **Full disclosure** — a selective-disclosure credential that has not been derived is auto-derived.
+  - **v2 envelope** — the presentation envelope is always VC Data Model 2.0; embedded credentials keep their own version.
+  - Credentials with a `TransferableRecords` status cannot be presented — ownership of a transferable record lives on-chain.
+
+  The holder proof is an `assertionMethod` proof: the CLI does not issue challenges, since an anti-replay nonce can only be checked by the verifier that issued it.
+
 ### OpenAttestation
 
 - **Document Signing**: Uses `signOA` to cryptographically sign OpenAttestation v2 and v3 documents with private keys.
@@ -233,7 +246,8 @@ trustvc title-escrow reject-transfer-owner-holder
 | **W3C Credentials** | [`key-pair-generation`](#key-pair-generation)                                | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
 |                     | [`did-web`](#did-web)                                                        | Create did:web identifiers from key pairs                  |
 |                     | [`w3c-sign`](#w3c-sign)                                                      | Sign W3C verifiable credentials                            |
-|                     | [`verify`](#verify)                                                          | Verify W3C verifiable credentials                          |
+|                     | [`verify`](#verify)                                                          | Verify W3C verifiable credentials and presentations        |
+|                     | [`vp-sign`](#vp-sign)                                                        | Create and sign a W3C verifiable presentation              |
 |                     | [`credential-status-create`](#credential-status-create)                      | Create credential status lists                             |
 |                     | [`credential-status-update`](#credential-status-update)                      | Update credential status (revoke/suspend)                  |
 | **OpenAttestation** | [`oa-sign`](#oa-sign)                                                        | Sign OpenAttestation v2/v3 documents                       |
@@ -442,8 +456,49 @@ Verifies the document integrity, status, and issuer identity.
 **Supported Formats:**
 
 - W3C Verifiable Credential
+- W3C Verifiable Presentation
 - OpenAttestation v2
 - OpenAttestation v3
+
+**Verifiable Presentations:**
+For a presentation, the three results cover the presentation as a whole — `DOCUMENT_INTEGRITY` is the holder proof plus holder binding (an unsigned presentation is invalid), `DOCUMENT_STATUS` is the presentation expiry plus each embedded credential's revocation, and `ISSUER_IDENTITY` resolves each embedded issuer. Freshness of an `authentication` proof (challenge/domain) is not checked — only the verifier that issued the challenge can do that.
+
+A valid presentation adds one line stating how many credentials it covered, since the three results read identically over one credential or five:
+
+```
+✔  success   DOCUMENT_INTEGRITY: VALID
+✔  success   DOCUMENT_STATUS: VALID
+✔  success   ISSUER_IDENTITY: VALID
+ℹ  info      2 embedded credentials verified.
+```
+
+</details>
+
+<details>
+<summary><h4 id="vp-sign">vp-sign</h4></summary>
+
+Creates **and** signs a W3C Verifiable Presentation from one or more signed credentials, so a holder can present credentials they own.
+
+**Usage:**
+
+```sh
+trustvc vp-sign
+```
+
+**Interactive Prompts:**
+
+- A directory of signed verifiable credentials, **or** the path(s) to individual JSON files (comma-separated). Given a directory, **every file in it is presented** — nothing is filtered by extension or content, so anything that is not a presentable credential is reported by the signing step, naming the file it came from. Sub-directories and dot-files (`.DS_Store` and the like) are skipped.
+- Path to the holder did key-pair JSON file (defaults to `./didKeyPairs.json`). The holder DID is taken from this file and is **not** asked for — trustvc requires the signing key's DID to *be* the holder, so there is nothing to choose. A key pair with no DID (the bare `keypair.json` from [`key-pair-generation`](#key-pair-generation)) is rejected up front; use the `didKeyPairs.json` that [`did-web`](#did-web) writes.
+- Presentation expiry — either a lifetime in seconds or an explicit `validUntil` timestamp
+- Output directory
+
+**Output:**
+Creates `signed_vp.json`, holding an `assertionMethod` holder proof. Verify it with [`verify`](#verify).
+
+**Requirements:**
+
+- The holder key pair must be an ECDSA (P-256) Multikey bound to a DID — the `didKeyPairs.json` produced by [`did-web`](#did-web) is one.
+- Every credential must be about the holder: each `credentialSubject.id` must equal the holder DID. Credentials with a `TransferableRecords` status cannot be presented.
 
 </details>
 
@@ -1438,6 +1493,7 @@ src/commands/
     ├── did.ts                       # Generate DID
     ├── key-pair.ts                  # Generate key pairs
     ├── sign.ts                      # Sign W3C credentials
+    ├── vp-sign.ts                   # Create and sign a verifiable presentation
     └── credentialStatus/
         ├── create.ts                # Create credential status list
         └── update.ts                # Update credential status list

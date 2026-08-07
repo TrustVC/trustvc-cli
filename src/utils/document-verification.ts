@@ -10,6 +10,25 @@ import {
 } from '@trustvc/trustvc';
 
 /**
+ * Detects a W3C Verifiable Presentation by shape only: `type` includes
+ * `VerifiablePresentation` and the document carries a `verifiableCredential` field.
+ * Deliberately does NOT look at `proof` — an unsigned presentation is still a
+ * presentation, and must be routed to the VP path so it can be reported as invalid.
+ *
+ * @param document - The document to inspect
+ * @returns true when the document is a Verifiable Presentation
+ */
+export const isVerifiablePresentation = (document: unknown): boolean => {
+  if (!document || typeof document !== 'object') return false;
+  const { type, verifiableCredential } = document as {
+    type?: string | string[];
+    verifiableCredential?: unknown;
+  };
+  const types = Array.isArray(type) ? type : [type];
+  return types.includes('VerifiablePresentation') && verifiableCredential !== undefined;
+};
+
+/**
  * Verifies the signature of a document (W3C or OpenAttestation).
  * Throws an error if the document signature is invalid.
  *

@@ -17,7 +17,7 @@ npx prettier --write "tests/fixtures/vp/**/*.json"
 
 That writes:
 
-```
+```text
 credentials/          → hand this WHOLE FOLDER to vp-sign
 invalid-credentials/  → one file per reason vp-sign refuses a credential (pass ONE at a time)
 invalid-keypairs/     → one file per reason vp-sign cannot sign with a key
@@ -29,10 +29,15 @@ Re-run it after bumping `@trustvc/trustvc`: these are signed artifacts and keep 
 issuance rules produced them. Each run mints fresh keys, so the holder DID changes — never
 hard-code it anywhere.
 
-Everything here is **did:key** based: the holder's DID is derived from its own public key, so
-nothing has to be hosted and every fixture verifies offline. Each credential is self-issued
-(issuer = holder) purely so the set is self-contained — in real use the issuer is a different
-party, which is fine: holder binding only checks holder = signer = `credentialSubject.id`.
+The holder is a **did:key**, so its DID is derived from its own public key and nothing has to
+be hosted for you to sign and verify. Each credential is self-issued (issuer = holder) purely
+so the set is self-contained — in real use the issuer is a different party, which is fine:
+holder binding only checks holder = signer = `credentialSubject.id`.
+
+**Two fixtures do need network access**, because what they demonstrate is a lookup:
+`invalid-credentials/revoked.json` fetches its status list from `trustvc.github.io`, and
+`invalid-credentials/unresolvable_issuer.json` only fails the way it should once DID
+resolution has been attempted and failed. Everything else works offline.
 
 Run the commands from the repository root, against a built CLI:
 

@@ -130,12 +130,15 @@ describe('verifiable presentation (integration)', () => {
   }, 60000);
 
   it('refuses to sign when the holder does not match the credential subject', async () => {
+    // Remove any presentation an earlier test left behind, so "no file" is a real signal
+    // rather than something inherited — otherwise this passes even if signing succeeded.
+    fs.rmSync(path.join(outputPath, 'signed_vp.json'), { force: true });
+
     const vp = await sign({ holder: 'did:example:someone-else' });
 
-    // Nothing was written for this run, so the file still holds the previous test's VP.
+    expect(vp).toBeUndefined(); // nothing was written
     expect(signaleErrorMock).toHaveBeenCalled();
     expect(String(signaleErrorMock.mock.calls[0][0])).toMatch(/does not match the holder/);
-    expect(vp?.holder).not.toBe('did:example:someone-else');
   }, 60000);
 
   it('verifies a presentation through the unified verify pipeline', async () => {
@@ -241,15 +244,17 @@ describe('verifiable presentation with a published did:web (integration, network
   let outputPath: string;
   let signaleSuccessMock: MockedFunction<any>;
 
-  // The did:web hosted at trustvc.github.io. `#multikey-1` is its ECDSA (P-256) Multikey;
-  // this is the same public test key material the trustvc fixtures use.
+  // The did:web hosted at trustvc.github.io. `#multikey-1` is its ECDSA (P-256) Multikey.
+  // This is PUBLISHED test material for a PUBLISHED test DID — the same key pair committed
+  // in @trustvc/trustvc's own sign/presentation/vpFragments fixtures. It secures nothing and
+  // controls no funds; it exists so a did:web can be exercised without hosting one.
   const HOSTED_DID = 'did:web:trustvc.github.io:did:1';
   const hostedKey = {
     id: `${HOSTED_DID}#multikey-1`,
     controller: HOSTED_DID,
     type: 'Multikey',
     publicKeyMultibase: 'zDnaemDNwi4G5eTzGfRooFFu5Kns3be6yfyVNtiaMhWkZbwtc',
-    secretKeyMultibase: 'z42tmUXTVn3n9BihE6NhdMpvVBTnFTgmb6fw18o5Ud6puhRW',
+    secretKeyMultibase: 'z42tmUXTVn3n9BihE6NhdMpvVBTnFTgmb6fw18o5Ud6puhRW', // gitleaks:allow
   };
 
   const issueTo = async (issuerDid: string, issuerKey: unknown, subjectDid: string) => {

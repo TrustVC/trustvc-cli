@@ -222,7 +222,7 @@ export const signPresentation = async ({
 
   signale.success('Verifiable Presentation signed successfully');
 
-  const signedVpPath = `${outputPath}/signed_vp.json`;
+  const signedVpPath = path.join(outputPath, 'signed_vp.json');
   writeFile(signedVpPath, signed, true);
   signale.success(`Signed verifiable presentation saved to: ${signedVpPath}`);
 };

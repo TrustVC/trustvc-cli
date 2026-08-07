@@ -465,7 +465,7 @@ For a presentation, the three results cover the presentation as a whole — `DOC
 
 A valid presentation adds one line stating how many credentials it covered, since the three results read identically over one credential or five:
 
-```
+```text
 ✔  success   DOCUMENT_INTEGRITY: VALID
 ✔  success   DOCUMENT_STATUS: VALID
 ✔  success   ISSUER_IDENTITY: VALID

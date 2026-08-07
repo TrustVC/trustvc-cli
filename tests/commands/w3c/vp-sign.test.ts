@@ -374,8 +374,9 @@ describe('vp-sign', () => {
         holder: HOLDER_DID,
         expiresInSeconds: 600,
       });
+      // path.join normalises the '.' away.
       expect(utils.writeFile).toHaveBeenCalledWith(
-        './signed_vp.json',
+        'signed_vp.json',
         { type: ['VerifiablePresentation'] },
         true,
       );

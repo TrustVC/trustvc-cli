@@ -14,7 +14,7 @@ chain logic — every command is prompts + file I/O around a library call. When 
 wrong with a signature, a proof or a verification result, the bug is almost always upstream
 in `trustvc` (or `@trustvc/w3c-vc` below it), not here.
 
-```
+```text
 src/main.ts          yargs entry point; auto-registers every command under src/commands/
 src/commands/        one file per command — see "Adding a command"
 src/utils/           file I/O, networks, wallets, formatting, prompts (barrel: utils/index.ts)

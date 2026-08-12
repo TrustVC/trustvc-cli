@@ -36,6 +36,19 @@ vi.mock('@trustvc/trustvc', async () => {
     getObligationRegistryStatus: vi.fn().mockResolvedValue(0),
     isObligationRegistryRegistered: vi.fn().mockResolvedValue(true),
     getObligationEscrowTerminationReason: vi.fn().mockResolvedValue(0),
+    getObligationEscrowAddress: vi.fn().mockResolvedValue('0xEscrow'),
+  };
+});
+
+vi.mock('ethers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('ethers')>();
+  return {
+    ...actual,
+    Contract: vi.fn().mockImplementation(() => ({
+      beneficiary: vi.fn().mockResolvedValue('0xBeneficiary'),
+      holder: vi.fn().mockResolvedValue('0xHolder'),
+      nominee: vi.fn().mockResolvedValue(actual.ZeroAddress),
+    })),
   };
 });
 
@@ -70,5 +83,11 @@ describe('obligation-escrow/status', () => {
     );
     expect(trustvc.isObligationRegistryRegistered).toHaveBeenCalled();
     expect(trustvc.getObligationEscrowTerminationReason).toHaveBeenCalled();
+    expect(trustvc.getObligationEscrowAddress).toHaveBeenCalledWith(
+      '0xRegistry',
+      '0x1',
+      { mock: 'provider' },
+      { titleEscrowVersion: 'v5' },
+    );
   });
 });

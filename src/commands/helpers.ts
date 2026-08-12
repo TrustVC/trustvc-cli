@@ -8,6 +8,7 @@ import {
   v5SupportInterfaceIds,
   DocumentStore__factory,
   encrypt,
+  getObligationEscrowAddress,
 } from '@trustvc/trustvc';
 
 // Internal utilities
@@ -462,7 +463,8 @@ interface ConnectToObligationEscrowArgs {
 }
 
 /**
- * Resolves ObligationEscrow via ownerOf(tokenId) on the obligation registry and connects.
+ * Resolves ObligationEscrow via getObligationEscrowAddress (handles inactive/burned titles
+ * via factory CREATE2) and connects — same as websites / demo dry-run resolution.
  */
 export const connectToObligationEscrow = async ({
   tokenId,
@@ -470,11 +472,15 @@ export const connectToObligationEscrow = async ({
   wallet,
 }: ConnectToObligationEscrowArgs) => {
   try {
-    signale.info(`Connecting to obligation registry at: ${address}`);
-    const registry = new ethers.Contract(address, TrustVCToken__factory.abi, wallet as any);
+    const provider = wallet.provider;
+    if (!provider) {
+      throw new Error('Provider is required to resolve obligation escrow address');
+    }
 
-    signale.info(`Fetching obligation escrow address for tokenId: ${tokenId}`);
-    const escrowAddress = await registry.ownerOf(tokenId);
+    signale.info(`Resolving obligation escrow for tokenId: ${tokenId} on ${address}`);
+    const escrowAddress = await getObligationEscrowAddress(address, tokenId, provider as any, {
+      titleEscrowVersion: 'v5',
+    });
     signale.info(`Obligation escrow address: ${escrowAddress}`);
 
     if (!escrowAddress || escrowAddress === ZeroAddress) {

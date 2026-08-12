@@ -229,6 +229,7 @@ trustvc obligation-escrow accept
 trustvc obligation-escrow reject
 trustvc obligation-escrow discharge
 trustvc obligation-escrow status
+trustvc obligation-escrow endorsement-chain
 
 # Transfers (mirror title-escrow)
 trustvc obligation-escrow transfer-holder
@@ -341,10 +342,11 @@ trustvc verify
 |                      | `[obligation-escrow reject](#obligation-escrow-reject)`                                   | Reject obligation                                          |
 |                      | `[obligation-escrow discharge](#obligation-escrow-discharge)`                             | Discharge obligation                                       |
 |                      | `[obligation-escrow status](#obligation-escrow-status)`                                   | Read obligation / escrow status                            |
+|                      | `[obligation-escrow endorsement-chain](#obligation-escrow-endorsement-chain)`             | Fetch endorsement chain (transfers + status events)        |
 |                      | `[obligation-escrow transfer-holder](#obligation-escrow-transfer-holder)`                 | Transfer BoE holder                                        |
-|                      | `[obligation-escrow nominate-transfer-owner](#obligation-escrow-transfer-holder)`         | Nominate BoE beneficiary                                   |
-|                      | `[obligation-escrow endorse-transfer-owner](#obligation-escrow-transfer-holder)`          | Endorse BoE beneficiary change                             |
-|                      | `[obligation-escrow transfer-owner-holder](#obligation-escrow-transfer-holder)`           | Endorse full BoE ownership transfer                        |
+|                      | `[obligation-escrow nominate-transfer-owner](#obligation-escrow-nominate-transfer-owner)` | Nominate BoE beneficiary                                   |
+|                      | `[obligation-escrow endorse-transfer-owner](#obligation-escrow-endorse-transfer-owner)`   | Endorse BoE beneficiary change                             |
+|                      | `[obligation-escrow transfer-owner-holder](#obligation-escrow-transfer-owner-holder)`     | Endorse full BoE ownership transfer                        |
 |                      | `[obligation-escrow return-to-issuer](#obligation-escrow-return-to-issuer)`               | Return BoE to issuer                                       |
 |                      | `[obligation-escrow accept-return-to-issuer](#obligation-escrow-accept-return-to-issuer)` | Accept returned BoE                                        |
 |                      | `[obligation-escrow reject-return-to-issuer](#obligation-escrow-reject-return-to-issuer)` | Reject returned BoE                                        |
@@ -359,7 +361,7 @@ trustvc verify
 
 ### Wallet/Private Key Options
 
-Commands that submit transactions (title-escrow, obligation-registry, obligation-escrow write actions, token registry, document-store, and transaction) require a wallet or private key to sign. Read-only `obligation-escrow status` does not — it uses the network RPC/provider from the document (override with `{NETWORK}_RPC` if needed). You can provide your private key in one of the following ways:
+Commands that submit transactions (title-escrow, obligation-registry, obligation-escrow write actions, token registry, document-store, and transaction) require a wallet or private key to sign. Read-only `obligation-escrow status` and `obligation-escrow endorsement-chain` do not — they use the network RPC/provider from the document (override with `{NETWORK}_RPC` if needed). You can provide your private key in one of the following ways:
 
 **Select wallet/private key option:**
 
@@ -1480,7 +1482,25 @@ trustvc obligation-escrow status
 - *Network, obligationRegistry, and token ID are extracted from the document*
 
 **Output:**
-Obligation and escrow status fields from the chain.
+Obligation and escrow status fields from the chain (status, registered, termination reason, escrow address, owner, holder, nominee when available).
+
+#### obligation-escrow endorsement-chain
+
+Fetches the BoE endorsement chain (transfers + obligation status events) via the network Infura/RPC. Remarks are decrypted with the credential `id`. Read-only: no wallet required.
+
+**Usage:**
+
+```sh
+trustvc obligation-escrow endorsement-chain
+```
+
+**Interactive Prompts:**
+
+- Path to BoE / obligation document
+- *Network, obligationRegistry, token ID, and document `id` (encryption key) are extracted from the document*
+
+**Output:**
+Chronological list of endorsement-chain events (type, block, owner/holder, remark, tx hash).
 
 #### obligation-escrow transfer-holder
 
@@ -1778,7 +1798,7 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 
 **4. Accept or reject (holder)** — `trustvc obligation-escrow accept` or `reject` while **beneficiary ≠ holder**. Accept moves Issued → Accepted. Reject moves Issued → Rejected and burns the title.
 
-**5. Status** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, and termination reason.
+**5. Status / history** — `trustvc obligation-escrow status` reads `Issued` / `Accepted` / `Rejected` / `Discharged`, registration, termination reason, and escrow parties. `trustvc obligation-escrow endorsement-chain` prints the full on-chain history (transfers + status events).
 
 **6. Transfers (optional)** — `obligation-escrow transfer-holder`, nominate/endorse/reject-transfer variants mirror `title-escrow`.
 
@@ -1802,6 +1822,7 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 | `accept-return-to-issuer`             | Connected wallet with registry **accepter** role (burn / shred) |
 | `reject-return-to-issuer`             | Connected wallet with registry **restorer** role (restore)      |
 | `obligation-escrow status`            | Anyone with the document (read-only RPC; no signing key)        |
+| `obligation-escrow endorsement-chain` | Anyone with the document (read-only RPC; no signing key)        |
 | `verify`                              | Anyone with the document (+ RPC when on-chain checks run)       |
 
 

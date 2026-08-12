@@ -1,3 +1,16 @@
+# [1.3.0-beta.1](https://github.com/TrustVC/trustvc-cli/compare/v1.2.0...v1.3.0-beta.1) (2026-08-12)
+
+
+### Bug Fixes
+
+* update W3C obligation record with new issuer and restructure credentialSubject fields for improved clarity and accuracy ([0c0bfed](https://github.com/TrustVC/trustvc-cli/commit/0c0bfed5edda3ddf200da9252a25f41c4032b0c8))
+
+
+### Features
+
+* add obligation escrow commands and types ([f7c0c78](https://github.com/TrustVC/trustvc-cli/commit/f7c0c785cb88235cb6c8efafbdd20be4c3512f17))
+* boe and integration testing ([#31](https://github.com/TrustVC/trustvc-cli/issues/31)) ([feb0829](https://github.com/TrustVC/trustvc-cli/commit/feb08299315a8b16b372fa35cdf8a4db8b313b2b))
+
 # [1.2.0-beta.2](https://github.com/TrustVC/trustvc-cli/compare/v1.2.0-beta.1...v1.2.0-beta.2) (2026-08-11)
 
 

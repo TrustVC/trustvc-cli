@@ -8,6 +8,12 @@ if (major < 22) {
   process.exit(1);
 }
 
+// Transitive dependencies (node-fetch@2 -> whatwg-url -> tr46, and jsonld@4 -> request ->
+// tough-cookie) still require Node's deprecated `punycode` module. Node prints that warning
+// to stderr on first load, which lands in the middle of an interactive prompt and garbles it.
+// Only DeprecationWarnings are silenced; every other warning and error still surfaces.
+process.noDeprecation = true;
+
 import path from 'path';
 import yargs from 'yargs';
 import signale from 'signale';

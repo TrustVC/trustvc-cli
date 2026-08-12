@@ -8,6 +8,7 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **Key Pair Generation**: Generate cryptographic key pairs with Multikey format
 - ✅ **DID Management**: Create and manage did:web identifiers
 - ✅ **W3C Verifiable Credentials**: Sign, verify and manage W3C verifiable credentials
+- ✅ **W3C Verifiable Presentations**: Present credentials as a holder and verify presentations
 - ✅ **OpenAttestation**: Sign, verify, wrap/unwrap, and encrypt/decrypt OpenAttestation v2/v3 documents
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Document Store**: Deploy and manage document store contracts
@@ -90,7 +91,10 @@ trustvc did-web
 # Sign a W3C verifiable credential
 trustvc w3c-sign
 
-# Verify a W3C document
+# Present credential(s) you hold as a Verifiable Presentation
+trustvc vp-sign
+
+# Verify a W3C credential or presentation
 trustvc verify
 
 # Create a credential status list
@@ -260,7 +264,14 @@ trustvc verify
 - **Credential Verification**: Uses `verifyDocument` to verify W3C verifiable credentials.
 - **Credential Status**: Provides commands to create and update W3C credential status lists for managing credential revocation and suspension.
 
+- **Verifiable Presentations**: Uses `signW3CPresentation` to let a holder bundle and present their own credentials; presentations are verified by the same `verify` command as every other document. TrustVC enforces the presentation policies, so the CLI cannot disable them:
+  - **Holder binding** — the signing key's DID must equal the presentation `holder` and every `credentialSubject.id`. The issuer is independent: a credential issued by another party is fine.
+  - **Mandatory expiry** — every presentation carries a `validUntil`; `vp-sign` always asks for one.
+  - **Full disclosure** — a selective-disclosure credential that has not been derived is auto-derived.
+  - **v2 envelope** — the presentation envelope is always VC Data Model 2.0; embedded credentials keep their own version.
+  - Credentials with a `TransferableRecords` status cannot be presented — ownership of a transferable record lives on-chain.
 
+  The holder proof is an `assertionMethod` proof: the CLI does not issue challenges, since an anti-replay nonce can only be checked by the verifier that issued it.
 
 ### OpenAttestation
 
@@ -288,69 +299,67 @@ trustvc verify
 
 ### Available Commands
 
-
-| Category             | Command                                                                                   | Description                                                |
-| -------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **W3C Credentials**  | `[key-pair-generation](#key-pair-generation)`                                             | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
-|                      | `[did-web](#did-web)`                                                                     | Create did:web identifiers from key pairs                  |
-|                      | `[w3c-sign](#w3c-sign)`                                                                   | Sign W3C verifiable credentials                            |
-|                      | `[verify](#verify)`                                                                       | Verify W3C verifiable credentials                          |
-|                      | `[credential-status-create](#credential-status-create)`                                   | Create credential status lists                             |
-|                      | `[credential-status-update](#credential-status-update)`                                   | Update credential status (revoke/suspend)                  |
-| **OpenAttestation**  | `[oa-sign](#oa-sign)`                                                                     | Sign OpenAttestation v2/v3 documents                       |
-|                      | `[verify](#verify)`                                                                       | Verify OpenAttestation documents                           |
-|                      | `[oa-wrap](#oa-wrap)`                                                                     | Wrap OpenAttestation documents                             |
-|                      | `[oa-unwrap](#oa-unwrap)`                                                                 | Unwrap OpenAttestation documents                           |
-|                      | `[oa-encrypt](#oa-encrypt)`                                                               | Encrypt an OA document for safe sharing and storage        |
-|                      | `[oa-decrypt](#oa-decrypt)`                                                               | Decrypt an OA document encrypted with oa-encrypt           |
-| **Token Registry**   | `[mint](#mint)`                                                                           | Mint tokens to blockchain registries                       |
-|                      | `[token-registry deploy](#token-registry-deploy)`                                         | Deploy token registry contracts                            |
-|                      | `token-registry mint`                                                                     | Alternative: `mint`                                        |
-| **Document Store**   | `[document-store deploy](#document-store-deploy)`                                         | Deploy document store contracts                            |
-|                      | `[document-store issue](#document-store-issue)`                                           | Issue document hashes                                      |
-|                      | `[document-store revoke](#document-store-revoke)`                                         | Revoke document hashes                                     |
-|                      | `[document-store grant-role](#document-store-grant-role)`                                 | Grant roles to accounts                                    |
-|                      | `[document-store revoke-role](#document-store-revoke-role)`                               | Revoke roles from accounts                                 |
-|                      | `[document-store transfer-ownership](#document-store-transfer-ownership)`                 | Transfer document store ownership                          |
-| **Transaction**      | `[transaction cancel](#transaction-cancel)`                                               | Cancel a pending transaction                               |
-| **Wallet**           | `[wallet create](#wallet-create)`                                                         | Create a new encrypted wallet file                         |
-|                      | `[wallet encrypt](#wallet-encrypt)`                                                       | Encrypt a wallet using a private key                       |
-|                      | `[wallet decrypt](#wallet-decrypt)`                                                       | Decrypt an encrypted wallet file                           |
-| **Title Escrow**     | `[transfer-holder](#title-escrow-transfer-holder)`                                        | Transfer document holder                                   |
-|                      | `title-escrow transfer-holder`                                                            | Alternative: `transfer-holder`                             |
-|                      | `[nominate-transfer-owner](#title-escrow-nominate-transfer-owner)`                        | Nominate new beneficiary                                   |
-|                      | `title-escrow nominate-transfer-owner`                                                    | Alternative: `nominate-transfer-owner`                     |
-|                      | `[endorse-transfer-owner](#title-escrow-endorse-transfer-owner)`                          | Endorse beneficiary change                                 |
-|                      | `title-escrow endorse-transfer-owner`                                                     | Alternative: `endorse-transfer-owner`                      |
-|                      | `[transfer-owner-holder](#title-escrow-transfer-owner-holder)`                            | Endorse full ownership transfer                            |
-|                      | `title-escrow transfer-owner-holder`                                                      | Alternative: `transfer-owner-holder`                       |
-|                      | `[return-to-issuer](#title-escrow-return-to-issuer)`                                      | Return document to issuer                                  |
-|                      | `title-escrow return-to-issuer`                                                           | Alternative: `return-to-issuer`                            |
-|                      | `[accept-return-to-issuer](#title-escrow-accept-return-to-issuer)`                        | Accept returned document                                   |
-|                      | `title-escrow accept-return-to-issuer`                                                    | Alternative: `accept-return-to-issuer`                     |
-|                      | `[reject-return-to-issuer](#title-escrow-reject-return-to-issuer)`                        | Reject returned document                                   |
-|                      | `title-escrow reject-return-to-issuer`                                                    | Alternative: `reject-return-to-issuer`                     |
-|                      | `[reject-transfer-holder](#title-escrow-reject-transfer-holder)`                          | Reject holder transfer                                     |
-|                      | `title-escrow reject-transfer-holder`                                                     | Alternative: `reject-transfer-holder`                      |
-|                      | `[reject-transfer-owner](#title-escrow-reject-transfer-owner)`                            | Reject owner transfer                                      |
-|                      | `[reject-transfer-owner-holder](#title-escrow-reject-transfer-owner-holder)`              | Reject full transfer                                       |
-|                      | `title-escrow reject-transfer-owner-holder`                                               | Alternative: `reject-transfer-owner-holder`                |
-| **Obligation / BoE** | `[obligation-registry deploy](#obligation-registry-deploy)`                               | Deploy Obligation Registry                                 |
-|                      | `[obligation-registry mint](#obligation-registry-mint)`                                   | Mint BoE token to obligationRegistry                       |
-|                      | `[obligation-escrow accept](#obligation-escrow-accept)`                                   | Accept obligation                                          |
-|                      | `[obligation-escrow reject](#obligation-escrow-reject)`                                   | Reject obligation                                          |
-|                      | `[obligation-escrow discharge](#obligation-escrow-discharge)`                             | Discharge obligation                                       |
-|                      | `[obligation-escrow status](#obligation-escrow-status)`                                   | Read obligation / escrow status                            |
-|                      | `[obligation-escrow transfer-holder](#obligation-escrow-transfer-holder)`                 | Transfer BoE holder                                        |
-|                      | `[obligation-escrow nominate-transfer-owner](#obligation-escrow-transfer-holder)`         | Nominate BoE beneficiary                                   |
-|                      | `[obligation-escrow endorse-transfer-owner](#obligation-escrow-transfer-holder)`          | Endorse BoE beneficiary change                             |
-|                      | `[obligation-escrow transfer-owner-holder](#obligation-escrow-transfer-holder)`           | Endorse full BoE ownership transfer                        |
-|                      | `[obligation-escrow return-to-issuer](#obligation-escrow-return-to-issuer)`               | Return BoE to issuer                                       |
-|                      | `[obligation-escrow accept-return-to-issuer](#obligation-escrow-accept-return-to-issuer)` | Accept returned BoE                                        |
-|                      | `[obligation-escrow reject-return-to-issuer](#obligation-escrow-reject-return-to-issuer)` | Reject returned BoE                                        |
-|                      | `[obligation-escrow reject-transfer-*](#obligation-escrow-transfer-holder)`               | Reject BoE transfer requests                               |
-
-
+| Category            | Command                                                                      | Description                                                |
+| ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **W3C Credentials** | [`key-pair-generation`](#key-pair-generation)                                | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
+|                     | [`did-web`](#did-web)                                                        | Create did:web identifiers from key pairs                  |
+|                     | [`w3c-sign`](#w3c-sign)                                                      | Sign W3C verifiable credentials                            |
+|                     | [`verify`](#verify)                                                          | Verify W3C verifiable credentials and presentations        |
+|                     | [`vp-sign`](#vp-sign)                                                        | Create and sign a W3C verifiable presentation              |
+|                     | [`credential-status-create`](#credential-status-create)                      | Create credential status lists                             |
+|                     | [`credential-status-update`](#credential-status-update)                      | Update credential status (revoke/suspend)                  |
+| **OpenAttestation** | [`oa-sign`](#oa-sign)                                                        | Sign OpenAttestation v2/v3 documents                       |
+|                     | [`verify`](#verify)                                                          | Verify OpenAttestation documents                           |
+|                     | [`oa-wrap`](#oa-wrap)                                                        | Wrap OpenAttestation documents                             |
+|                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
+|                     | [`oa-encrypt`](#oa-encrypt)                                                  | Encrypt an OA document for safe sharing and storage        |
+|                     | [`oa-decrypt`](#oa-decrypt)                                                  | Decrypt an OA document encrypted with oa-encrypt           |
+| **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
+|                     | [`token-registry deploy`](#token-registry-deploy)                            | Deploy token registry contracts                            |
+|                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
+| **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
+|                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
+|                     | [`document-store revoke`](#document-store-revoke)                            | Revoke document hashes                                     |
+|                     | [`document-store grant-role`](#document-store-grant-role)                    | Grant roles to accounts                                    |
+|                     | [`document-store revoke-role`](#document-store-revoke-role)                  | Revoke roles from accounts                                 |
+|                     | [`document-store transfer-ownership`](#document-store-transfer-ownership)    | Transfer document store ownership                          |
+| **Transaction**     | [`transaction cancel`](#transaction-cancel)                                  | Cancel a pending transaction                              |
+| **Wallet**          | [`wallet create`](#wallet-create)                                            | Create a new encrypted wallet file                         |
+|                     | [`wallet encrypt`](#wallet-encrypt)                                          | Encrypt a wallet using a private key                       |
+|                     | [`wallet decrypt`](#wallet-decrypt)                                          | Decrypt an encrypted wallet file                           |
+| **Title Escrow**    | [`transfer-holder`](#title-escrow-transfer-holder)                           | Transfer document holder                                   |
+|                     | `title-escrow transfer-holder`                                               | Alternative: `transfer-holder`                             |
+|                     | [`nominate-transfer-owner`](#title-escrow-nominate-transfer-owner)           | Nominate new beneficiary                                   |
+|                     | `title-escrow nominate-transfer-owner`                                       | Alternative: `nominate-transfer-owner`                     |
+|                     | [`endorse-transfer-owner`](#title-escrow-endorse-transfer-owner)             | Endorse beneficiary change                                 |
+|                     | `title-escrow endorse-transfer-owner`                                        | Alternative: `endorse-transfer-owner`                      |
+|                     | [`transfer-owner-holder`](#title-escrow-transfer-owner-holder)               | Endorse full ownership transfer                            |
+|                     | `title-escrow transfer-owner-holder`                                         | Alternative: `transfer-owner-holder`                       |
+|                     | [`return-to-issuer`](#title-escrow-return-to-issuer)                         | Return document to issuer                                  |
+|                     | `title-escrow return-to-issuer`                                              | Alternative: `return-to-issuer`                            |
+|                     | [`accept-return-to-issuer`](#title-escrow-accept-return-to-issuer)           | Accept returned document                                   |
+|                     | `title-escrow accept-return-to-issuer`                                       | Alternative: `accept-return-to-issuer`                     |
+|                     | [`reject-return-to-issuer`](#title-escrow-reject-return-to-issuer)           | Reject returned document                                   |
+|                     | `title-escrow reject-return-to-issuer`                                       | Alternative: `reject-return-to-issuer`                     |
+|                     | [`reject-transfer-holder`](#title-escrow-reject-transfer-holder)             | Reject holder transfer                                     |
+|                     | `title-escrow reject-transfer-holder`                                        | Alternative: `reject-transfer-holder`                      |
+|                     | [`reject-transfer-owner`](#title-escrow-reject-transfer-owner)               | Reject owner transfer                                      |
+|                     | [`reject-transfer-owner-holder`](#title-escrow-reject-transfer-owner-holder) | Reject full transfer                                       |
+|                     | `title-escrow reject-transfer-owner-holder`                                  | Alternative: `reject-transfer-owner-holder`                |
+| **Obligation / BoE** | [`obligation-registry deploy`](#obligation-registry-deploy)                   | Deploy Obligation Registry                                 |
+|                     | [`obligation-registry mint`](#obligation-registry-mint)                      | Mint BoE token to obligationRegistry                       |
+|                     | [`obligation-escrow accept`](#obligation-escrow-accept)                      | Accept obligation                                          |
+|                     | [`obligation-escrow reject`](#obligation-escrow-reject)                      | Reject obligation                                          |
+|                     | [`obligation-escrow discharge`](#obligation-escrow-discharge)                | Discharge obligation                                       |
+|                     | [`obligation-escrow status`](#obligation-escrow-status)                      | Read obligation / escrow status                            |
+|                     | [`obligation-escrow transfer-holder`](#obligation-escrow-transfer-holder)    | Transfer BoE holder                                        |
+|                     | [`obligation-escrow nominate-transfer-owner`](#obligation-escrow-transfer-holder) | Nominate BoE beneficiary                              |
+|                     | [`obligation-escrow endorse-transfer-owner`](#obligation-escrow-transfer-holder) | Endorse BoE beneficiary change                         |
+|                     | [`obligation-escrow transfer-owner-holder`](#obligation-escrow-transfer-holder) | Endorse full BoE ownership transfer                     |
+|                     | [`obligation-escrow return-to-issuer`](#obligation-escrow-return-to-issuer)  | Return BoE to issuer                                       |
+|                     | [`obligation-escrow accept-return-to-issuer`](#obligation-escrow-accept-return-to-issuer) | Accept returned BoE                       |
+|                     | [`obligation-escrow reject-return-to-issuer`](#obligation-escrow-reject-return-to-issuer) | Reject returned BoE                       |
+|                     | [`obligation-escrow reject-transfer-*`](#obligation-escrow-transfer-holder)  | Reject BoE transfer requests                               |
 
 
 ---
@@ -516,8 +525,47 @@ Verifies document integrity, status, and issuer identity. For BoE documents, log
 **Supported Formats:**
 
 - W3C Verifiable Credential (ETR, BoE, revocable VDs)
+- W3C Verifiable Presentation
 - OpenAttestation v2
 - OpenAttestation v3
+
+**Verifiable Presentations:**
+For a presentation, the three results cover the presentation as a whole — `DOCUMENT_INTEGRITY` is the holder proof plus holder binding (an unsigned presentation is invalid), `DOCUMENT_STATUS` is the presentation expiry plus each embedded credential's revocation, and `ISSUER_IDENTITY` resolves each embedded issuer. Freshness of an `authentication` proof (challenge/domain) is not checked — only the verifier that issued the challenge can do that.
+
+A valid presentation adds one line stating how many credentials it covered, since the three results read identically over one credential or five:
+
+```text
+✔  success   DOCUMENT_INTEGRITY: VALID
+✔  success   DOCUMENT_STATUS: VALID
+✔  success   ISSUER_IDENTITY: VALID
+ℹ  info      2 embedded credentials verified.
+```
+
+
+#### vp-sign
+
+Creates **and** signs a W3C Verifiable Presentation from one or more signed credentials, so a holder can present credentials they own.
+
+**Usage:**
+
+```sh
+trustvc vp-sign
+```
+
+**Interactive Prompts:**
+
+- A directory of signed verifiable credentials, **or** the path(s) to individual JSON files (comma-separated). Given a directory, **every file in it is presented** — nothing is filtered by extension or content, so anything that is not a presentable credential is reported by the signing step, naming the file it came from. Sub-directories and dot-files (`.DS_Store` and the like) are skipped.
+- Path to the holder did key-pair JSON file (defaults to `./didKeyPairs.json`). The holder DID is taken from this file and is **not** asked for — trustvc requires the signing key's DID to *be* the holder, so there is nothing to choose. A key pair with no DID (the bare `keypair.json` from [`key-pair-generation`](#key-pair-generation)) is rejected up front; use the `didKeyPairs.json` that [`did-web`](#did-web) writes.
+- Presentation expiry — either a lifetime in seconds or an explicit `validUntil` timestamp
+- Output directory
+
+**Output:**
+Creates `signed_vp.json`, holding an `assertionMethod` holder proof. Verify it with [`verify`](#verify).
+
+**Requirements:**
+
+- The holder key pair must be an ECDSA (P-256) Multikey bound to a DID — the `didKeyPairs.json` produced by [`did-web`](#did-web) is one.
+- Every credential must be about the holder: each `credentialSubject.id` must equal the holder DID. Credentials with a `TransferableRecords` status cannot be presented.
 
 
 
@@ -1693,6 +1741,7 @@ src/commands/
     ├── did.ts                       # Generate DID
     ├── key-pair.ts                  # Generate key pairs
     ├── sign.ts                      # Sign W3C credentials
+    ├── vp-sign.ts                   # Create and sign a verifiable presentation
     └── credentialStatus/
         ├── create.ts                # Create credential status list
         └── update.ts                # Update credential status list

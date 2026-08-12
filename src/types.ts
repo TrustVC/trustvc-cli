@@ -1,4 +1,11 @@
-import { credentialStatus, issuer, RawVerifiableCredential } from '@trustvc/trustvc';
+import {
+  credentialStatus,
+  issuer,
+  PrivateKeyPair,
+  RawVerifiableCredential,
+  signW3CPresentation,
+  SignedVerifiableCredential,
+} from '@trustvc/trustvc';
 import {
   PrivateKeyOption,
   GasPriceScale,
@@ -13,6 +20,28 @@ export type SignInput = {
   keyPairData: typeof issuer.IssuedDIDOption;
   encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
   pathToSignedVC: string;
+};
+
+// @trustvc/trustvc does not (yet) re-export the presentation types, so they are derived
+// from the signature of the function the CLI calls.
+export type SignedVerifiablePresentation = NonNullable<
+  Awaited<ReturnType<typeof signW3CPresentation>>['signed']
+>;
+
+/**
+ * The VP lifetime is mandatory at the trustvc layer: exactly one of these is passed
+ * through to signW3CPresentation.
+ */
+export type VpLifetime = { expiresInSeconds: number } | { validUntil: string };
+
+export type VpSignInput = {
+  credentials: SignedVerifiableCredential[];
+  /** Where each credential was read from, in the same order — used to name a rejected one. */
+  credentialPaths?: string[];
+  keyPairData: PrivateKeyPair;
+  holder: string;
+  lifetime: VpLifetime;
+  outputPath: string;
 };
 
 export enum WrapMode {

@@ -1,8 +1,0 @@
-{
-  "@context": "https://w3id.org/security/multikey/v1",
-  "id": "did:web:trustvc.github.io:did:1#multikey-1",
-  "type": "Multikey",
-  "controller": "did:web:trustvc.github.io:did:1",
-  "publicKeyMultibase": "zDnaemDNwi4G5eTzGfRooFFu5Kns3be6yfyVNtiaMhWkZbwtc",
-  "secretKeyMultibase": "z42tmUXTVn3n9BihE6NhdMpvVBTnFTgmb6fw18o5Ud6puhRW"
-}

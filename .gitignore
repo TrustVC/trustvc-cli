@@ -9,6 +9,7 @@
 /signed_vp.json
 /raw_vc.json
 /decrypted.json
+/wr/
 
 # Verifiable Presentation manual-test fixtures — generated, deliberately not committed.
 # They carry throwaway private keys, and every credential and presentation is bound to the

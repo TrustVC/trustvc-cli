@@ -8,7 +8,7 @@ import {
   v5SupportInterfaceIds,
   DocumentStore__factory,
   encrypt,
-  getObligationEscrowAddress,
+  getTitleEscrowAddress,
 } from '@trustvc/trustvc';
 
 // Internal utilities
@@ -463,7 +463,7 @@ interface ConnectToObligationEscrowArgs {
 }
 
 /**
- * Resolves ObligationEscrow via getObligationEscrowAddress (handles inactive/burned titles
+ * Resolves ObligationEscrow via getTitleEscrowAddress (handles inactive/burned titles
  * via factory CREATE2) and connects — same as websites / demo dry-run resolution.
  */
 export const connectToObligationEscrow = async ({
@@ -478,7 +478,7 @@ export const connectToObligationEscrow = async ({
     }
 
     signale.info(`Resolving obligation escrow for tokenId: ${tokenId} on ${address}`);
-    const escrowAddress = await getObligationEscrowAddress(address, tokenId, provider as any, {
+    const escrowAddress = await getTitleEscrowAddress(address, tokenId, provider as any, {
       titleEscrowVersion: 'v5',
     });
     signale.info(`Obligation escrow address: ${escrowAddress}`);

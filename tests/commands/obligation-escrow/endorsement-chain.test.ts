@@ -41,16 +41,17 @@ vi.mock('@trustvc/trustvc', async () => {
         owner: '0xOwner',
         holder: '0xHolder',
         remark: 'minted',
-        transactionHash: '0xtx',
+        transactionHash: '0xtx1',
       },
       {
-        type: 'STATUS_INITIALIZED',
-        blockNumber: 1,
-        timestamp: 1_700_000_000_000,
+        type: 'RETURN_TO_ISSUER_ACCEPTED',
+        blockNumber: 2,
+        timestamp: 1_700_000_100_000,
         owner: '0xOwner',
         holder: '0xHolder',
-        remark: '',
-        transactionHash: '0xtx',
+        remark: 'burned',
+        transactionHash: '0xtx2',
+        terminationReason: 'Discharged',
       },
     ]),
   };
@@ -75,6 +76,7 @@ describe('obligation-escrow/endorsement-chain', () => {
 
   it('fetches chain via network Infura/RPC using document id as keyId', async () => {
     const trustvc = await import('@trustvc/trustvc');
+    const signale = await import('signale');
     await endorsementChainHandler({
       network: NetworkCmdName.Sepolia,
       obligationRegistryAddress: '0xRegistry',
@@ -88,5 +90,16 @@ describe('obligation-escrow/endorsement-chain', () => {
       { mock: 'infura-provider' },
       'urn:uuid:test-doc-id',
     );
+
+    const infoMock = signale.info as MockedFunction<any>;
+    const infoMessages = infoMock.mock.calls.map((args) => String(args[0]));
+    expect(infoMessages.some((msg) => msg.includes('Owner:') && msg.includes('0xOwner'))).toBe(
+      true,
+    );
+    expect(infoMessages.some((msg) => msg.includes('Holder:') && msg.includes('0xHolder'))).toBe(
+      true,
+    );
+    expect(infoMessages.some((msg) => msg.includes('Reason: Discharged'))).toBe(true);
+    expect(infoMessages.some((msg) => msg.includes('Remark: burned'))).toBe(true);
   });
 });

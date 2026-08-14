@@ -2,7 +2,7 @@ import { info, success } from 'signale';
 import {
   ObligationDocumentStatus,
   ObligationEscrowTerminationReason,
-  getObligationEscrowAddress,
+  getTitleEscrowAddress,
   getObligationEscrowTerminationReason,
   getObligationRegistryStatus,
   isObligationRegistryRegistered,
@@ -68,21 +68,29 @@ export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
     getObligationRegistryStatus(opts, toSdkSigner(readOnlySigner), { tokenId }),
     isObligationRegistryRegistered(opts, toSdkSigner(readOnlySigner), { tokenId }),
     getObligationEscrowTerminationReason(opts, toSdkSigner(readOnlySigner), { tokenId }),
-    getObligationEscrowAddress(obligationRegistryAddress, tokenId, provider as any, {
+    getTitleEscrowAddress(obligationRegistryAddress, tokenId, provider as any, {
       titleEscrowVersion: 'v5',
     }),
   ]);
+
+  const isZero = (value?: string) => !value || value === ZeroAddress;
 
   let beneficiary = '';
   let holder = '';
   let nominee = '';
   try {
     const escrow = new Contract(escrowAddress, ObligationEscrow__factory.abi, provider);
-    [beneficiary, holder, nominee] = await Promise.all([
-      escrow.beneficiary(),
-      escrow.holder(),
-      escrow.nominee(),
-    ]);
+    const [currentBeneficiary, currentHolder, currentNominee, lastBeneficiary, lastHolder] =
+      await Promise.all([
+        escrow.beneficiary(),
+        escrow.holder(),
+        escrow.nominee(),
+        escrow.lastBeneficiary(),
+        escrow.lastHolder(),
+      ]);
+    beneficiary = isZero(currentBeneficiary) ? lastBeneficiary : currentBeneficiary;
+    holder = isZero(currentHolder) ? lastHolder : currentHolder;
+    nominee = currentNominee;
   } catch {
     // Escrow may be inactive / not readable after shred — still print registry-level status.
   }
@@ -92,7 +100,7 @@ export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
   info(`  Status: ${STATUS_LABEL[status] ?? status} (${status})`);
   info(`  Registered: ${registered}`);
   info(`  Termination reason: ${REASON_LABEL[reason] ?? reason} (${reason})`);
-  if (beneficiary) info(`  Owner (beneficiary): ${beneficiary}`);
-  if (holder) info(`  Holder: ${holder}`);
+  if (!isZero(beneficiary)) info(`  Owner (beneficiary): ${beneficiary}`);
+  if (!isZero(holder)) info(`  Holder: ${holder}`);
   if (nominee && nominee !== ZeroAddress) info(`  Nominee: ${nominee}`);
 };

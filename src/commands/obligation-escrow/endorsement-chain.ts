@@ -49,11 +49,33 @@ export const endorsementChainHandler = async (args: ObligationEscrowEndorsementC
   );
 
   success(`Endorsement chain (${chain.length} event${chain.length === 1 ? '' : 's'})`);
+  let lastOwner = '';
+  let lastHolder = '';
+  const isZero = (value?: string) => !value || /^0x0{40}$/i.test(value);
   chain.forEach((event, index) => {
+    const isShred =
+      event.type === 'RETURN_TO_ISSUER_ACCEPTED' || event.type === 'SURRENDER_ACCEPTED';
+    // eBoE shred keeps last owner/holder on the shred row.
+    const owner = isZero(event.owner) ? lastOwner : event.owner || lastOwner;
+    const holder = isZero(event.holder) ? lastHolder : event.holder || lastHolder;
+    if (!isZero(owner)) lastOwner = owner;
+    if (!isZero(holder)) lastHolder = holder;
+    if (isShred) {
+      lastOwner = '';
+      lastHolder = '';
+    }
+
     const when = event.timestamp ? new Date(event.timestamp).toISOString() : 'unknown-time';
     info(`  ${index + 1}. [${event.type}] block=${event.blockNumber} @ ${when}`);
-    if (event.owner) info(`     Owner:  ${event.owner}`);
-    if (event.holder) info(`     Holder: ${event.holder}`);
+    info(`     Owner:  ${owner || '-'}`);
+    info(`     Holder: ${holder || '-'}`);
+    if (isShred && event.terminationReason && event.terminationReason !== 'None') {
+      const reasonLabel =
+        event.terminationReason === 'ReturnToIssuer'
+          ? 'Return to issuer'
+          : event.terminationReason;
+      info(`     Reason: ${reasonLabel}`);
+    }
     if (event.remark) info(`     Remark: ${event.remark}`);
     if (event.transactionHash) info(`     Tx:     ${event.transactionHash}`);
   });

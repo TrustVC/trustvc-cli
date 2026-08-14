@@ -14,12 +14,11 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **Document Store**: Deploy and manage document store contracts
 - ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
 - ✅ **Obligation Registry (BoE)**: Deploy/mint obligation registries, manage ObligationEscrow lifecycle, and verify BoE documents via a dedicated pipeline
+- ✅ **Gasless Transactions**: Sponsor gas for title-escrow, minting, and token registry deployment via EIP-7702 + Pimlico-sponsored `PlatformPaymaster` beta contracts (Sepolia, Amoy)
 - ✅ **Credential Status**: Create and update W3C credential status lists
 - ✅ **W3C Standards**: Compliant with latest W3C DID and Verifiable Credentials specifications
 - ✅ **Multi-Network Support**: Ethereum, Polygon, XDC, Stability, and Astron networks
 - ✅ **Interactive CLI**: User-friendly prompts for all operations
-
-
 
 ## Powered By
 
@@ -28,6 +27,8 @@ This CLI leverages the TrustVC package:
 - `[@trustvc/trustvc](https://github.com/TrustVC/trustvc)` — Core library for W3C credentials, OpenAttestation, token registries, Obligation Registry (BoE), and blockchain operations
 
 BoE on-chain helpers are imported from the **root** package (`mintObligationRegistry`, `acceptObligationRegistry`, …). Prefer those over any older `@trustvc/trustvc/obligation-registry` path.
+
+Gasless transactions additionally use `viem` and `permissionless` for EIP-7702 smart-account tooling, and submit UserOperations through a [Pimlico](https://pimlico.io) bundler.
 
 ## Table of Contents
 
@@ -45,8 +46,7 @@ BoE on-chain helpers are imported from the **root** package (`mintObligationRegi
   - [Project Structure](#project-structure)
 - [License](#license)
 - [Obligation Registry user guide](#obligation-registry-user-guide)
-
-
+- [Gasless Transactions user guide](#gasless-transactions-user-guide)
 
 ## Prerequisites
 
@@ -56,8 +56,6 @@ BoE on-chain helpers are imported from the **root** package (`mintObligationRegi
 nvm install 22.19.5
 nvm use 22.19.5
 ```
-
-
 
 ## Installation
 
@@ -73,11 +71,7 @@ Or run a single command without installing:
 npx @trustvc/trustvc-cli <command>
 ```
 
-
-
 ## Quick Start
-
-
 
 ### W3C Verifiable Credentials
 
@@ -104,8 +98,6 @@ trustvc credential-status-create
 trustvc credential-status-update
 ```
 
-
-
 ### OpenAttestation Documents
 
 ```sh
@@ -128,8 +120,6 @@ trustvc oa-encrypt
 trustvc oa-decrypt
 ```
 
-
-
 ### Wallet Management
 
 ```sh
@@ -142,8 +132,6 @@ trustvc wallet encrypt
 # Decrypt and view wallet details
 trustvc wallet decrypt
 ```
-
-
 
 ### Document Store
 
@@ -167,8 +155,6 @@ trustvc document-store revoke-role
 trustvc document-store transfer-ownership
 ```
 
-
-
 ### Transaction
 
 ```sh
@@ -179,8 +165,6 @@ trustvc transaction cancel
 trustvc transaction cancel [options]
 # e.g. trustvc transaction cancel --transaction-hash 0x... --network sepolia --encrypted-wallet-path ./wallet.json
 ```
-
-
 
 ### Token Registry & Title Escrow
 
@@ -216,8 +200,6 @@ trustvc title-escrow reject-transfer-owner
 trustvc title-escrow reject-transfer-owner-holder
 ```
 
-
-
 ### Obligation Registry & Escrow (BoE)
 
 ```sh
@@ -250,11 +232,39 @@ trustvc obligation-escrow reject-return-to-issuer
 trustvc verify
 ```
 
+### Gasless (Sponsored) Transactions
 
+> ⚠️ **Beta, testnets only.** Gasless transactions are in beta and only supported on Sepolia and Amoy — do not use them, or a `PlatformPaymaster`, in production.
+
+```sh
+# One-time setup: deploy a PlatformPaymaster (regular transaction — you pay gas)
+trustvc deploy-platform-paymaster
+
+# One-time setup: authorize what it may sponsor, then fund/stake it (owner-only, regular transactions)
+trustvc paymaster-admin add-authorized-caller
+trustvc paymaster-admin add-title-escrow
+trustvc paymaster-admin add-registry
+trustvc paymaster-admin fund-paymaster
+trustvc paymaster-admin stake-paymaster
+
+# Then add --gasless to any supported command — no ETH required from the caller
+trustvc transfer-holder --gasless
+trustvc endorse-transfer-owner --gasless
+trustvc transfer-owner-holder --gasless
+trustvc nominate-transfer-owner --gasless
+trustvc reject-transfer-holder --gasless
+trustvc reject-transfer-owner --gasless
+trustvc reject-transfer-owner-holder --gasless
+trustvc return-to-issuer --gasless
+trustvc accept-return-to-issuer --gasless
+trustvc reject-return-to-issuer --gasless
+trustvc mint --gasless
+trustvc token-registry deploy --gasless
+```
+
+See the [Gasless Transactions user guide](#gasless-transactions-user-guide) for required environment variables and the full setup workflow.
 
 ## How It Works
-
-
 
 ### W3C Credentials
 
@@ -281,8 +291,6 @@ trustvc verify
 - **Document Unwrapping**: Uses `unwrapOA` to unwrap OpenAttestation documents.
 - **Document Encryption**: Uses `oa-encrypt` to encrypt OA documents for safe sharing; use `oa-decrypt` with the same key to recover the document.
 
-
-
 ### Blockchain Operations
 
 - **Token Registry**: Deploy token registry contracts and mint document hashes (tokenIds) to blockchain-based token registries across multiple networks (Ethereum, Polygon, XDC, Stability, Astron).
@@ -290,81 +298,100 @@ trustvc verify
 - **Transaction Cancel**: Cancel a pending transaction by replacing it with a 0-value transaction to yourself (same nonce, higher gas price). Supports specifying by transaction hash or by nonce and gas price.
 - **Title Escrow**: Provides comprehensive transferable records management including holder transfers, beneficiary nominations, endorsements, returns, and rejections using smart contracts.
 - **Obligation Registry (BoE)**: Separate command trees for electronic Bill of Exchange on-chain flows — `obligation-registry` (deploy/mint) and `obligation-escrow` (accept/reject/discharge, transfers, return). Use `trustvc verify` for both ETR and BoE documents (ObligationRecords vs TransferableRecords is auto-detected). Do not use classic `token-registry` / `title-escrow` for obligation documents. See [Obligation Registry user guide](#obligation-registry-user-guide).
-
-
+- **Gasless Transactions** (⚠️ beta, testnets only): Pass `--gasless` to a supported title-escrow, `mint`, or `token-registry deploy` command to submit it as an EIP-7702 smart-account UserOperation sponsored by a `PlatformPaymaster`, instead of a regular transaction paid from your own wallet balance. Gas is drawn from the PlatformPaymaster's EntryPoint deposit; Pimlico bundles and (optionally) sponsors the UserOperation. Only available on Sepolia and Amoy — not for production use. See [Gasless Transactions user guide](#gasless-transactions-user-guide).
 
 ## Commands
 
-
-
 ### Available Commands
 
-| Category            | Command                                                                      | Description                                                |
-| ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **W3C Credentials** | [`key-pair-generation`](#key-pair-generation)                                | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023) |
-|                     | [`did-web`](#did-web)                                                        | Create did:web identifiers from key pairs                  |
-|                     | [`w3c-sign`](#w3c-sign)                                                      | Sign W3C verifiable credentials                            |
-|                     | [`verify`](#verify)                                                          | Verify W3C verifiable credentials and presentations        |
-|                     | [`vp-sign`](#vp-sign)                                                        | Create and sign a W3C verifiable presentation              |
-|                     | [`credential-status-create`](#credential-status-create)                      | Create credential status lists                             |
-|                     | [`credential-status-update`](#credential-status-update)                      | Update credential status (revoke/suspend)                  |
-| **OpenAttestation** | [`oa-sign`](#oa-sign)                                                        | Sign OpenAttestation v2/v3 documents                       |
-|                     | [`verify`](#verify)                                                          | Verify OpenAttestation documents                           |
-|                     | [`oa-wrap`](#oa-wrap)                                                        | Wrap OpenAttestation documents                             |
-|                     | [`oa-unwrap`](#oa-unwrap)                                                    | Unwrap OpenAttestation documents                           |
-|                     | [`oa-encrypt`](#oa-encrypt)                                                  | Encrypt an OA document for safe sharing and storage        |
-|                     | [`oa-decrypt`](#oa-decrypt)                                                  | Decrypt an OA document encrypted with oa-encrypt           |
-| **Token Registry**  | [`mint`](#mint)                                                              | Mint tokens to blockchain registries                       |
-|                     | [`token-registry deploy`](#token-registry-deploy)                            | Deploy token registry contracts                            |
-|                     | `token-registry mint`                                                        | Alternative: `mint`                                        |
-| **Document Store**  | [`document-store deploy`](#document-store-deploy)                            | Deploy document store contracts                            |
-|                     | [`document-store issue`](#document-store-issue)                              | Issue document hashes                                      |
-|                     | [`document-store revoke`](#document-store-revoke)                            | Revoke document hashes                                     |
-|                     | [`document-store grant-role`](#document-store-grant-role)                    | Grant roles to accounts                                    |
-|                     | [`document-store revoke-role`](#document-store-revoke-role)                  | Revoke roles from accounts                                 |
-|                     | [`document-store transfer-ownership`](#document-store-transfer-ownership)    | Transfer document store ownership                          |
-| **Transaction**     | [`transaction cancel`](#transaction-cancel)                                  | Cancel a pending transaction                              |
-| **Wallet**          | [`wallet create`](#wallet-create)                                            | Create a new encrypted wallet file                         |
-|                     | [`wallet encrypt`](#wallet-encrypt)                                          | Encrypt a wallet using a private key                       |
-|                     | [`wallet decrypt`](#wallet-decrypt)                                          | Decrypt an encrypted wallet file                           |
-| **Title Escrow**    | [`transfer-holder`](#title-escrow-transfer-holder)                           | Transfer document holder                                   |
-|                     | `title-escrow transfer-holder`                                               | Alternative: `transfer-holder`                             |
-|                     | [`nominate-transfer-owner`](#title-escrow-nominate-transfer-owner)           | Nominate new beneficiary                                   |
-|                     | `title-escrow nominate-transfer-owner`                                       | Alternative: `nominate-transfer-owner`                     |
-|                     | [`endorse-transfer-owner`](#title-escrow-endorse-transfer-owner)             | Endorse beneficiary change                                 |
-|                     | `title-escrow endorse-transfer-owner`                                        | Alternative: `endorse-transfer-owner`                      |
-|                     | [`transfer-owner-holder`](#title-escrow-transfer-owner-holder)               | Endorse full ownership transfer                            |
-|                     | `title-escrow transfer-owner-holder`                                         | Alternative: `transfer-owner-holder`                       |
-|                     | [`return-to-issuer`](#title-escrow-return-to-issuer)                         | Return document to issuer                                  |
-|                     | `title-escrow return-to-issuer`                                              | Alternative: `return-to-issuer`                            |
-|                     | [`accept-return-to-issuer`](#title-escrow-accept-return-to-issuer)           | Accept returned document                                   |
-|                     | `title-escrow accept-return-to-issuer`                                       | Alternative: `accept-return-to-issuer`                     |
-|                     | [`reject-return-to-issuer`](#title-escrow-reject-return-to-issuer)           | Reject returned document                                   |
-|                     | `title-escrow reject-return-to-issuer`                                       | Alternative: `reject-return-to-issuer`                     |
-|                     | [`reject-transfer-holder`](#title-escrow-reject-transfer-holder)             | Reject holder transfer                                     |
-|                     | `title-escrow reject-transfer-holder`                                        | Alternative: `reject-transfer-holder`                      |
-|                     | [`reject-transfer-owner`](#title-escrow-reject-transfer-owner)               | Reject owner transfer                                      |
-|                     | [`reject-transfer-owner-holder`](#title-escrow-reject-transfer-owner-holder) | Reject full transfer                                       |
-|                     | `title-escrow reject-transfer-owner-holder`                                  | Alternative: `reject-transfer-owner-holder`                |
-| **Obligation / BoE** | [`obligation-registry deploy`](#obligation-registry-deploy)                   | Deploy Obligation Registry                                 |
-|                     | [`obligation-registry mint`](#obligation-registry-mint)                      | Mint BoE token to obligationRegistry                       |
-|                     | [`obligation-escrow accept`](#obligation-escrow-accept)                      | Accept obligation                                          |
-|                     | [`obligation-escrow reject`](#obligation-escrow-reject)                      | Reject obligation                                          |
-|                     | [`obligation-escrow discharge`](#obligation-escrow-discharge)                | Discharge obligation                                       |
-|                     | [`obligation-escrow status`](#obligation-escrow-status)                      | Read obligation / escrow status                            |
-|                     | [`obligation-escrow transfer-holder`](#obligation-escrow-transfer-holder)    | Transfer BoE holder                                        |
-|                     | [`obligation-escrow nominate-transfer-owner`](#obligation-escrow-transfer-holder) | Nominate BoE beneficiary                              |
-|                     | [`obligation-escrow endorse-transfer-owner`](#obligation-escrow-transfer-holder) | Endorse BoE beneficiary change                         |
-|                     | [`obligation-escrow transfer-owner-holder`](#obligation-escrow-transfer-holder) | Endorse full BoE ownership transfer                     |
-|                     | [`obligation-escrow return-to-issuer`](#obligation-escrow-return-to-issuer)  | Return BoE to issuer                                       |
-|                     | [`obligation-escrow accept-return-to-issuer`](#obligation-escrow-accept-return-to-issuer) | Accept returned BoE                       |
-|                     | [`obligation-escrow reject-return-to-issuer`](#obligation-escrow-reject-return-to-issuer) | Reject returned BoE                       |
-|                     | [`obligation-escrow reject-transfer-*`](#obligation-escrow-transfer-holder)  | Reject BoE transfer requests                               |
-
+| Category             | Command                                                                                   | Description                                                                                                  |
+| -------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **W3C Credentials**  | [`key-pair-generation`](#key-pair-generation)                                             | Generate cryptographic key pairs (ECDSA-SD-2023, BBS-2023)                                                   |
+|                      | [`did-web`](#did-web)                                                                     | Create did:web identifiers from key pairs                                                                    |
+|                      | [`w3c-sign`](#w3c-sign)                                                                   | Sign W3C verifiable credentials                                                                              |
+|                      | [`verify`](#verify)                                                                       | Verify W3C verifiable credentials and presentations                                                          |
+|                      | [`vp-sign`](#vp-sign)                                                                     | Create and sign a W3C verifiable presentation                                                                |
+|                      | [`credential-status-create`](#credential-status-create)                                   | Create credential status lists                                                                               |
+|                      | [`credential-status-update`](#credential-status-update)                                   | Update credential status (revoke/suspend)                                                                    |
+| **OpenAttestation**  | [`oa-sign`](#oa-sign)                                                                     | Sign OpenAttestation v2/v3 documents                                                                         |
+|                      | [`verify`](#verify)                                                                       | Verify OpenAttestation documents                                                                             |
+|                      | [`oa-wrap`](#oa-wrap)                                                                     | Wrap OpenAttestation documents                                                                               |
+|                      | [`oa-unwrap`](#oa-unwrap)                                                                 | Unwrap OpenAttestation documents                                                                             |
+|                      | [`oa-encrypt`](#oa-encrypt)                                                               | Encrypt an OA document for safe sharing and storage                                                          |
+|                      | [`oa-decrypt`](#oa-decrypt)                                                               | Decrypt an OA document encrypted with oa-encrypt                                                             |
+| **Token Registry**   | [`mint`](#mint)                                                                           | Mint tokens to blockchain registries                                                                         |
+|                      | [`token-registry deploy`](#token-registry-deploy)                                         | Deploy token registry contracts                                                                              |
+|                      | `token-registry mint`                                                                     | Alternative: `mint`                                                                                          |
+| **Document Store**   | [`document-store deploy`](#document-store-deploy)                                         | Deploy document store contracts                                                                              |
+|                      | [`document-store issue`](#document-store-issue)                                           | Issue document hashes                                                                                        |
+|                      | [`document-store revoke`](#document-store-revoke)                                         | Revoke document hashes                                                                                       |
+|                      | [`document-store grant-role`](#document-store-grant-role)                                 | Grant roles to accounts                                                                                      |
+|                      | [`document-store revoke-role`](#document-store-revoke-role)                               | Revoke roles from accounts                                                                                   |
+|                      | [`document-store transfer-ownership`](#document-store-transfer-ownership)                 | Transfer document store ownership                                                                            |
+| **Transaction**      | [`transaction cancel`](#transaction-cancel)                                               | Cancel a pending transaction                                                                                 |
+| **Wallet**           | [`wallet create`](#wallet-create)                                                         | Create a new encrypted wallet file                                                                           |
+|                      | [`wallet encrypt`](#wallet-encrypt)                                                       | Encrypt a wallet using a private key                                                                         |
+|                      | [`wallet decrypt`](#wallet-decrypt)                                                       | Decrypt an encrypted wallet file                                                                             |
+| **Title Escrow**     | [`transfer-holder`](#title-escrow-transfer-holder)                                        | Transfer document holder                                                                                     |
+|                      | `title-escrow transfer-holder`                                                            | Alternative: `transfer-holder`                                                                               |
+|                      | [`nominate-transfer-owner`](#title-escrow-nominate-transfer-owner)                        | Nominate new beneficiary                                                                                     |
+|                      | `title-escrow nominate-transfer-owner`                                                    | Alternative: `nominate-transfer-owner`                                                                       |
+|                      | [`endorse-transfer-owner`](#title-escrow-endorse-transfer-owner)                          | Endorse beneficiary change                                                                                   |
+|                      | `title-escrow endorse-transfer-owner`                                                     | Alternative: `endorse-transfer-owner`                                                                        |
+|                      | [`transfer-owner-holder`](#title-escrow-transfer-owner-holder)                            | Endorse full ownership transfer                                                                              |
+|                      | `title-escrow transfer-owner-holder`                                                      | Alternative: `transfer-owner-holder`                                                                         |
+|                      | [`return-to-issuer`](#title-escrow-return-to-issuer)                                      | Return document to issuer                                                                                    |
+|                      | `title-escrow return-to-issuer`                                                           | Alternative: `return-to-issuer`                                                                              |
+|                      | [`accept-return-to-issuer`](#title-escrow-accept-return-to-issuer)                        | Accept returned document                                                                                     |
+|                      | `title-escrow accept-return-to-issuer`                                                    | Alternative: `accept-return-to-issuer`                                                                       |
+|                      | [`reject-return-to-issuer`](#title-escrow-reject-return-to-issuer)                        | Reject returned document                                                                                     |
+|                      | `title-escrow reject-return-to-issuer`                                                    | Alternative: `reject-return-to-issuer`                                                                       |
+|                      | [`reject-transfer-holder`](#title-escrow-reject-transfer-holder)                          | Reject holder transfer                                                                                       |
+|                      | `title-escrow reject-transfer-holder`                                                     | Alternative: `reject-transfer-holder`                                                                        |
+|                      | [`reject-transfer-owner`](#title-escrow-reject-transfer-owner)                            | Reject owner transfer                                                                                        |
+|                      | [`reject-transfer-owner-holder`](#title-escrow-reject-transfer-owner-holder)              | Reject full transfer                                                                                         |
+|                      | `title-escrow reject-transfer-owner-holder`                                               | Alternative: `reject-transfer-owner-holder`                                                                  |
+| **Obligation / BoE** | [`obligation-registry deploy`](#obligation-registry-deploy)                               | Deploy Obligation Registry                                                                                   |
+|                      | [`obligation-registry mint`](#obligation-registry-mint)                                   | Mint BoE token to obligationRegistry                                                                         |
+|                      | [`obligation-escrow accept`](#obligation-escrow-accept)                                   | Accept obligation                                                                                            |
+|                      | [`obligation-escrow reject`](#obligation-escrow-reject)                                   | Reject obligation                                                                                            |
+|                      | [`obligation-escrow discharge`](#obligation-escrow-discharge)                             | Discharge obligation                                                                                         |
+|                      | [`obligation-escrow status`](#obligation-escrow-status)                                   | Read obligation / escrow status                                                                              |
+|                      | [`obligation-escrow transfer-holder`](#obligation-escrow-transfer-holder)                 | Transfer BoE holder                                                                                          |
+|                      | [`obligation-escrow nominate-transfer-owner`](#obligation-escrow-transfer-holder)         | Nominate BoE beneficiary                                                                                     |
+|                      | [`obligation-escrow endorse-transfer-owner`](#obligation-escrow-transfer-holder)          | Endorse BoE beneficiary change                                                                               |
+|                      | [`obligation-escrow transfer-owner-holder`](#obligation-escrow-transfer-holder)           | Endorse full BoE ownership transfer                                                                          |
+|                      | [`obligation-escrow return-to-issuer`](#obligation-escrow-return-to-issuer)               | Return BoE to issuer                                                                                         |
+|                      | [`obligation-escrow accept-return-to-issuer`](#obligation-escrow-accept-return-to-issuer) | Accept returned BoE                                                                                          |
+|                      | [`obligation-escrow reject-return-to-issuer`](#obligation-escrow-reject-return-to-issuer) | Reject returned BoE                                                                                          |
+|                      | [`obligation-escrow reject-transfer-*`](#obligation-escrow-transfer-holder)               | Reject BoE transfer requests                                                                                 |
+| **Gasless** (⚠️ beta, testnets only) | [`deploy-platform-paymaster`](#deploy-platform-paymaster)                                 | Deploy a PlatformPaymaster contract                                                                          |
+|                      | `transfer-holder --gasless`                                                               | Transfer holder, sponsored — see [below](#running-any-command-gaslessly---gasless)                           |
+|                      | `endorse-transfer-owner --gasless`                                                        | Transfer/endorse beneficiary, sponsored                                                                      |
+|                      | `transfer-owner-holder --gasless`                                                         | Transfer both beneficiary and holder, sponsored                                                              |
+|                      | `nominate-transfer-owner --gasless`                                                       | Nominate a new beneficiary, sponsored                                                                        |
+|                      | `reject-transfer-holder --gasless`                                                        | Reject holder transfer, sponsored                                                                            |
+|                      | `reject-transfer-owner --gasless`                                                         | Reject beneficiary transfer, sponsored                                                                       |
+|                      | `reject-transfer-owner-holder --gasless`                                                  | Reject full transfer, sponsored                                                                              |
+|                      | `return-to-issuer --gasless`                                                              | Return document to issuer, sponsored                                                                         |
+|                      | `accept-return-to-issuer --gasless`                                                       | Accept returned document, sponsored                                                                          |
+|                      | `reject-return-to-issuer --gasless`                                                       | Reject returned document, sponsored                                                                          |
+|                      | `mint --gasless`                                                                          | Mint gaslessly (registry must grant the paymaster MINTER_ROLE)                                               |
+|                      | `token-registry deploy --gasless`                                                         | Deploy a token registry gaslessly (caller needs deploy credits)                                              |
+| **Paymaster Admin** (⚠️ beta, testnets only) | [`paymaster-admin add-authorized-caller`](#paymaster-admin-method)                        | Authorize a caller to trigger sponsored calls                                                                |
+|                      | [`paymaster-admin add-title-escrow`](#paymaster-admin-method)                             | Authorize a title escrow for sponsorship                                                                     |
+|                      | [`paymaster-admin add-registry`](#paymaster-admin-method)                                 | Authorize a token registry for sponsorship                                                                   |
+|                      | [`paymaster-admin remove-authorized-caller`](#paymaster-admin-method)                     | Deauthorize a caller                                                                                         |
+|                      | [`paymaster-admin remove-title-escrow`](#paymaster-admin-method)                          | Deauthorize a title escrow                                                                                   |
+|                      | [`paymaster-admin remove-registry`](#paymaster-admin-method)                              | Deauthorize a token registry                                                                                 |
+|                      | [`paymaster-admin set-daily-limit`](#paymaster-admin-method)                              | Set the per-user daily sponsored-gas limit                                                                   |
+|                      | [`paymaster-admin set-user-whitelist`](#paymaster-admin-method)                           | Grant a user token-registry deployment credits (0-3)                                                         |
+|                      | [`paymaster-admin remove-user-from-whitelist`](#paymaster-admin-method)                   | Reset a user's deployment credits to 0                                                                       |
+|                      | [`paymaster-admin fund-paymaster`](#paymaster-admin-method)                               | Deposit ETH into the paymaster's EntryPoint balance                                                          |
+|                      | [`paymaster-admin stake-paymaster`](#paymaster-admin-method)                              | Stake ETH for the paymaster on the EntryPoint                                                                |
+|                      | [`paymaster-admin delegate-user`](#paymaster-admin-method)                                | Delegate a user's EOA to the EIP7702Implementation contract                                                  |
 
 ---
-
-
 
 ### Wallet/Private Key Options
 
@@ -379,11 +406,7 @@ Commands that submit transactions (title-escrow, obligation-registry, obligation
 
 ---
 
-
-
 ### Detailed Command Reference
-
-
 
 #### transaction cancel
 
@@ -398,8 +421,10 @@ trustvc transaction cancel
 You will be prompted for:
 
 1. **How to specify the pending transaction**
-  - **By transaction hash (recommended)** – Enter the pending transaction hash (0x...). Nonce and gas price are fetched from the network and the gas price is increased by 100% for the replacement.
-  - **By nonce and gas price** – Enter the pending transaction nonce and a higher gas price (wei) for the replacement. Use this when the pending transaction uses EIP-1559 (no legacy `gasPrice`) or when you prefer to set the replacement gas manually.
+
+- **By transaction hash (recommended)** – Enter the pending transaction hash (0x...). Nonce and gas price are fetched from the network and the gas price is increased by 100% for the replacement.
+- **By nonce and gas price** – Enter the pending transaction nonce and a higher gas price (wei) for the replacement. Use this when the pending transaction uses EIP-1559 (no legacy `gasPrice`) or when you prefer to set the replacement gas manually.
+
 2. **Network** – Select the network (e.g. Sepolia, Mainnet).
 3. **Wallet / private key** – Choose encrypted wallet file, environment variable (OA_PRIVATE_KEY), key file, or enter the private key.
 
@@ -456,8 +481,6 @@ Creates `keypair.json` containing:
 - `secretKeyMultibase`: Secret key in multibase format
 - `seedBase58`: Seed (if provided for BBS-2023)
 
-
-
 #### did-web
 
 Generates a did:web identifier from an existing key pair.
@@ -479,8 +502,6 @@ trustvc did-web
 
 - `wellknown.json`: DID document for hosting at `/.well-known/did.json`
 - `didKeyPairs.json`: Key pair information with DID references
-
-
 
 #### w3c-sign
 
@@ -541,7 +562,6 @@ A valid presentation adds one line stating how many credentials it covered, sinc
 ℹ  info      2 embedded credentials verified.
 ```
 
-
 #### vp-sign
 
 Creates **and** signs a W3C Verifiable Presentation from one or more signed credentials, so a holder can present credentials they own.
@@ -555,7 +575,7 @@ trustvc vp-sign
 **Interactive Prompts:**
 
 - A directory of signed verifiable credentials, **or** the path(s) to individual JSON files (comma-separated). Given a directory, **every file in it is presented** — nothing is filtered by extension or content, so anything that is not a presentable credential is reported by the signing step, naming the file it came from. Sub-directories and dot-files (`.DS_Store` and the like) are skipped.
-- Path to the holder did key-pair JSON file (defaults to `./didKeyPairs.json`). The holder DID is taken from this file and is **not** asked for — trustvc requires the signing key's DID to *be* the holder, so there is nothing to choose. A key pair with no DID (the bare `keypair.json` from [`key-pair-generation`](#key-pair-generation)) is rejected up front; use the `didKeyPairs.json` that [`did-web`](#did-web) writes.
+- Path to the holder did key-pair JSON file (defaults to `./didKeyPairs.json`). The holder DID is taken from this file and is **not** asked for — trustvc requires the signing key's DID to _be_ the holder, so there is nothing to choose. A key pair with no DID (the bare `keypair.json` from [`key-pair-generation`](#key-pair-generation)) is rejected up front; use the `didKeyPairs.json` that [`did-web`](#did-web) writes.
 - Presentation expiry — either a lifetime in seconds or an explicit `validUntil` timestamp
 - Output directory
 
@@ -566,8 +586,6 @@ Creates `signed_vp.json`, holding an `assertionMethod` holder proof. Verify it w
 
 - The holder key pair must be an ECDSA (P-256) Multikey bound to a DID — the `didKeyPairs.json` produced by [`did-web`](#did-web) is one.
 - Every credential must be about the holder: each `credentialSubject.id` must equal the holder DID. Credentials with a `TransferableRecords` status cannot be presented.
-
-
 
 #### credential-status-create
 
@@ -638,8 +656,6 @@ Signed OpenAttestation documents in the specified directory.
 - OpenAttestation v2
 - OpenAttestation v3
 
-
-
 #### oa-wrap
 
 Wraps OpenAttestation v2 or v3 documents
@@ -664,8 +680,6 @@ Wrapped OpenAttestation document(s) in the specified directory.
 - OpenAttestation v2
 - OpenAttestation v3
 
-
-
 #### oa-unwrap
 
 Unwraps OpenAttestation v2 or v3 documents
@@ -688,8 +702,6 @@ Unwrapped OpenAttestation document(s) in the specified directory.
 
 - OpenAttestation v2
 - OpenAttestation v3
-
-
 
 #### oa-encrypt
 
@@ -715,8 +727,6 @@ Writes an encrypted document file containing `type: "encrypted-document"` and a 
 
 - OpenAttestation v2 (raw or wrapped)
 - OpenAttestation v3 (raw or wrapped)
-
-
 
 #### oa-decrypt
 
@@ -751,7 +761,7 @@ trustvc mint
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - Beneficiary address (initial recipient)
 - Holder address (initial holder)
 - Wallet/private key option
@@ -767,8 +777,6 @@ Transaction receipt with hash, block number, gas used, and explorer link.
 - XDC Network (Mainnet, Apothem Testnet)
 - Stability (Mainnet, Testnet)
 - Astron (Mainnet, Testnet)
-
-
 
 #### token-registry deploy
 
@@ -799,8 +807,6 @@ Transaction receipt with deployed contract address, hash, block number, gas used
 - Stability (Mainnet, Testnet)
 - Astron (Mainnet, Testnet)
 
-
-
 #### token-registry mint
 
 Alternative command for minting tokens. Functionally identical to `mint`.
@@ -814,8 +820,6 @@ trustvc mint
 # Or with prefix
 trustvc token-registry mint
 ```
-
-
 
 #### document-store deploy
 
@@ -844,8 +848,6 @@ Transaction receipt with contract address, hash, block number, gas used, and exp
 - XDC Network (Mainnet, Apothem Testnet)
 - Stability (Mainnet, Testnet)
 - Astron (Mainnet, Testnet)
-
-
 
 #### document-store issue
 
@@ -912,8 +914,6 @@ Transaction receipt with hash, block number, gas used, and explorer link.
 - Stability (Mainnet, Testnet)
 - Astron (Mainnet, Testnet)
 
-
-
 #### document-store revoke-role
 
 Revokes a role (ISSUER_ROLE, REVOKER_ROLE, or DEFAULT_ADMIN_ROLE) from an account in a deployed document store.
@@ -943,8 +943,6 @@ Transaction receipt with hash, block number, gas used, and explorer link.
 - Stability (Mainnet, Testnet)
 - Astron (Mainnet, Testnet)
 
-
-
 #### document-store transfer-ownership
 
 Transfers ownership of a document store contract to a new owner. This grants DEFAULT_ADMIN_ROLE to the new owner and revokes it from the current owner.
@@ -971,8 +969,6 @@ Transaction receipts for both grant and revoke operations with hashes, block num
 - XDC Network (Mainnet, Apothem Testnet)
 - Stability (Mainnet, Testnet)
 - Astron (Mainnet, Testnet)
-
-
 
 #### wallet create
 
@@ -1018,8 +1014,6 @@ Creates `wallet.json` containing the encrypted wallet in the specified directory
 ⚠ IMPORTANT: Never share this file or your mnemonic phrase publicly!
 ⚠ IMPORTANT: If you lose your password, you will not be able to recover your wallet!
 ```
-
-
 
 #### wallet encrypt
 
@@ -1071,8 +1065,6 @@ Creates `wallet.json` containing the encrypted wallet in the specified directory
 ⚠ IMPORTANT: Never share this file or your private key publicly!
 ⚠ IMPORTANT: If you lose your password, you will not be able to recover your wallet!
 ```
-
-
 
 #### wallet decrypt
 
@@ -1128,8 +1120,6 @@ Displays the decrypted wallet information:
 ⚠ IMPORTANT: Store this information securely and delete it from your terminal history!
 ```
 
-
-
 #### title-escrow transfer-holder
 
 Transfers the holder of a transferable record to a new address.
@@ -1150,7 +1140,7 @@ trustvc title-escrow transfer-holder
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - New holder address
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
@@ -1178,7 +1168,7 @@ trustvc title-escrow nominate-transfer-owner
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - New beneficiary address
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
@@ -1206,7 +1196,7 @@ trustvc title-escrow endorse-transfer-owner
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - New beneficiary address
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
@@ -1234,7 +1224,7 @@ trustvc title-escrow transfer-owner-holder
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - New beneficiary address
 - New holder address
 - Wallet/private key option
@@ -1263,7 +1253,7 @@ trustvc title-escrow return-to-issuer
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
 
@@ -1290,7 +1280,7 @@ trustvc title-escrow accept-return-to-issuer
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
 
@@ -1317,7 +1307,7 @@ trustvc title-escrow reject-return-to-issuer
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
 
@@ -1344,7 +1334,7 @@ trustvc title-escrow reject-transfer-holder
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
 
@@ -1371,7 +1361,7 @@ trustvc title-escrow reject-transfer-owner
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
 
@@ -1398,7 +1388,7 @@ trustvc title-escrow reject-transfer-owner-holder
 **Interactive Prompts:**
 
 - Path to TT/JSON document file (or manual input)
-  - *Network, token registry address, token ID, and document ID are extracted from the document*
+  - _Network, token registry address, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional, V5 registries only - will be encrypted with document ID as encryption key)
 
@@ -1446,7 +1436,7 @@ trustvc obligation-registry mint
 **Interactive Prompts:**
 
 - Path to signed BoE / obligation document (output of `w3c-sign`)
-  - *Network, obligationRegistry address, token ID, and document ID are extracted from the document*
+  - _Network, obligationRegistry address, token ID, and document ID are extracted from the document_
 - Holder and beneficiary (drawer/drawee) addresses as required
 - Wallet/private key option
 - Dry-run confirmation before broadcasting
@@ -1467,7 +1457,7 @@ trustvc obligation-escrow accept
 **Interactive Prompts:**
 
 - Path to BoE / obligation document
-  - *Network, obligationRegistry, token ID, and document ID are extracted from the document*
+  - _Network, obligationRegistry, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional)
 
@@ -1525,7 +1515,7 @@ trustvc obligation-escrow status
 **Interactive Prompts:**
 
 - Path to BoE / obligation document
-- *Network, obligationRegistry, and token ID are extracted from the document*
+- _Network, obligationRegistry, and token ID are extracted from the document_
 
 **Output:**
 Obligation and escrow status fields from the chain.
@@ -1569,7 +1559,7 @@ trustvc obligation-escrow return-to-issuer
 **Interactive Prompts:**
 
 - Path to BoE / obligation document
-  - *Network, obligationRegistry, token ID, and document ID are extracted from the document*
+  - _Network, obligationRegistry, token ID, and document ID are extracted from the document_
 - Wallet/private key option
 - Remark (optional)
 
@@ -1620,9 +1610,99 @@ trustvc obligation-escrow reject-return-to-issuer
 **Output:**
 Transaction receipt confirming rejection (restore).
 
+#### deploy-platform-paymaster
+
+Deploys a `PlatformPaymaster` contract that sponsors gasless title-escrow, mint, and token registry deployment transactions. This is a **regular transaction** — you pay gas directly to deploy it. Only available on Sepolia and Amoy — beta feature, not for production use.
+
+**Usage:**
+
+```sh
+trustvc deploy-platform-paymaster
+```
+
+**Interactive Prompts:**
+
+- Network (Sepolia or Amoy)
+- Salt to deterministically derive the paymaster address (0x-prefixed 32-byte hex, or any string — hashed into one)
+- Platform owner address (optional, defaults to the deployer address)
+- Daily sponsored-gas limit in wei (optional, `0` = unlimited)
+- Wallet/private key option
+
+**Output:**
+Success message with the deployed paymaster address, plus transaction hash and explorer link.
+
+Before it can sponsor anything, authorize what it covers and fund it with `paymaster-admin` (see below).
+
+#### paymaster-admin \<method\>
+
+Owner-only administration of a `PlatformPaymaster` contract. Every method is a **regular, non-gasless transaction** — the caller (the paymaster owner, except for `delegate-user`) pays gas directly. All methods except `delegate-user` prompt for network → paymaster address → wallet/private key option, then the method-specific fields below. Beta feature, testnets only (Sepolia, Amoy) — not for production use.
+
+**Usage:**
+
+```sh
+trustvc paymaster-admin <method>
+```
+
+| Method                       | Extra prompts                                                    | Purpose                                                                                                                                                                                                                                                                         |
+| ---------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `add-authorized-caller`      | caller address                                                   | Authorize an address to trigger sponsored title-escrow/registry calls                                                                                                                                                                                                           |
+| `remove-authorized-caller`   | caller address                                                   | Deauthorize a caller                                                                                                                                                                                                                                                            |
+| `add-title-escrow`           | title escrow address                                             | Authorize a title escrow so its calls can be sponsored                                                                                                                                                                                                                          |
+| `remove-title-escrow`        | title escrow address                                             | Deauthorize a title escrow                                                                                                                                                                                                                                                      |
+| `add-registry`               | registry address                                                 | Authorize a token registry so its calls can be sponsored                                                                                                                                                                                                                        |
+| `remove-registry`            | registry address                                                 | Deauthorize a token registry                                                                                                                                                                                                                                                    |
+| `set-daily-limit`            | daily limit in wei                                               | Set the global per-user daily sponsored-gas spend limit                                                                                                                                                                                                                         |
+| `set-user-whitelist`         | user address, deployment credits (0-3)                           | Whitelist a user and set how many token registries they may deploy gaslessly                                                                                                                                                                                                    |
+| `remove-user-from-whitelist` | user address                                                     | Reset a user's deployment credits to 0                                                                                                                                                                                                                                          |
+| `fund-paymaster`             | amount in ETH                                                    | Deposit ETH into the paymaster's EntryPoint balance so it can sponsor gas                                                                                                                                                                                                       |
+| `stake-paymaster`            | amount in ETH, unstake delay in seconds (default `86400`)        | Stake ETH on the EntryPoint — many bundlers, including Pimlico, require this before accepting sponsored UserOperations                                                                                                                                                          |
+| `delegate-user`              | network, wallet/private key option (no paymaster address prompt) | Delegates a user's own EOA to the deployed `EIP7702Implementation` contract via a standalone EIP-7702 authorization. Every gasless command already does this automatically on its first sponsored UserOperation — run it explicitly only if you want to delegate ahead of time. |
+
+**Output:**
+Transaction hash and explorer link for the method's on-chain call.
+
+#### Running any command gaslessly (`--gasless`)
+
+Add `--gasless` to a supported command to submit it as an EIP-7702 smart-account UserOperation sponsored by a `PlatformPaymaster`, instead of a regular transaction paid from your own wallet. Only available on Sepolia and Amoy — beta feature, not for production use.
+
+**Every title-escrow command** supports `--gasless`:
+
+```sh
+# Transfers
+trustvc transfer-holder --gasless              # transfer holder
+trustvc endorse-transfer-owner --gasless       # transfer/endorse beneficiary (owner)
+trustvc transfer-owner-holder --gasless        # transfer both beneficiary and holder
+trustvc nominate-transfer-owner --gasless      # nominate a new beneficiary
+
+# Rejections
+trustvc reject-transfer-holder --gasless
+trustvc reject-transfer-owner --gasless
+trustvc reject-transfer-owner-holder --gasless
+
+# Return to issuer
+trustvc return-to-issuer --gasless             # holder+beneficiary return the record
+trustvc accept-return-to-issuer --gasless      # issuer accepts the return (burn)
+trustvc reject-return-to-issuer --gasless      # issuer rejects the return (restore)
+```
+
+Plus mint and registry deployment:
+
+```sh
+trustvc mint --gasless
+trustvc token-registry deploy --gasless
+```
+
+Compared to the regular flow, `--gasless`:
+
+- Skips gas/dry-run prompts (Pimlico's bundler estimates and sponsors gas).
+- Adds one prompt for the **PlatformPaymaster contract address**.
+- Requires direct private-key access (encrypted wallet file, `--key`, `--key-file`, or `OA_PRIVATE_KEY`) — AWS KMS signers are not supported, since the raw key is needed to build the EIP-7702 smart account.
+- Runs an eligibility check against the paymaster before submitting (see [Gasless Transactions user guide](#gasless-transactions-user-guide)) and fails fast with a specific error if it is not met.
+- Role requirements are identical to the regular command (e.g. `transfer-holder --gasless` still requires the caller to be the current holder), except `mint --gasless` (gated by the token registry granting the paymaster `MINTER_ROLE`, not by caller identity) and `token-registry deploy --gasless` (gated by deployment credits from `paymaster-admin set-user-whitelist`).
+
+**Output:** Same success message and explorer link as the regular command.
+
 ## Configuration
-
-
 
 ### Custom RPC Endpoints
 
@@ -1659,9 +1739,18 @@ export POL_RPC=https://polygon-rpc.com
 
 If no environment variable is set, the CLI will use the default RPC endpoint for each network.
 
+### Gasless Transactions
+
+⚠️ Beta, testnets only (Sepolia, Amoy) — not for production use.
+
+Required for any command run with `--gasless`, `deploy-platform-paymaster`, or `paymaster-admin`:
+
+- `PIMLICO_API_KEY` — get one from [dashboard.pimlico.io](https://dashboard.pimlico.io)
+- `{NETWORK}_EIP7702_IMPL_ADDRESS` (e.g. `SEPOLIA_EIP7702_IMPL_ADDRESS`, `AMOY_EIP7702_IMPL_ADDRESS`) or the generic `EIP7702_IMPL_ADDRESS` — the deployed `EIP7702Implementation` contract address
+
+See the [Gasless Transactions user guide](#gasless-transactions-user-guide) for the full setup workflow and eligibility rules.
+
 ## Development
-
-
 
 ### Setup
 
@@ -1678,8 +1767,6 @@ npm link
 # Run tests
 npm test
 ```
-
-
 
 ### Project Structure
 
@@ -1730,6 +1817,18 @@ src/commands/
 │   ├── reject-transfer-holder.ts    # Reject BoE holder transfer
 │   ├── reject-transfer-owner.ts     # Reject BoE owner transfer
 │   └── reject-transfer-owner-holder.ts  # Reject full BoE transfer
+├── gasless/
+│   ├── config.ts                     # Supported networks, env vars, Pimlico bundler URL
+│   ├── client.ts                     # EIP-7702 smart account client setup
+│   ├── common.ts                     # Shared prepareGaslessRun / prepareGaslessRegistryRun
+│   ├── eligibility.ts                # Paymaster eligibility checks (authorized caller, whitelist, MINTER_ROLE)
+│   ├── admin/                        # `paymaster-admin <method>` — owner-only PlatformPaymaster admin
+│   ├── deploy/
+│   │   ├── deploy-platform-paymaster.ts        # `deploy-platform-paymaster` command
+│   │   └── deploy-token-registry-gasless.ts    # wired into `token-registry deploy --gasless`
+│   ├── title-escrow/                 # wired into each `title-escrow` command's `--gasless` flag
+│   └── token-regitsry/
+│       └── mint.ts                   # wired into `mint --gasless`
 ├── transaction/
 │   └── cancel.ts                    # Cancel a pending transaction
 ├── wallet/
@@ -1746,8 +1845,6 @@ src/commands/
         ├── create.ts                # Create credential status list
         └── update.ts                # Update credential status list
 ```
-
-
 
 ## Obligation Registry user guide
 
@@ -1789,10 +1886,7 @@ You do **not** need to call the TypeScript SDK directly — the CLI wraps it wit
 4. **A signed BoE document** — set `credentialStatus.obligationRegistry`, then sign with `trustvc w3c-sign` (not `tokenRegistry`)
 5. **Network access** — select network in prompts, or set a custom RPC (e.g. `export SEPOLIA_RPC=…`)
 
-
-
 ### Classic vs Obligation — pick the right commands
-
 
 | Task            | Classic ETR                    | Obligation / BoE             |
 | --------------- | ------------------------------ | ---------------------------- |
@@ -1800,7 +1894,6 @@ You do **not** need to call the TypeScript SDK directly — the CLI wraps it wit
 | Mint            | `mint` / `token-registry mint` | `obligation-registry mint`   |
 | Escrow actions  | `title-escrow …`               | `obligation-escrow …`        |
 | Verify          | `verify` (ETR and BoE)         | `verify` (same command)      |
-
 
 Using classic commands on a BoE document will fail or skip obligation checks. Using obligation commands on a classic eBL document will fail extraction (missing `obligationRegistry`).
 
@@ -1839,7 +1932,6 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 
 ### Who can run what
 
-
 | Action                                | Typical role                                                    |
 | ------------------------------------- | --------------------------------------------------------------- |
 | `obligation-registry deploy`          | Deployer / issuer org                                           |
@@ -1853,9 +1945,6 @@ Signing/building the VC can also be done with TrustVC library tools or your app 
 | `obligation-escrow status`            | Anyone with the document (read-only RPC; no signing key)        |
 | `verify`                              | Anyone with the document (+ RPC when on-chain checks run)       |
 
-
-
-
 ### What the CLI reads from your document
 
 For mint, escrow, and related flows, the CLI extracts:
@@ -1866,6 +1955,106 @@ For mint, escrow, and related flows, the CLI extracts:
 - Document ID (remark encryption key when remarks are set)
 
 If extraction fails with a message about classic transferable records / `tokenRegistry`, you are using the wrong document type or command family.
+
+## Gasless Transactions user guide
+
+> ⚠️ **Beta feature, testnets only.** Gasless transactions are only supported on Sepolia and Amoy and are still in beta. Do not use gasless transactions, or a `PlatformPaymaster`/`EIP7702Implementation` contract, on mainnet or in production.
+
+User guide for running title-escrow, mint, and token registry deployment actions as **sponsored** transactions — the caller submits an EIP-7702 smart-account UserOperation instead of a regular transaction, and a `PlatformPaymaster` contract pays the gas (via a [Pimlico](https://pimlico.io) bundler).
+
+### Who gasless transactions are for
+
+- **Paymaster owners / platform operators** who deploy and administer a `PlatformPaymaster` and decide what it sponsors.
+- **End users** who want to run title-escrow, mint, or token registry deployment commands without holding native gas on Sepolia or Amoy.
+
+### Supported networks
+
+Gasless transactions require a deployed `PlatformPaymaster` and `EIP7702Implementation` contract, which today only exist on:
+
+- **Sepolia**
+- **Amoy** (Polygon testnet)
+
+Every other network is rejected up front with an error telling you to re-run without `--gasless`.
+
+### Required environment variables
+
+| Variable                                                   | Required for              | Notes                                                                                                                                                                                     |
+| ---------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PIMLICO_API_KEY`                                          | Every gasless transaction | Get one from [dashboard.pimlico.io](https://dashboard.pimlico.io). Never logged — the CLI redacts it from error output.                                                                   |
+| `{NETWORK}_EIP7702_IMPL_ADDRESS` or `EIP7702_IMPL_ADDRESS` | Every gasless transaction | The deployed `EIP7702Implementation` contract address, e.g. `SEPOLIA_EIP7702_IMPL_ADDRESS`, `AMOY_EIP7702_IMPL_ADDRESS`. The network-scoped variable takes priority over the generic one. |
+| `{NETWORK}_RPC`                                            | Optional                  | Overrides the default public RPC used for gasless reads/client setup, same convention as [Custom RPC Endpoints](#custom-rpc-endpoints).                                                   |
+
+### How eligibility is checked
+
+Before submitting any sponsored UserOperation, the CLI reads the `PlatformPaymaster` contract on-chain and fails fast with a specific error if any check doesn't pass. There are three separate gates depending on the action:
+
+**Title-escrow actions and `mint` on the registry side** (`transfer-holder`, `nominate-transfer-owner`, `return-to-issuer`, etc.):
+
+1. The paymaster contract exists at the given address.
+2. The title escrow (or, for registry-level actions, the token registry) being acted on is authorized (`paymaster-admin add-title-escrow` / `add-registry`).
+3. The caller is an authorized caller (`paymaster-admin add-authorized-caller`).
+4. The caller's daily sponsored-gas spend limit has not been reached (`paymaster-admin set-daily-limit`; `0` = unlimited).
+5. The paymaster has a non-zero ETH deposit at the EntryPoint (`paymaster-admin fund-paymaster`).
+
+Additionally, the connected wallet must currently hold the role the action requires (e.g. `transfer-holder --gasless` requires the caller to be the current holder) — same rule as the regular, non-gasless command.
+
+**`mint --gasless`** is gated differently — there is no authorized-caller check. Instead:
+
+1. The paymaster contract exists.
+2. The token registry has granted the **`PlatformPaymaster` contract itself** `MINTER_ROLE` (the token registry owner's call, not the paymaster owner's — e.g. via `document-store grant-role`–style `grantRole` on the registry).
+3. The token registry is authorized on the paymaster (`paymaster-admin add-registry`).
+4. The paymaster has a non-zero EntryPoint deposit.
+
+**`token-registry deploy --gasless`** is credit-gated:
+
+1. The paymaster contract exists.
+2. The caller has at least one deployment credit (`paymaster-admin set-user-whitelist`, 0-3 credits).
+3. The paymaster has a non-zero EntryPoint deposit.
+
+### Typical setup workflow
+
+```text
+1. Deploy a PlatformPaymaster:          trustvc deploy-platform-paymaster
+2. Authorize what it may sponsor:       trustvc paymaster-admin add-title-escrow / add-registry / add-authorized-caller
+3. Fund and stake it:                   trustvc paymaster-admin fund-paymaster / stake-paymaster
+4. (mint only) grant MINTER_ROLE to the paymaster on the token registry
+5. (deploy only) whitelist deployers:   trustvc paymaster-admin set-user-whitelist
+6. Run any supported command with --gasless
+```
+
+The end user's own EOA is delegated to the `EIP7702Implementation` contract automatically on their first sponsored UserOperation — there is no separate "activate my account" step. `paymaster-admin delegate-user` exists only if you want to do that delegation ahead of time as its own (regular, non-gasless) transaction.
+
+### Who can run what (gasless)
+
+| Action                                                                    | Who                                                                                                                     |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `deploy-platform-paymaster`                                               | Anyone (deploys their own paymaster; pays gas directly)                                                                 |
+| `paymaster-admin <method>` (except `delegate-user`)                       | The paymaster owner                                                                                                     |
+| `paymaster-admin delegate-user`                                           | Any user, for their own EOA                                                                                             |
+| `<title-escrow command> --gasless`                                        | Same role as the regular command, plus: must be an authorized caller on the paymaster                                   |
+| `accept-return-to-issuer --gasless` / `reject-return-to-issuer --gasless` | Same as the regular command — enforced by the registry contract, not by an authorized-caller check                      |
+| `mint --gasless`                                                          | Anyone, once the token registry has granted the paymaster `MINTER_ROLE` and the registry is authorized on the paymaster |
+| `token-registry deploy --gasless`                                         | Anyone the paymaster owner has whitelisted with deployment credits                                                      |
+
+### Troubleshooting
+
+Every eligibility failure names the specific check and the admin command that fixes it, for example:
+
+```text
+This account cannot perform a gasless transaction: caller 0x... is not an authorized
+caller on the PlatformPaymaster (0x...). Ask the paymaster owner to call addAuthorizedCaller first.
+```
+
+Common causes:
+
+- **"is not authorized on the PlatformPaymaster"** — run `paymaster-admin add-title-escrow` / `add-registry` for the address in the message.
+- **"is not an authorized caller"** — run `paymaster-admin add-authorized-caller` for your address.
+- **"daily sponsored-gas limit reached"** — wait for the daily window to reset, or ask the owner to raise/clear it with `paymaster-admin set-daily-limit`.
+- **"has no ETH deposited at the EntryPoint"** — ask the owner to run `paymaster-admin fund-paymaster`.
+- **"does not hold MINTER_ROLE"** (mint only) — the token registry owner must grant the paymaster contract `MINTER_ROLE`.
+- **"has no deployment credits"** (deploy only) — ask the owner to run `paymaster-admin set-user-whitelist`.
+- **"Gasless transactions require direct access to a private key"** — you're using an AWS KMS signer; gasless needs the raw key to build the EIP-7702 smart account. Use an encrypted wallet file, `--key`, `--key-file`, or `OA_PRIVATE_KEY` instead.
+- **"PIMLICO_API_KEY environment variable is required"** — get a key from [dashboard.pimlico.io](https://dashboard.pimlico.io) and set it in your environment.
 
 ## License
 

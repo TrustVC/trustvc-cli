@@ -12,7 +12,11 @@ import {
   promptNetworkSelection,
   promptWalletSelection,
 } from '../../../utils';
-import { assertGaslessSupportedNetwork, getGaslessFactoryAddress } from '../config';
+import {
+  assertGaslessSupportedNetwork,
+  getGaslessFactoryAddress,
+  redactPimlicoApiKey,
+} from '../config';
 import { GaslessWalletOption } from '../types';
 
 // Deploys the PlatformPaymaster itself — this is a regular, non-gasless transaction. Someone has
@@ -111,7 +115,7 @@ export const runDeployPlatformPaymaster = async (
 
     return paymasterAddress;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };
 

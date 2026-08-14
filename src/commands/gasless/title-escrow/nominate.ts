@@ -11,7 +11,7 @@ import {
   verifyDocumentSignature,
 } from '../../../utils';
 import { validateAndEncryptRemark } from '../../helpers';
-import { assertGaslessSupportedNetwork } from '../config';
+import { assertGaslessSupportedNetwork, redactPimlicoApiKey } from '../config';
 import { prepareGaslessRun } from '../common';
 import { TitleEscrowNominateBeneficiaryGaslessCommand } from '../types';
 
@@ -81,12 +81,12 @@ export const runNominateGasless = async (
     );
 
     success(
-      `Transferable record with tokenId ${args.tokenId}'s holder has been successfully nominated to new owner with address ${args.newBeneficiary}`,
+      `Transferable record with tokenId ${args.tokenId} has successfully nominated a new beneficiary with address ${args.newBeneficiary}`,
     );
     info(`Find more details at ${getEtherscanAddress({ network })}/tx/${transactionHash}`);
 
     return transactionHash;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };

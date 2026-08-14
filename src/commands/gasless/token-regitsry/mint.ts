@@ -1,6 +1,7 @@
 import { error, info, success, warn } from 'signale';
 import { mintGasless } from '@trustvc/trustvc';
 import {
+  addAddressPrefix,
   extractDocumentInfo,
   getErrorMessage,
   getEtherscanAddress,
@@ -12,7 +13,7 @@ import {
   verifyDocumentSignature,
 } from '../../../utils';
 import { validateAndEncryptRemark } from '../../helpers';
-import { assertGaslessSupportedNetwork } from '../config';
+import { assertGaslessSupportedNetwork, redactPimlicoApiKey } from '../config';
 import { buildGaslessSmartAccountClient } from '../client';
 import { checkGaslessMintEligibility } from '../eligibility';
 import { TokenRegistryMintGaslessCommand } from '../types';
@@ -108,7 +109,7 @@ export const runMintGasless = async (
       {
         beneficiaryAddress: args.beneficiary,
         holderAddress: args.holder,
-        tokenId: args.tokenId,
+        tokenId: addAddressPrefix(args.tokenId),
         remarks: args.remark,
       },
       { id: args.encryptionKey },
@@ -121,6 +122,6 @@ export const runMintGasless = async (
 
     return transactionHash;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };

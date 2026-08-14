@@ -10,7 +10,12 @@ import {
   promptNetworkSelection,
   promptWalletSelection,
 } from '../../../utils';
-import { assertGaslessSupportedNetwork, getGaslessRpcUrl, getViemChain } from '../config';
+import {
+  assertGaslessSupportedNetwork,
+  getGaslessRpcUrl,
+  getViemChain,
+  redactPimlicoApiKey,
+} from '../config';
 import { buildGaslessSmartAccountClient } from '../client';
 import { checkGaslessDeployEligibility } from '../eligibility';
 import { GaslessWalletOption } from '../types';
@@ -145,6 +150,6 @@ export const runDeployTokenRegistryGasless = async (
 
     return deployedAddress ?? transactionHash;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };

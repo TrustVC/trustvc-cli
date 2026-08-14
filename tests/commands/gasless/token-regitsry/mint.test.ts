@@ -64,6 +64,7 @@ vi.mock('../../../../src/commands/helpers', () => ({
 
 vi.mock('../../../../src/commands/gasless/config', () => ({
   assertGaslessSupportedNetwork: vi.fn((network: string) => network),
+  redactPimlicoApiKey: vi.fn((message: string) => message),
 }));
 
 vi.mock('../../../../src/commands/gasless/client', () => ({
@@ -222,6 +223,7 @@ describe('gasless/token-registry mint', () => {
       (configModule.assertGaslessSupportedNetwork as any).mockImplementation(
         (network: string) => network,
       );
+      (configModule.redactPimlicoApiKey as any).mockImplementation((message: string) => message);
 
       getWalletOrSignerMock.mockResolvedValue({ privateKey: '0xprivatekey' });
       checkGaslessMintEligibilityMock.mockResolvedValue(undefined);
@@ -295,6 +297,28 @@ describe('gasless/token-registry mint', () => {
       const signaleModule = await import('signale');
       expect(signaleModule.success).toHaveBeenCalledWith(expect.stringContaining(baseArgs.tokenId));
       expect(signaleModule.info).toHaveBeenCalledWith(expect.stringContaining('0xtxhash'));
+    });
+
+    it('adds a 0x prefix to an unprefixed hexadecimal tokenId before minting', async () => {
+      await runMintGasless({ ...baseArgs, tokenId: 'abcdef1234567890' });
+
+      expect(mintGaslessMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ tokenId: '0xabcdef1234567890' }),
+        expect.anything(),
+      );
+    });
+
+    it('does not alter an already-prefixed numeric tokenId', async () => {
+      await runMintGasless({ ...baseArgs, tokenId: '0x1234567890' });
+
+      expect(mintGaslessMock).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.objectContaining({ tokenId: '0x1234567890' }),
+        expect.anything(),
+      );
     });
 
     it('should log an error and return undefined when eligibility check rejects with an Error', async () => {

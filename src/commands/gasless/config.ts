@@ -89,6 +89,17 @@ export const getPimlicoBundlerUrl = (network: GaslessSupportedNetwork, apiKey: s
   `https://api.pimlico.io/v2/${getViemChain(network).id}/rpc?apikey=${apiKey}`;
 
 /**
+ * viem's HTTP/RPC/timeout errors embed the request URL verbatim in their message (it only strips
+ * basic-auth credentials, not query params), so a bundler network error would otherwise leak the
+ * `apikey` query value from `getPimlicoBundlerUrl` straight into command-handler logs. Strips it
+ * from arbitrary error text before logging.
+ */
+export const redactPimlicoApiKey = (message: string): string => {
+  const apiKey = process.env.PIMLICO_API_KEY;
+  return apiKey ? message.split(apiKey).join('[REDACTED]') : message;
+};
+
+/**
  * PlatformAccountFactory address for the given network, from @trustvc/trustvc's own
  * `gaslessConstants`. Deliberately not left for `deployPlatformPaymaster` to default itself —
  * its internal fallback (`@trustvc/eip7702`'s bundled constants) is stale for Sepolia and has no
@@ -100,5 +111,14 @@ export const getGaslessFactoryAddress = (network: GaslessSupportedNetwork): `0x$
     [NetworkCmdName.Sepolia]: gaslessConstants.GASLESS_FACTORY_ADDRESS_SEPOLIA,
     [NetworkCmdName.Amoy]: gaslessConstants.GASLESS_FACTORY_ADDRESS_AMOY,
   };
-  return factoryAddress[network] as `0x${string}`;
+
+  const address = factoryAddress[network];
+  if (!address) {
+    throw new Error(
+      `Missing gasless factory address for ${network} in @trustvc/trustvc's gaslessConstants. ` +
+        `This indicates an incompatible @trustvc/trustvc version — check for a package update.`,
+    );
+  }
+
+  return address as `0x${string}`;
 };

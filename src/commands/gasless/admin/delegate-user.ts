@@ -13,6 +13,7 @@ import {
   getEip7702ImplementationAddress,
   getGaslessRpcUrl,
   getViemChain,
+  redactPimlicoApiKey,
 } from '../config';
 
 // Submits a standalone EIP-7702 authorization for a user's own EOA — the first of the three
@@ -76,6 +77,6 @@ export const handler = async (): Promise<string | undefined> => {
 
     return txHash;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };

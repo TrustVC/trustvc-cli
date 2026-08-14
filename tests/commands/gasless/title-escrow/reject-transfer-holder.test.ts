@@ -60,6 +60,7 @@ vi.mock('../../../../src/commands/helpers', () => ({
 
 vi.mock('../../../../src/commands/gasless/config', () => ({
   assertGaslessSupportedNetwork: vi.fn((n) => n),
+  redactPimlicoApiKey: vi.fn((message: string) => message),
 }));
 
 vi.mock('../../../../src/commands/gasless/common', () => ({

@@ -11,7 +11,7 @@ import {
   verifyDocumentSignature,
 } from '../../../utils';
 import { validateAndEncryptRemark } from '../../helpers';
-import { assertGaslessSupportedNetwork } from '../config';
+import { assertGaslessSupportedNetwork, redactPimlicoApiKey } from '../config';
 import { prepareGaslessRegistryRun } from '../common';
 import { TokenRegistryReturnedDocumentGaslessCommand } from '../types';
 
@@ -78,6 +78,6 @@ export const runAcceptReturnToIssuerGasless = async (
 
     return transactionHash;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };

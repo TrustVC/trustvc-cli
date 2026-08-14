@@ -7,7 +7,7 @@ import {
   promptNetworkSelection,
   promptWalletSelection,
 } from '../../../utils';
-import { assertGaslessSupportedNetwork } from '../config';
+import { assertGaslessSupportedNetwork, redactPimlicoApiKey } from '../config';
 import { GaslessWalletOption } from '../types';
 
 /**
@@ -80,6 +80,6 @@ export const runPaymasterAdminAction = async ({
 
     return txHash;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };

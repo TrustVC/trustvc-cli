@@ -73,6 +73,7 @@ vi.mock('../../../../src/commands/gasless/config', () => ({
   assertGaslessSupportedNetwork: vi.fn((network: string) => network),
   getGaslessRpcUrl: vi.fn(() => 'https://sepolia.example-rpc.com'),
   getViemChain: vi.fn(() => ({ id: 11155111 })),
+  redactPimlicoApiKey: vi.fn((message: string) => message),
 }));
 
 vi.mock('../../../../src/commands/gasless/client', () => ({
@@ -260,6 +261,9 @@ describe('gasless/deploy/deploy-token-registry-gasless', () => {
       (configModule.getViemChain as MockedFunction<any>).mockReturnValue({
         id: CHAIN_ID_WITH_DEFAULT,
       });
+      (configModule.redactPimlicoApiKey as MockedFunction<any>).mockImplementation(
+        (message: any) => message,
+      );
 
       const eligibilityModule = await import('../../../../src/commands/gasless/eligibility');
       (eligibilityModule.checkGaslessDeployEligibility as MockedFunction<any>).mockResolvedValue(

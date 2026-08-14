@@ -64,6 +64,7 @@ vi.mock('../../../../src/utils', async (importOriginal) => {
 vi.mock('../../../../src/commands/gasless/config', () => ({
   assertGaslessSupportedNetwork: vi.fn((network: string) => network),
   getGaslessFactoryAddress: vi.fn(() => '0xfactoryfactoryfactoryfactoryfactoryfacto'),
+  redactPimlicoApiKey: vi.fn((message: string) => message),
 }));
 
 const VALID_SALT = `0x${'11'.repeat(32)}`;
@@ -226,6 +227,9 @@ describe('gasless/deploy/deploy-platform-paymaster', () => {
       (configModule.getGaslessFactoryAddress as MockedFunction<any>).mockReturnValue(
         '0xfactoryfactoryfactoryfactoryfactoryfacto',
       );
+      (configModule.redactPimlicoApiKey as MockedFunction<any>).mockImplementation(
+        (message: any) => message,
+      );
 
       const utils = await import('../../../../src/utils');
       (utils.getSupportedNetwork as MockedFunction<any>).mockReturnValue({ networkId: 11155111 });
@@ -331,6 +335,9 @@ describe('gasless/deploy/deploy-platform-paymaster', () => {
       );
       (configModule.getGaslessFactoryAddress as MockedFunction<any>).mockReturnValue(
         '0xfactoryfactoryfactoryfactoryfactoryfacto',
+      );
+      (configModule.redactPimlicoApiKey as MockedFunction<any>).mockImplementation(
+        (message: any) => message,
       );
 
       const utils = await import('../../../../src/utils');

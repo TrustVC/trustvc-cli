@@ -11,7 +11,7 @@ import {
   verifyDocumentSignature,
 } from '../../../utils';
 import { validateAndEncryptRemark } from '../../helpers';
-import { assertGaslessSupportedNetwork } from '../config';
+import { assertGaslessSupportedNetwork, redactPimlicoApiKey } from '../config';
 import { prepareGaslessRun } from '../common';
 import { TitleEscrowTransferOwnersGaslessCommand } from '../types';
 
@@ -93,6 +93,6 @@ export const runTransferOwnersGasless = async (
 
     return transactionHash;
   } catch (e) {
-    error(getErrorMessage(e));
+    error(redactPimlicoApiKey(getErrorMessage(e)));
   }
 };

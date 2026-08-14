@@ -94,7 +94,7 @@ export const checkGaslessEligibility = async ({
     );
   }
 
-  const [spent, limit] = dailySpend as unknown as [bigint, bigint, bigint];
+  const [spent, limit] = dailySpend;
   if (limit > 0n && spent >= limit) {
     throw new Error(
       `This account cannot perform a gasless transaction: daily sponsored-gas limit reached for ` +

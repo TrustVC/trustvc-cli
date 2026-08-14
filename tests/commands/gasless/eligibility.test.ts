@@ -89,7 +89,7 @@ describe('gasless/eligibility', () => {
         case 'authorizedCallers':
           return Promise.resolve(true);
         case 'getUserDailySpend':
-          return Promise.resolve([0n, 100n]);
+          return Promise.resolve([0n, 100n, 0n]);
         case 'getDeposit':
           return Promise.resolve(1n);
         default:
@@ -179,7 +179,7 @@ describe('gasless/eligibility', () => {
     it('throws when the daily limit has been reached (limit > 0 and spent >= limit)', async () => {
       getCodeMock.mockResolvedValue('0xcode');
       readContractMock.mockImplementation(({ functionName }: { functionName: string }) => {
-        if (functionName === 'getUserDailySpend') return Promise.resolve([100n, 100n]);
+        if (functionName === 'getUserDailySpend') return Promise.resolve([100n, 100n, 0n]);
         return allPassingReadContract({ functionName });
       });
 
@@ -197,7 +197,7 @@ describe('gasless/eligibility', () => {
       getCodeMock.mockResolvedValue('0xcode');
       readContractMock.mockImplementation(({ functionName }: { functionName: string }) => {
         if (functionName === 'getUserDailySpend') {
-          return Promise.resolve([1_000_000_000n, 0n]);
+          return Promise.resolve([1_000_000_000n, 0n, 0n]);
         }
         return allPassingReadContract({ functionName });
       });

@@ -1,3 +1,10 @@
+# [1.3.0-beta.2](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.1...v1.3.0-beta.2) (2026-08-14)
+
+
+### Features
+
+* pay on behalf ([#34](https://github.com/TrustVC/trustvc-cli/issues/34)) ([e586699](https://github.com/TrustVC/trustvc-cli/commit/e5866991d90f6f0325019c8b8345dbc3fe1b6bf1))
+
 # [1.3.0-beta.1](https://github.com/TrustVC/trustvc-cli/compare/v1.2.0...v1.3.0-beta.1) (2026-08-12)
 
 

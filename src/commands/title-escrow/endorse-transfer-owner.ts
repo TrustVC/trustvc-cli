@@ -1,3 +1,4 @@
+import { Argv } from 'yargs';
 import { error, info, success, warn } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
@@ -26,14 +27,31 @@ import {
   validateAndEncryptRemark,
   validateNominateBeneficiary,
 } from '../helpers';
+import {
+  promptForGaslessTransferBeneficiaryInputs,
+  runTransferBeneficiaryGasless,
+} from '../gasless';
 
 export const command = 'endorse-transfer-owner';
 
 export const describe =
   'Endorses the transfer of owner of transferable record to an approved owner and approved holder address';
 
-export const handler = async (): Promise<string | undefined> => {
+export const builder = (yargs: Argv): Argv =>
+  yargs.option('gasless', {
+    type: 'boolean',
+    default: false,
+    description:
+      'Perform this transfer as a gasless (EIP-7702 + Pimlico sponsored) transaction instead of paying gas directly. Requires PIMLICO_API_KEY and an EIP7702 implementation address to be set in the environment; you will be prompted for the PlatformPaymaster address.',
+  });
+
+export const handler = async (argv: { gasless?: boolean } = {}): Promise<string | undefined> => {
   try {
+    if (argv.gasless) {
+      const gaslessAnswers = await promptForGaslessTransferBeneficiaryInputs();
+      return await runTransferBeneficiaryGasless(gaslessAnswers);
+    }
+
     const answers = await promptForInputs();
     if (!answers) return;
 

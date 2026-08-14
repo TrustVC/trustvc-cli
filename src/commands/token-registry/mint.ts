@@ -1,3 +1,4 @@
+import { Argv } from 'yargs';
 import signale, { error, info, success } from 'signale';
 import { TokenRegistryMintCommand } from '../../types';
 import {
@@ -20,13 +21,28 @@ import {
 import { connectToTokenRegistry, validateAndEncryptRemark } from '../helpers';
 import { TransactionReceipt } from 'ethers';
 import { mint } from '@trustvc/trustvc';
+import { promptForGaslessMintInputs, runMintGasless } from '../gasless';
 
 export const command = 'mint';
 
 export const describe = 'Mint a hash to a token registry deployed on the blockchain';
 
-export const handler = async (): Promise<void> => {
+export const builder = (yargs: Argv): Argv =>
+  yargs.option('gasless', {
+    type: 'boolean',
+    default: false,
+    description:
+      'Perform this mint as a gasless (EIP-7702 + Pimlico sponsored) transaction instead of paying gas directly. Requires PIMLICO_API_KEY and an EIP7702 implementation address to be set in the environment; you will be prompted for the PlatformPaymaster address. The caller must be the paymaster owner and the registry must be authorized on it.',
+  });
+
+export const handler = async (argv: { gasless?: boolean } = {}): Promise<void> => {
   try {
+    if (argv.gasless) {
+      const gaslessAnswers = await promptForGaslessMintInputs();
+      await runMintGasless(gaslessAnswers);
+      return;
+    }
+
     const answers = await promptForInputs();
     if (!answers) return;
 

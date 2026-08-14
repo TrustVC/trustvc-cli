@@ -1,3 +1,4 @@
+import { Argv } from 'yargs';
 import { error, success, info } from 'signale';
 import signale from 'signale';
 import { TransactionReceipt } from 'ethers';
@@ -21,13 +22,27 @@ import {
   verifyDocumentSignature,
 } from '../../utils';
 import { connectToTitleEscrow, validateAndEncryptRemark } from '../helpers';
+import { promptForGaslessReturnToIssuerInputs, runReturnToIssuerGasless } from '../gasless';
 
 export const command = 'return-to-issuer';
 
 export const describe = 'Returns a document on the blockchain';
 
-export const handler = async (): Promise<string | undefined> => {
+export const builder = (yargs: Argv): Argv =>
+  yargs.option('gasless', {
+    type: 'boolean',
+    default: false,
+    description:
+      'Perform this return as a gasless (EIP-7702 + Pimlico sponsored) transaction instead of paying gas directly. Requires PIMLICO_API_KEY and an EIP7702 implementation address to be set in the environment; you will be prompted for the PlatformPaymaster address.',
+  });
+
+export const handler = async (argv: { gasless?: boolean } = {}): Promise<string | undefined> => {
   try {
+    if (argv.gasless) {
+      const gaslessAnswers = await promptForGaslessReturnToIssuerInputs();
+      return await runReturnToIssuerGasless(gaslessAnswers);
+    }
+
     const answers = await promptForInputs();
     if (!answers) return;
 

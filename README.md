@@ -499,7 +499,7 @@ Creates `signed_vc.json` with cryptographic proof.
 
 Verifies a W3C or OA document using the unified TrustVC verification pipeline.
 
-Works for **classic ETR** (`tokenRegistry` → TransferableRecords fragment) and **BoE** (`obligationRegistry` → ObligationRecords fragment). When the document is an obligation record, the CLI also prints enriched on-chain status when available.
+Works for **classic ETR** (`tokenRegistry` → TransferableRecords fragment) and **BoE** (`obligationRegistry` → ObligationRecords fragment). Both report the same keys: `DOCUMENT_INTEGRITY`, `DOCUMENT_STATUS`, and `ISSUER_IDENTITY` with `VALID` / `SKIPPED` / `INVALID` / `ERROR`. For BoE, `DOCUMENT_STATUS` is the ObligationRecords fragment (minted on the obligation registry), not a registry address dump.
 
 **Usage:**
 
@@ -513,7 +513,7 @@ trustvc verify
 - [If network required but no network detected]: Select network
 
 **Output:**
-Verifies document integrity, status, and issuer identity. For BoE documents, logs obligation registry status when the ObligationRecords fragment is VALID.
+Verifies document integrity, status, and issuer identity (`DOCUMENT_INTEGRITY`, `DOCUMENT_STATUS`, `ISSUER_IDENTITY`).
 
 **Supported Formats:**
 

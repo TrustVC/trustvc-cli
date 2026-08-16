@@ -113,18 +113,6 @@ export const verify = async (signedVC: SignedVerifiableCredential, options: Veri
   logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_INTEGRITY, result));
   logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_STATUS, result));
   logResultStatus(getResultFromFragment(FragmentType.ISSUER_IDENTITY, result));
-
-  const obligationStatus = getObligationDocumentStatus(result);
-  if (obligationStatus) {
-    const parts = [`registry=${obligationStatus.obligationRegistry}`];
-    if (obligationStatus.status !== undefined) {
-      parts.push(`status=${obligationStatus.status}`);
-    }
-    if (obligationStatus.terminationReason !== undefined) {
-      parts.push(`terminationReason=${obligationStatus.terminationReason}`);
-    }
-    signale.info(`Obligation document status: ${parts.join(' ')}`);
-  }
 };
 
 // ==== Helper Functions ====

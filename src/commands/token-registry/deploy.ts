@@ -1,3 +1,4 @@
+import { Argv } from 'yargs';
 import { error, info, success } from 'signale';
 import { CHAIN_ID, deployTokenRegistry, v5Utils, v5ContractAddress } from '@trustvc/trustvc';
 import { input, confirm } from '@inquirer/prompts';
@@ -20,13 +21,31 @@ import {
   waitForTransaction,
 } from '../helpers';
 import { TransactionReceipt, Provider } from 'ethers';
+import {
+  promptForDeployTokenRegistryGaslessInputs,
+  runDeployTokenRegistryGasless,
+} from '../gasless';
 
 export const command = 'deploy';
 
 export const describe = 'Deploys a document store contract on the blockchain';
 
-export const handler = async (): Promise<void> => {
+export const builder = (yargs: Argv): Argv =>
+  yargs.option('gasless', {
+    type: 'boolean',
+    default: false,
+    description:
+      'Deploy this token registry as a gasless (EIP-7702 + Pimlico sponsored) transaction via a PlatformPaymaster instead of paying gas directly. Requires PIMLICO_API_KEY and an EIP7702 implementation address to be set in the environment; you will be prompted for the PlatformPaymaster address. The caller must already be whitelisted (deployment credits) on the paymaster.',
+  });
+
+export const handler = async (argv: { gasless?: boolean } = {}): Promise<void> => {
   try {
+    if (argv.gasless) {
+      const gaslessAnswers = await promptForDeployTokenRegistryGaslessInputs();
+      await runDeployTokenRegistryGasless(gaslessAnswers);
+      return;
+    }
+
     const answers = await promptForInputs();
     if (!answers) return;
 

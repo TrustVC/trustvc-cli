@@ -1,11 +1,27 @@
-# Generated files from CLI commands
-keypair.json
-didKeyPairs.json
-wellknown.json
-credentialStatus.json
-signed_vc.json
-raw_vc.json
-decrypted.json
+# Generated files from CLI commands, dropped in the working directory by their default
+# output paths. Anchored to the repo root: unanchored, these names match at ANY depth and
+# would also swallow identically-named files elsewhere in the tree.
+/keypair.json
+/didKeyPairs.json
+/wellknown.json
+/credentialStatus.json
+/signed_vc.json
+/signed_vp.json
+/raw_vc.json
+/decrypted.json
+/wr/
+
+# Verifiable Presentation manual-test fixtures — generated, deliberately not committed.
+# They carry throwaway private keys, and every credential and presentation is bound to the
+# one holder key pair, so the set is only coherent as a whole; there is no regenerating
+# part of it. Only generate-fixtures.cjs and README.md are tracked. Recreate with:
+#   node tests/fixtures/vp/generate-fixtures.cjs
+#   npx prettier --write "tests/fixtures/vp/**/*.json"
+tests/fixtures/vp/*.json
+tests/fixtures/vp/credentials/
+tests/fixtures/vp/invalid-credentials/
+tests/fixtures/vp/invalid-keypairs/
+tests/fixtures/vp/presentations/
 
 # Dependencies
 node_modules/

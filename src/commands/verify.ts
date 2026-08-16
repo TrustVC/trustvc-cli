@@ -8,6 +8,7 @@ import {
   CaptureConsoleWarn,
   promptNetworkSelection,
   supportedNetwork,
+  isVerifiablePresentation,
 } from '../utils';
 import {
   getChainId,
@@ -101,18 +102,33 @@ export const promptQuestions = async (): Promise<SignedVerifiableCredential> => 
 
 export const verify = async (signedVC: SignedVerifiableCredential, options: VerifyOptions = {}) => {
   const isOpenAttestation = isWrappedV2Document(signedVC) || isWrappedV3Document(signedVC);
+  const isPresentation = isVerifiablePresentation(signedVC);
 
-  const { result, warnings } = isOpenAttestation
-    ? { result: await verifyOpenAttestationDocument(signedVC, options), warnings: null }
-    : await verifyW3CDocument(signedVC, options);
+  let result: VerificationFragment[];
+  let warnings: unknown[][] | null = null;
+
+  if (isPresentation) {
+    result = await verifyPresentationDocument(signedVC);
+  } else if (isOpenAttestation) {
+    result = await verifyOpenAttestationDocument(signedVC, options);
+  } else {
+    ({ result, warnings } = await verifyW3CDocument(signedVC, options));
+  }
 
   if (warnings) {
     handleExpiredCredentialWarning(warnings);
   }
 
-  logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_INTEGRITY, result));
-  logResultStatus(getResultFromFragment(FragmentType.DOCUMENT_STATUS, result));
-  logResultStatus(getResultFromFragment(FragmentType.ISSUER_IDENTITY, result));
+  const fragments = [
+    getResultFromFragment(FragmentType.DOCUMENT_INTEGRITY, result),
+    getResultFromFragment(FragmentType.DOCUMENT_STATUS, result),
+    getResultFromFragment(FragmentType.ISSUER_IDENTITY, result),
+  ];
+  fragments.forEach(logResultStatus);
+
+  if (isPresentation && fragments.every((fragment) => fragment.status === 'VALID')) {
+    logPresentationCredentialCount(fragments[0]);
+  }
 };
 
 // ==== Helper Functions ====
@@ -142,6 +158,21 @@ const resolveFallbackProvider = async (
     'No network could be resolved from the document and this session is non-interactive. Verifying without a provider. Pass --network to select one.',
   );
   return undefined;
+};
+
+/**
+ * Verifies a Verifiable Presentation through the unified fragment pipeline: the holder
+ * proof and holder binding (DOCUMENT_INTEGRITY), the presentation expiry and every
+ * embedded credential's revocation (DOCUMENT_STATUS), and every embedded issuer
+ * (ISSUER_IDENTITY). Freshness of an authentication proof (challenge / domain) is out of
+ * scope — only the verifier that issued the challenge can check it.
+ */
+const verifyPresentationDocument = async (
+  presentation: SignedVerifiableCredential,
+): Promise<VerificationFragment[]> => {
+  signale.info('Verifying W3C Verifiable Presentation...');
+
+  return await verifyDocument(presentation);
 };
 
 const verifyW3CDocument = async (
@@ -222,6 +253,22 @@ const checkExpiration = (signedVC: WrappedOrSignedOpenAttestationDocument) => {
   if (documentData.expirationDate && documentData.expirationDate < new Date().toISOString()) {
     signale.warn('The document credential has expired.');
   }
+};
+
+/**
+ * How many credentials a valid presentation actually covered. The three aggregate lines read
+ * identically whether one credential was checked or five, so state the count — it is the one
+ * thing they cannot convey. Taken from the integrity fragment, which already verified each
+ * embedded credential.
+ */
+export const logPresentationCredentialCount = (
+  integrityFragment: VerificationFragmentWithData,
+): void => {
+  const credentialResults = (integrityFragment?.data as { credentialResults?: unknown[] })
+    ?.credentialResults;
+  if (!credentialResults?.length) return;
+  const count = credentialResults.length;
+  signale.info(`${count} embedded credential${count === 1 ? '' : 's'} verified.`);
 };
 
 export const getResultFromFragment = (

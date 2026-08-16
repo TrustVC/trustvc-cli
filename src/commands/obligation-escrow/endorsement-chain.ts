@@ -71,9 +71,7 @@ export const endorsementChainHandler = async (args: ObligationEscrowEndorsementC
     info(`     Holder: ${holder || '-'}`);
     if (isShred && event.terminationReason && event.terminationReason !== 'None') {
       const reasonLabel =
-        event.terminationReason === 'ReturnToIssuer'
-          ? 'Return to issuer'
-          : event.terminationReason;
+        event.terminationReason === 'ReturnToIssuer' ? 'Return to issuer' : event.terminationReason;
       info(`     Reason: ${reasonLabel}`);
     }
     if (event.remark) info(`     Remark: ${event.remark}`);

@@ -177,7 +177,6 @@ const sleepUntil = (iso) => {
 };
 
 (async () => {
-  const lapsesAt = new Date(Date.now() + SHORT_SECONDS * 1000).toISOString();
   // An already-closed presentation window: opened an hour ago, closed half an hour ago. Kept
   // relative to now because a presentation's `validFrom` is stamped at signing time — a fixed
   // 2020 window would describe a presentation nobody could have signed.
@@ -244,9 +243,17 @@ const sleepUntil = (iso) => {
   write('credentials/presentable/signed_vc_2.json', vc2);
 
   // ---------------------------------------------------------------------------------
-  // The lapsing credential goes early: its presentations must be signed while it is still
-  // inside its window, or signW3CPresentation refuses them.
+  // The lapsing credential and its presentations must ALL be signed inside an 8-second window,
+  // or `signW3CPresentation` refuses them ("has expired") and this script dies.
+  //
+  // The clock therefore starts HERE, immediately before the credential that uses it — not at
+  // the top of this function. Everything above (seven key generations, two of them BBS, plus
+  // the presentable credentials) would otherwise eat into the window before it is ever used.
+  // Measured at ~250ms today, so the old placement was not failing, but it silently coupled
+  // the window to how much setup happened to sit above it — and that setup has grown twice
+  // already. Anchored here, the budget is spent only on the work that actually needs it.
   // ---------------------------------------------------------------------------------
+  const lapsesAt = new Date(Date.now() + SHORT_SECONDS * 1000).toISOString();
   const lapsingVc = await signAndDerive(
     bol(holderDid, holderDid, 'BL-LAPSING', { validUntil: lapsesAt }),
     holderKey,

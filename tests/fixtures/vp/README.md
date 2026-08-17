@@ -311,14 +311,30 @@ so the signed output is indistinguishable from an explicit one.
 
 ## What is automated, and what these files are for
 
-Every scenario here is also covered by `tests/commands/w3c/vp.integration.test.ts`, which mints
-its own presentations rather than reading this folder — a stored presentation carries a real
-expiry and would start failing on its own. So **nothing automated reads these files**, and
-regenerating them can never break the suite.
+**Nothing automated reads these files.** `tests/commands/w3c/vp.integration.test.ts` mints its own
+presentations instead — a stored presentation carries a real expiry and would start failing on its
+own. So regenerating this folder can never break the suite, and a green suite is never evidence
+that these files are right.
 
-Four `vp-sign` refusals are fixture-only, with no automated test: revoked, transferable record,
-missing `credentialSubject.id`, and the BBS/wrong-suite pair. They work, but nothing catches a
-regression.
+Coverage is partial, and the split matters if you are relying on one to protect the other:
+
+| Scenario                                            | Fixture | Automated test                                              |
+| --------------------------------------------------- | ------- | ----------------------------------------------------------- |
+| Valid presentation, single and multiple credentials | ✅      | ✅                                                          |
+| Presentation expired · credential expired · both    | ✅      | ✅                                                          |
+| Unsigned · tampered credential                      | ✅      | ✅                                                          |
+| Bare credential not yet valid                       | ✅      | ✅                                                          |
+| Holder ≠ credential subject, refused at signing     | —       | ✅                                                          |
+| Credential **revoked** (refusal and presentation)   | ✅      | ❌ needs network                                            |
+| Transferable record refused                         | ✅      | ❌                                                          |
+| Missing `credentialSubject.id` refused              | ✅      | ❌                                                          |
+| BBS key / wrong suite refused                       | ✅      | ❌                                                          |
+| Mixed `ecdsa-sd-2023` + `bbs-2023` presentation     | ✅      | ❌                                                          |
+| Holder mismatch **with an intact signature**        | ✅      | ❌ the test edits `holder`, which only breaks the proof     |
+| Unresolvable issuer **with an intact proof**        | ✅      | ❌ the test covers the signing refusal, not the verify side |
+
+The ❌ rows work — every one was run through the built CLI — but nothing catches a regression in
+them.
 
 **So these files exist for what a test cannot do**: handing a real document to a verifier UI, the
 trustvc website, or another implementation, and reading the message a human would see. That is

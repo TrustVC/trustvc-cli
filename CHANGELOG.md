@@ -1,3 +1,11 @@
+# [1.3.0-beta.3](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.2...v1.3.0-beta.3) (2026-08-17)
+
+
+### Bug Fixes
+
+* **deps:** bump @trustvc/trustvc to ^2.16.0-beta.6 ([4b4ed5b](https://github.com/TrustVC/trustvc-cli/commit/4b4ed5bda03e3e12ca62c59042827c8d44d4c060))
+* vp fixtures consolidation ([#36](https://github.com/TrustVC/trustvc-cli/issues/36)) ([85d5b3d](https://github.com/TrustVC/trustvc-cli/commit/85d5b3d7bbe102fe79e21f9cd98a61783e278c6b))
+
 # [1.3.0-beta.2](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.1...v1.3.0-beta.2) (2026-08-14)
 
 

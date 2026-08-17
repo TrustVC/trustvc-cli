@@ -8,17 +8,16 @@
 /signed_vc.json
 /signed_vp.json
 /raw_vc.json
+/decrypted.json
 
 # Verifiable Presentation manual-test fixtures — generated, deliberately not committed.
-# They carry throwaway private keys, and every credential and presentation is bound to the
-# one holder key pair, so the set is only coherent as a whole; there is no regenerating
-# part of it. Only generate-fixtures.cjs and README.md are tracked. Recreate with:
-#   node tests/fixtures/vp/generate-fixtures.cjs
+# They carry throwaway private keys, and ONE holder key pair signs the whole set, so it is
+# only coherent as a whole; there is no regenerating part of it. Only generate.cjs and
+# README.md are tracked. Recreate with:
+#   node tests/fixtures/vp/generate.cjs
 #   npx prettier --write "tests/fixtures/vp/**/*.json"
-tests/fixtures/vp/*.json
+tests/fixtures/vp/keys/
 tests/fixtures/vp/credentials/
-tests/fixtures/vp/invalid-credentials/
-tests/fixtures/vp/invalid-keypairs/
 tests/fixtures/vp/presentations/
 
 # Dependencies

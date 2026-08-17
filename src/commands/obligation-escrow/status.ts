@@ -64,21 +64,27 @@ export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
   const readOnlySigner = new VoidSigner(ZeroAddress, provider);
   const opts = { obligationRegistryAddress, tokenId };
 
-  const [status, registered, reason, escrowAddress] = await Promise.all([
+  const [status, registered, reason] = await Promise.all([
     getObligationRegistryStatus(opts, toSdkSigner(readOnlySigner), { tokenId }),
     isObligationRegistryRegistered(opts, toSdkSigner(readOnlySigner), { tokenId }),
     getObligationEscrowTerminationReason(opts, toSdkSigner(readOnlySigner), { tokenId }),
-    getTitleEscrowAddress(obligationRegistryAddress, tokenId, provider as any, {
-      titleEscrowVersion: 'v5',
-    }),
   ]);
 
   const isZero = (value?: string) => !value || value === ZeroAddress;
 
+  let escrowAddress: string | undefined;
   let beneficiary = '';
   let holder = '';
   let nominee = '';
   try {
+    escrowAddress = await getTitleEscrowAddress(
+      obligationRegistryAddress,
+      tokenId,
+      provider as any,
+      {
+        titleEscrowVersion: 'v5',
+      },
+    );
     const escrow = new Contract(escrowAddress, ObligationEscrow__factory.abi, provider);
     const [currentBeneficiary, currentHolder, currentNominee, lastBeneficiary, lastHolder] =
       await Promise.all([
@@ -92,11 +98,12 @@ export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
     holder = isZero(currentHolder) ? lastHolder : currentHolder;
     nominee = currentNominee;
   } catch {
-    // Escrow may be inactive / not readable after shred — still print registry-level status.
+    // Escrow address may not resolve, or escrow may be inactive / unreadable after shred —
+    // still print registry-level status.
   }
 
   success(`Obligation ${tokenId} on ${obligationRegistryAddress}`);
-  info(`  Escrow: ${escrowAddress}`);
+  if (escrowAddress) info(`  Escrow: ${escrowAddress}`);
   info(`  Status: ${STATUS_LABEL[status] ?? status} (${status})`);
   info(`  Registered: ${registered}`);
   info(`  Termination reason: ${REASON_LABEL[reason] ?? reason} (${reason})`);

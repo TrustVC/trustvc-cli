@@ -125,9 +125,9 @@ describe('verify obligation / BoE (shredded titles)', () => {
       expect(signale.default.success).toHaveBeenCalledWith('DOCUMENT_STATUS: VALID');
       const infoMessages = (
         signale.default.info as unknown as { mock: { calls: unknown[][] } }
-      ).mock.calls.map((call) => String(call[0]));
+      ).mock.calls.flatMap((call) => call.map((arg) => String(arg)));
       expect(infoMessages.join('\n')).not.toContain('Obligation document status');
-      expect(infoMessages.join('\n')).not.toContain('registry=');
+      expect(infoMessages.join('\n')).not.toContain('0xRegistry');
     });
   });
 });

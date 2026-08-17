@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import { statusHandler } from '../../../src/commands/obligation-escrow/status';
 import { NetworkCmdName } from '../../../src/utils';
 import { Contract, ZeroAddress } from 'ethers';
-import { info } from 'signale';
+import { info, success } from 'signale';
 
 vi.mock('signale', async (importOriginal) => {
   const originalSignale = await importOriginal<typeof import('signale')>();
@@ -132,5 +132,23 @@ describe('obligation-escrow/status', () => {
 
     expect(info).toHaveBeenCalledWith('  Owner (beneficiary): 0xLastBeneficiary');
     expect(info).toHaveBeenCalledWith('  Holder: 0xLastHolder');
+  });
+
+  it('still prints registry-level status when escrow address resolution fails', async () => {
+    const trustvc = await import('@trustvc/trustvc');
+    vi.mocked(trustvc.getTitleEscrowAddress).mockRejectedValue(new Error('no escrow deployed'));
+
+    await statusHandler({
+      network: NetworkCmdName.Amoy,
+      obligationRegistryAddress: '0xRegistry',
+      tokenId: '0x1',
+    });
+
+    expect(success).toHaveBeenCalledWith('Obligation 0x1 on 0xRegistry');
+    expect(info).toHaveBeenCalledWith('  Status: Issued (0)');
+    expect(info).toHaveBeenCalledWith('  Registered: true');
+    expect(info).toHaveBeenCalledWith('  Termination reason: None (0)');
+    expect(info).not.toHaveBeenCalledWith(expect.stringContaining('Escrow:'));
+    expect(Contract).not.toHaveBeenCalled();
   });
 });

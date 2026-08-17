@@ -30,6 +30,13 @@
 
 * add obligation escrow commands and types ([f7c0c78](https://github.com/TrustVC/trustvc-cli/commit/f7c0c785cb88235cb6c8efafbdd20be4c3512f17))
 
+## [1.2.1](https://github.com/TrustVC/trustvc-cli/compare/v1.2.0...v1.2.1) (2026-08-17)
+
+
+### Bug Fixes
+
+* vp fixtures consolidation ([#36](https://github.com/TrustVC/trustvc-cli/issues/36)) ([85d5b3d](https://github.com/TrustVC/trustvc-cli/commit/85d5b3d7bbe102fe79e21f9cd98a61783e278c6b))
+
 # [1.2.0](https://github.com/TrustVC/trustvc-cli/compare/v1.1.0...v1.2.0) (2026-08-07)
 
 

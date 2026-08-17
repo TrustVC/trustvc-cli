@@ -233,6 +233,165 @@ describe('verifiable presentation (integration)', () => {
     expect(messages()).toContain('DOCUMENT_STATUS: INVALID');
     expect(messages()).toContain('has expired');
   }, 60000);
+
+  // ---------------------------------------------------------------------------------
+  // Temporal validity — the rest of the windows.
+  //
+  // A presentation's and its credential's expiries are separate, land on different
+  // messages, and need OPPOSITE remedies: an expired presentation means the holder should
+  // re-present, an expired credential means the ISSUER must reissue. So each case pins one
+  // window and leaves the other wide, which is the only way an "expired" report can be
+  // checked for being about the right thing.
+  //
+  // Nothing here is stored: a signed presentation carries a real expiry and a fixture would
+  // start failing on its own. `tests/fixtures/vp/generate-expiring-vp.cjs` writes the same
+  // set to disk for driving a verifier UI by hand.
+  //
+  // Time is moved with a faked `Date` rather than by sleeping, so these stay fast and
+  // deterministic. All the windows are relative to now, so nothing rots.
+  // ---------------------------------------------------------------------------------
+  const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+  let credentialExpiry: string; // credential dies here
+  let afterCredentialExpiry: string; // ...and we verify from here
+  let beforeCredentialExpiry: string;
+  let farFuture: string; // a window this wide never fails
+
+  beforeAll(() => {
+    const now = Date.now();
+    beforeCredentialExpiry = new Date(now + YEAR_MS * 0.5).toISOString();
+    credentialExpiry = new Date(now + YEAR_MS).toISOString();
+    afterCredentialExpiry = new Date(now + YEAR_MS * 2).toISOString();
+    farFuture = new Date(now + YEAR_MS * 10).toISOString();
+  });
+
+  /** Signs (and normally derives) a credential about the holder with an explicit window. */
+  const credentialWithWindow = async (
+    bounds: { validFrom?: string; validUntil?: string },
+    blNumber: string,
+    { derive = true }: { derive?: boolean } = {},
+  ): Promise<Record<string, unknown>> => {
+    const raw: Record<string, unknown> = {
+      '@context': [
+        'https://www.w3.org/ns/credentials/v2',
+        'https://trustvc.io/context/bill-of-lading.json',
+      ],
+      type: ['VerifiableCredential'],
+      issuer: holderDid,
+      validFrom: bounds.validFrom ?? '2024-04-01T12:19:52Z',
+      ...(bounds.validUntil ? { validUntil: bounds.validUntil } : {}),
+      credentialSubject: { id: holderDid, type: ['BillOfLading'], blNumber },
+    };
+    const signed = await signW3C(raw as never, keyPairData as never, 'ecdsa-sd-2023');
+    if (signed.error) throw new Error(`could not sign ${blNumber}: ${signed.error}`);
+    const base = assertDefined(signed.signed, 'signed credential');
+    if (!derive) return base as Record<string, unknown>;
+    const pointers = ['/credentialSubject/id', '/credentialSubject/blNumber', '/validFrom'];
+    if (bounds.validUntil) pointers.push('/validUntil');
+    const derived = await deriveW3C(base, pointers);
+    if (derived.error) throw new Error(`could not derive ${blNumber}: ${derived.error}`);
+    return assertDefined(derived.derived, 'derived credential') as Record<string, unknown>;
+  };
+
+  /**
+   * Signs a presentation directly. `signPresentation` (the CLI path) refuses a past
+   * `validUntil` at the prompt, and these windows are deliberately outside what it accepts.
+   */
+  const presentDirectly = async (
+    credential: Record<string, unknown>,
+    options: Record<string, unknown>,
+  ): Promise<SignedVerifiablePresentation> => {
+    const { signed, error } = await signW3CPresentation(
+      credential as never,
+      keyPairData as never,
+      {
+        holder: holderDid,
+        ...options,
+      } as never,
+    );
+    expect(error).toBeUndefined();
+    return assertDefined(signed, 'signed VP') as SignedVerifiablePresentation;
+  };
+
+  /** Verifies with the clock at `iso`. Only `Date` is faked, so real awaits still resolve. */
+  const verifyAt = async (iso: string, document: unknown): Promise<void> => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(iso));
+    try {
+      await verify(document as never);
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('reports an expired embedded credential on DOCUMENT_STATUS, not integrity', async () => {
+    // The presentation is good for a decade; only the credential's window closes. Signing
+    // happens now, while the credential is still valid — `signW3CPresentation` refuses to
+    // present an already-expired one, so this is the only honest way to build it.
+    const credential = await credentialWithWindow({ validUntil: credentialExpiry }, 'BL-LAPSES');
+    const vp = await presentDirectly(credential, { validUntil: farFuture });
+
+    vi.clearAllMocks();
+    await verifyAt(afterCredentialExpiry, vp);
+
+    // Integrity must stay VALID: the signature is sound and the holder still owns it.
+    expect(signaleSuccessMock).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
+    expect(messages()).toContain('DOCUMENT_STATUS: INVALID');
+    expect(messages()).toMatch(/[Ee]mbedded credential at index 0 has expired/);
+    // Must NOT be reported as the presentation expiring — that would send a user to the
+    // holder for a re-presentation, which can never fix an expired credential.
+    expect(messages()).not.toContain('Presentation has expired');
+  }, 60000);
+
+  it('verifies the same presentation VALID before its credential expires and INVALID after', async () => {
+    const credential = await credentialWithWindow({ validUntil: credentialExpiry }, 'BL-WINDOW');
+    const vp = await presentDirectly(credential, { validUntil: farFuture });
+
+    vi.clearAllMocks();
+    await verifyAt(beforeCredentialExpiry, vp);
+    expect(signaleSuccessMock).toHaveBeenCalledWith('DOCUMENT_STATUS: VALID');
+    expect(messages()).toContain('1 embedded credential verified.');
+
+    // Same bytes, no edit — only the clock moved.
+    vi.clearAllMocks();
+    await verifyAt(afterCredentialExpiry, vp);
+    expect(messages()).toContain('DOCUMENT_STATUS: INVALID');
+    expect(messages()).not.toContain('embedded credential verified.');
+  }, 60000);
+
+  it("reports the presentation's own expiry ahead of its credential's when both have closed", async () => {
+    const credential = await credentialWithWindow({ validUntil: credentialExpiry }, 'BL-BOTH');
+    // A past presentation window is accepted at signing — only the credentials are checked.
+    const vp = await presentDirectly(credential, {
+      validFrom: '2020-01-01T00:00:00Z',
+      validUntil: '2021-01-01T00:00:00Z',
+    });
+
+    vi.clearAllMocks();
+    await verifyAt(afterCredentialExpiry, vp);
+
+    expect(signaleSuccessMock).toHaveBeenCalledWith('DOCUMENT_INTEGRITY: VALID');
+    expect(messages()).toContain('DOCUMENT_STATUS: INVALID');
+    // The presentation is checked first and short-circuits, so its message is the one shown.
+    expect(messages()).toContain('Presentation has expired');
+  }, 60000);
+
+  it('reports a bare credential that is not yet valid as invalid', async () => {
+    // Left underived — see the note in `credentialWithWindow`; it does not affect the result.
+    const credential = await credentialWithWindow({ validFrom: farFuture }, 'BL-NOTYET-VC', {
+      derive: false,
+    });
+
+    vi.clearAllMocks();
+    await verify(credential as never);
+
+    expect(messages()).toContain('DOCUMENT_INTEGRITY: INVALID');
+    expect(messages()).toMatch(/validFrom/);
+    // The SAME throw is reported twice: `isSignedDocument` runs the same `_checkCredential`,
+    // catches the future-`validFrom` error and returns a bare `false`, which the empty-status
+    // fragment renders as a shape complaint. The document is in fact a valid signed VC, so this
+    // message is misleading — asserted to pin the behaviour, not to endorse it.
+    expect(messages()).toContain('Document is not a valid SignedVerifiableCredential');
+  }, 60000);
 });
 
 /**

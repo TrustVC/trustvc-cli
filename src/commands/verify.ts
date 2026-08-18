@@ -126,18 +126,6 @@ export const verify = async (signedVC: SignedVerifiableCredential, options: Veri
   ];
   fragments.forEach(logResultStatus);
 
-  const obligationStatus = getObligationDocumentStatus(result);
-  if (obligationStatus) {
-    const parts = [`registry=${obligationStatus.obligationRegistry}`];
-    if (obligationStatus.status !== undefined) {
-      parts.push(`status=${obligationStatus.status}`);
-    }
-    if (obligationStatus.terminationReason !== undefined) {
-      parts.push(`terminationReason=${obligationStatus.terminationReason}`);
-    }
-    signale.info(`Obligation document status: ${parts.join(' ')}`);
-  }
-
   if (isPresentation && fragments.every((fragment) => fragment.status === 'VALID')) {
     logPresentationCredentialCount(fragments[0]);
   }

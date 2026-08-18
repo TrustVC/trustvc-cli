@@ -2,11 +2,13 @@ import { info, success } from 'signale';
 import {
   ObligationDocumentStatus,
   ObligationEscrowTerminationReason,
+  getTitleEscrowAddress,
   getObligationEscrowTerminationReason,
   getObligationRegistryStatus,
   isObligationRegistryRegistered,
+  v5Contracts,
 } from '@trustvc/trustvc';
-import { VoidSigner, ZeroAddress } from 'ethers';
+import { Contract, VoidSigner, ZeroAddress } from 'ethers';
 import { BaseObligationEscrowCommand } from '../../types';
 import {
   extractObligationDocumentInfo,
@@ -16,6 +18,8 @@ import {
   toSdkSigner,
 } from '../../utils';
 import { runObligationEscrowCommand } from './shared';
+
+const { ObligationEscrow__factory } = v5Contracts;
 
 export const command = 'status';
 export const describe = 'Read BoE obligation escrow status / registration / termination reason';
@@ -60,16 +64,50 @@ export const statusHandler = async (args: ObligationEscrowStatusCommand) => {
   const readOnlySigner = new VoidSigner(ZeroAddress, provider);
   const opts = { obligationRegistryAddress, tokenId };
 
-  const status = await getObligationRegistryStatus(opts, toSdkSigner(readOnlySigner), { tokenId });
-  const registered = await isObligationRegistryRegistered(opts, toSdkSigner(readOnlySigner), {
-    tokenId,
-  });
-  const reason = await getObligationEscrowTerminationReason(opts, toSdkSigner(readOnlySigner), {
-    tokenId,
-  });
+  const [status, registered, reason] = await Promise.all([
+    getObligationRegistryStatus(opts, toSdkSigner(readOnlySigner), { tokenId }),
+    isObligationRegistryRegistered(opts, toSdkSigner(readOnlySigner), { tokenId }),
+    getObligationEscrowTerminationReason(opts, toSdkSigner(readOnlySigner), { tokenId }),
+  ]);
+
+  const isZero = (value?: string) => !value || value === ZeroAddress;
+
+  let escrowAddress: string | undefined;
+  let beneficiary = '';
+  let holder = '';
+  let nominee = '';
+  try {
+    escrowAddress = await getTitleEscrowAddress(
+      obligationRegistryAddress,
+      tokenId,
+      provider as any,
+      {
+        titleEscrowVersion: 'v5',
+      },
+    );
+    const escrow = new Contract(escrowAddress, ObligationEscrow__factory.abi, provider);
+    const [currentBeneficiary, currentHolder, currentNominee, lastBeneficiary, lastHolder] =
+      await Promise.all([
+        escrow.beneficiary(),
+        escrow.holder(),
+        escrow.nominee(),
+        escrow.lastBeneficiary(),
+        escrow.lastHolder(),
+      ]);
+    beneficiary = isZero(currentBeneficiary) ? lastBeneficiary : currentBeneficiary;
+    holder = isZero(currentHolder) ? lastHolder : currentHolder;
+    nominee = currentNominee;
+  } catch {
+    // Escrow address may not resolve, or escrow may be inactive / unreadable after shred —
+    // still print registry-level status.
+  }
 
   success(`Obligation ${tokenId} on ${obligationRegistryAddress}`);
+  if (escrowAddress) info(`  Escrow: ${escrowAddress}`);
   info(`  Status: ${STATUS_LABEL[status] ?? status} (${status})`);
   info(`  Registered: ${registered}`);
   info(`  Termination reason: ${REASON_LABEL[reason] ?? reason} (${reason})`);
+  if (!isZero(beneficiary)) info(`  Owner (beneficiary): ${beneficiary}`);
+  if (!isZero(holder)) info(`  Holder: ${holder}`);
+  if (nominee && nominee !== ZeroAddress) info(`  Nominee: ${nominee}`);
 };

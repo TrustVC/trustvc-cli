@@ -116,16 +116,18 @@ describe('verify obligation / BoE (shredded titles)', () => {
   });
 
   describe('verify', () => {
-    it('treats shredded BoE as DOCUMENT_STATUS VALID and logs obligation status', async () => {
+    it('treats shredded BoE as DOCUMENT_STATUS VALID without dumping the registry address', async () => {
       const signale = await import('signale');
 
       await verify({ id: 'urn:uuid:shredded-boe' } as never);
 
       expect(verifyDocumentMock).toHaveBeenCalled();
       expect(signale.default.success).toHaveBeenCalledWith('DOCUMENT_STATUS: VALID');
-      expect(signale.default.info).toHaveBeenCalledWith(
-        'Obligation document status: registry=0xRegistry status=2 terminationReason=2',
-      );
+      const infoMessages = (
+        signale.default.info as unknown as { mock: { calls: unknown[][] } }
+      ).mock.calls.flatMap((call) => call.map((arg) => String(arg)));
+      expect(infoMessages.join('\n')).not.toContain('Obligation document status');
+      expect(infoMessages.join('\n')).not.toContain('0xRegistry');
     });
   });
 });

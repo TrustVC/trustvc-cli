@@ -1543,7 +1543,7 @@ trustvc obligation-escrow endorsement-chain
 - *Network, obligationRegistry, token ID, and document `id` (encryption key) are extracted from the document*
 
 **Output:**
-Chronological list of endorsement-chain events (type, block, timestamp, owner/holder, remark, tx hash). Status events include `StatusInitialized`, `StatusAccepted`, `StatusRejected`, `StatusDischarged`, and `Shred`.
+Chronological list of endorsement-chain events (type, block, timestamp, owner/holder, remark, tx hash). Status events include `STATUS_INITIALIZED`, `STATUS_ACCEPTED`, `STATUS_REJECTED`, `STATUS_DISCHARGED`, `RETURN_TO_ISSUER_ACCEPTED`, and `SURRENDER_ACCEPTED`.
 
 #### obligation-escrow transfer-holder
 

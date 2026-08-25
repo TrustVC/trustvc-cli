@@ -44,7 +44,7 @@ vi.mock('@trustvc/trustvc', async () => {
         transactionHash: '0xtx1',
       },
       {
-        type: 'RETURN_TO_ISSUER_ACCEPTED',
+        type: 'STATUS_DISCHARGED',
         blockNumber: 2,
         timestamp: 1_700_000_100_000,
         owner: '0xOwner',
@@ -99,7 +99,7 @@ describe('obligation-escrow/endorsement-chain', () => {
     expect(infoMessages.some((msg) => msg.includes('Holder:') && msg.includes('0xHolder'))).toBe(
       true,
     );
-    expect(infoMessages.some((msg) => msg.includes('Reason: Discharged'))).toBe(true);
+    expect(infoMessages.some((msg) => msg.includes('[STATUS_DISCHARGED]'))).toBe(true);
     expect(infoMessages.some((msg) => msg.includes('Remark: burned'))).toBe(true);
   });
 });

@@ -1529,7 +1529,7 @@ Obligation and escrow status fields from the chain (status, registered, terminat
 
 Fetches the BoE endorsement chain (transfers + obligation status events) via the network Infura/RPC. Remarks are decrypted with the credential `id`. Read-only: no wallet required.
 
-On a shred (`RETURN_TO_ISSUER_ACCEPTED` / `SURRENDER_ACCEPTED`) row, owner and holder are the last known parties before the title was burned.
+On a shred (`RETURN_TO_ISSUER_ACCEPTED` / `SURRENDER_ACCEPTED`) row, owner and holder are the last known parties before the title was burned. Reject and discharge print as `STATUS_REJECTED` / `STATUS_DISCHARGED` (they auto-shred in the same tx; `RETURN_TO_ISSUER_ACCEPTED` is classic ETR shred only).
 
 **Usage:**
 

@@ -1,3 +1,10 @@
+# [1.3.0-beta.5](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.4...v1.3.0-beta.5) (2026-09-01)
+
+
+### Bug Fixes
+
+* v4 endorsement chain ([#37](https://github.com/TrustVC/trustvc-cli/issues/37)) ([81867f0](https://github.com/TrustVC/trustvc-cli/commit/81867f0842428a6d919d6c87934a8c175178f33c))
+
 # [1.3.0-beta.4](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.3...v1.3.0-beta.4) (2026-08-18)
 
 

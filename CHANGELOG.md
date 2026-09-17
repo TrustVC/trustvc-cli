@@ -1,3 +1,10 @@
+# [1.3.0-beta.6](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.5...v1.3.0-beta.6) (2026-09-17)
+
+
+### Features
+
+* boe v3 ([#38](https://github.com/TrustVC/trustvc-cli/issues/38)) ([21f7a12](https://github.com/TrustVC/trustvc-cli/commit/21f7a129460827b69eb275835b09699edb7e3c92))
+
 # [1.3.0-beta.5](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.4...v1.3.0-beta.5) (2026-09-01)
 
 

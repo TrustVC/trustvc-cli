@@ -356,8 +356,14 @@ export const validateAndEncryptRemark = (remark?: string, keyId?: string): Bytes
     return '0x';
   }
 
+  if (!keyId) {
+    const error = 'An encryption key is required to encrypt a remark';
+    signale.error(error);
+    throw new Error(error);
+  }
+
   // Encrypt the remark and ensure it has '0x' prefix
-  const encrpyted = encrypt(remark, keyId ?? '');
+  const encrpyted = encrypt(remark, keyId);
   return encrpyted.startsWith('0x') ? encrpyted : `0x${encrpyted}`;
 };
 

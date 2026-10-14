@@ -81,7 +81,6 @@ export const getWalletOrSigner = async ({
   //     keyId: options.kmsKeyId,
   //     sessionToken: options.sessionToken,
   //   };
-
   //   const signer = new AwsKmsSigner(kmsCredentials).connect(provider);
   //   if (signer.provider) return signer as ConnectedSigner;
   //   throw new Error('Unable to attach the provider to the kms signer');

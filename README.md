@@ -42,7 +42,7 @@ This CLI leverages the TrustVC package:
 
 ## Prerequisites
 
-- **Node.js 22+** — Download from [nodejs.org](https://nodejs.org) or use [nvm](https://github.com/nvm-sh/nvm):
+- **Node.js 22.23.4+, 24.22.1+ or 26.12.1+** — earlier releases of those lines, and all of Node 25 (EOL), are affected by [CVE-2026-111497](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases), which matters because `verify` fetches URLs taken from the document. Download from [nodejs.org](https://nodejs.org) or use [nvm](https://github.com/nvm-sh/nvm):
 
 ```sh
 nvm install 22

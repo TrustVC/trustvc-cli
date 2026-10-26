@@ -30,7 +30,9 @@ files register flat, which is why `src/commands/w3c/sign.ts` is `trustvc w3c-sig
 ## Commands
 
 Node **≥ 22** — enforced at runtime in `main.ts`, and the install fails below it.
-Use `nvm use 22`.
+`engines` asks for a patched build, `^22.23.4 || ^24.22.1 || >=26.12.1` (CVE-2026-111497): one range
+per release line, because a bare `>=22.23.4` would admit vulnerable 24.x/26.x and EOL 25.x.
+`main.ts` still only checks the major. Use `nvm use 22`.
 
 ```bash
 npm run build            # tsup -> dist/ (run before testing the real CLI)

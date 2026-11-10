@@ -7,6 +7,9 @@ export * from './cli-errors';
 // File I/O Operations
 export * from './file-io';
 
+// Inline HTML Template compression
+export * from './inline-html-template';
+
 // Formatting Utilities
 export * from './formatting';
 

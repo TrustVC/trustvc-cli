@@ -157,6 +157,35 @@ document type. There is deliberately **no `vp-verify`** — one verify command f
 `VerifiablePresentation` **and** a `verifiableCredential` field). It deliberately ignores
 `proof`, so an unsigned presentation is routed in and reported INVALID rather than skipped.
 
+## Inline HTML Templates
+
+Three commands cover the raw-HTML-template → issued-credential workflow, all thin wrappers
+around `@trustvc/trustvc`'s `src/inline-html-template/` + `DocumentBuilder`:
+
+- `inline-template-preview` — fills a template's `data-field`/`data-field-src`/`data-repeat`
+  bindings against sample data (or none) and writes a standalone HTML file to open in a
+  browser. Uses `jsdom`, not `linkedom` — see the gotcha below. Run this first.
+- `inline-template-build` — compresses the HTML + CSS via `compressTemplate()` into the
+  string a renderMethod entry (or `DocumentBuilder.inlineHtmlTemplate()`) expects, for callers
+  building a document outside the CLI.
+- `w3c-sign` — optionally attaches the compressed template as an `INLINE_HTML_TEMPLATE`
+  renderMethod **before** signing, so the credential actually gets issued with it. It asks
+  html/css/template-name only when the user opts in (`confirm`, default no); declining leaves
+  every prompt and the signed output byte-identical to before this feature existed.
+
+`compressTemplateFromFiles` (`src/utils/inline-html-template.ts`) is the one shared
+read-html-and-css-and-compress function both `inline-template-build` and `w3c-sign` call — if
+you touch the compression step, change it there, not in either command.
+
+`w3c-sign`'s attach step goes through the SDK's real `DocumentBuilder.inlineHtmlTemplate()`
+(`new DocumentBuilder(credential).inlineHtmlTemplate(compressed)`, then `.toString()` → parsed
+back to a plain object) rather than hand-rolling the renderMethod-replacement and `@context`
+logic here — that keeps it byte-for-byte identical to what the SDK itself produces. **It is
+only ever used for that one method call** — `.sign()` is never called on this builder
+instance, so none of its signing-time validation (required `credentialSubject`, auto-set
+`issuer`/`validFrom`, credential-status checks) applies; `w3c-sign` still signs via the
+original direct `signW3C(...)` call, unchanged for every caller who doesn't opt in.
+
 ## Gotchas (hard-won — add to this list)
 
 - **`.gitignore` entries for command output are anchored (`/didKeyPairs.json`) on purpose.**
@@ -197,6 +226,35 @@ document type. There is deliberately **no `vp-verify`** — one verify command f
   directly once the library exports it.
 - **`Cannot read properties of null (reading 'verificationMethod')`** always means a DID could
   not be resolved — nearly always a did:web whose document isn't published yet.
+- **`inline-template-preview` uses `jsdom`, not `linkedom`.** trustvc's
+  `buildInlineHtmlTemplateSrcdoc` assumes a spec-compliant `DOMParser`: a bare HTML fragment
+  (no `<html>`/`<body>` wrapper — the normal shape of a hand-written template) must still
+  land in `document.body`, the way a real browser and jsdom both normalize it. linkedom
+  does not: `parseFromString('<div>x</div>', 'text/html')` makes the `<div>` the
+  `documentElement` instead, so `.body` comes back empty and the preview silently renders
+  blank. jsdom was verified against the real function and matches trustvc's own jsdom-based
+  test suite; don't swap it for a lighter DOM library without re-checking this. The global
+  `DOMParser` it installs is removed in a `finally` right after the call — never left set for
+  other commands.
+- **Tests that touch jsdom must run on Node ≥ 22.** jsdom 31 bundles an `undici` that breaks
+  (`Cannot read properties of undefined (reading 'bind')`) under this machine's default
+  Node 20. The CLI already requires Node ≥ 22 at runtime, so this is a dev-environment-only
+  trap, not a real bug — run `npm test` under `nvm use 22` if you see that error locally.
+- **`w3c-sign`'s template attach step throws `DocumentBuilder` errors, not CLI ones.** It only
+  calls `new DocumentBuilder(credential)` when the user opts into attaching a template, so a
+  v1.1 credential (`@context` includes `https://www.w3.org/2018/credentials/v1`) surfaces
+  `'Document builder does not support data model v1.1.'` for that path only — every other
+  `w3c-sign` use (declined, or any credential version) is unaffected, since the original
+  `signW3C(...)` call never goes through `DocumentBuilder`.
+- **A signing failure that prints only `Safe mode validation error.`** is jsonld.js rejecting
+  an undefined vocabulary term during RDF expansion/canonicalization (`"invalid property"` is
+  the usual code) — not a trustvc-cli bug. It means some property or `type` value in the
+  credential (or `credentialSubject`) isn't defined by any context in `@context`. `signW3C`
+  swallows jsonld's detailed error and returns just this one line; to see which term, call
+  `signW3C` directly in Node and inspect the thrown error, or check the credential against
+  every context it declares. Hit this while testing the inline-template attach step: a
+  hand-written fixture used the `bill-of-lading.json` context but added a `carrier` field that
+  context doesn't define — nothing to do with rendering or templates, purely an unknown term.
 
 ## Adding a command
 

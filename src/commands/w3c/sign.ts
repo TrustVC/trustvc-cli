@@ -1,6 +1,12 @@
-import { input, select } from '@inquirer/prompts';
-import { isDirectoryValid, readJsonFile, writeFile } from '../../utils';
-import { issuer, RawVerifiableCredential, signW3C } from '@trustvc/trustvc';
+import { confirm, input, select } from '@inquirer/prompts';
+import {
+  compressTemplateFromFiles,
+  isDirectoryValid,
+  readJsonFile,
+  validateInputFileExists,
+  writeFile,
+} from '../../utils';
+import { DocumentBuilder, issuer, RawVerifiableCredential, signW3C } from '@trustvc/trustvc';
 import { SignInput } from '../../types';
 import signale from 'signale';
 
@@ -33,6 +39,47 @@ export const promptForInputs = async (): Promise<SignInput> => {
     pathToCredentialFile,
     'Verifiable Credential JSON',
   );
+
+  const attachInlineTemplate = await confirm({
+    message: 'Attach an inline HTML template as the rendering method for this credential?',
+    default: false,
+  });
+
+  let inlineTemplate: SignInput['inlineTemplate'];
+  if (attachInlineTemplate) {
+    const pathToHtml = await input({
+      message: 'Enter the path to your template HTML file:',
+      required: true,
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return 'Template HTML file path is required';
+        return validateInputFileExists(value);
+      },
+    });
+
+    const pathToCss = await input({
+      message: 'Enter the path to your template CSS file:',
+      required: true,
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return 'Template CSS file path is required';
+        return validateInputFileExists(value);
+      },
+    });
+
+    const templateName = await input({
+      message: 'Enter a name for this template (e.g. BILL_OF_LADING):',
+      required: true,
+      validate: (value: string) => {
+        if (!value || value.trim() === '') return 'Template name is required';
+        return true;
+      },
+    });
+
+    inlineTemplate = {
+      pathToHtml: pathToHtml.trim(),
+      pathToCss: pathToCss.trim(),
+      templateName: templateName.trim(),
+    };
+  }
 
   const pathToKeypairFile = await input({
     message: 'Please enter the path to your did key-pair JSON file:',
@@ -73,7 +120,24 @@ export const promptForInputs = async (): Promise<SignInput> => {
     keyPairData,
     encryptionAlgorithm,
     pathToSignedVC,
+    ...(inlineTemplate ? { inlineTemplate } : {}),
   };
+};
+
+/**
+ * Compresses the raw HTML + CSS and attaches it as the credential's INLINE_HTML_TEMPLATE
+ * renderMethod, via the same `DocumentBuilder.inlineHtmlTemplate()` the SDK exposes — this
+ * keeps the renderMethod-replacement and `@context` handling identical to building the
+ * credential with DocumentBuilder directly, rather than reimplementing it here.
+ */
+const attachInlineHtmlTemplate = async (
+  credential: RawVerifiableCredential,
+  inlineTemplate: NonNullable<SignInput['inlineTemplate']>,
+): Promise<RawVerifiableCredential> => {
+  const template = await compressTemplateFromFiles(inlineTemplate);
+  const builder = new DocumentBuilder(credential);
+  builder.inlineHtmlTemplate(template);
+  return JSON.parse(builder.toString());
 };
 
 export const sign = async ({
@@ -81,8 +145,13 @@ export const sign = async ({
   keyPairData,
   encryptionAlgorithm,
   pathToSignedVC,
+  inlineTemplate,
 }: SignInput): Promise<void> => {
-  const signedVC = await signW3C(credential, keyPairData, encryptionAlgorithm);
+  const credentialToSign = inlineTemplate
+    ? await attachInlineHtmlTemplate(credential, inlineTemplate)
+    : credential;
+
+  const signedVC = await signW3C(credentialToSign, keyPairData, encryptionAlgorithm);
   if (signedVC?.signed) {
     signale.success('Verifiable Credential signed successfully');
     const signedVCPath = `${pathToSignedVC}/signed_vc.json`;

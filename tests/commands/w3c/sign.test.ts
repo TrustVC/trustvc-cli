@@ -1,6 +1,9 @@
+import fs from 'fs';
+import path from 'path';
+import tmp from 'tmp';
 import * as prompts from '@inquirer/prompts';
-import { issuer } from '@trustvc/trustvc';
-import { beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
+import { context, decompressInlineHtmlTemplate, issuer } from '@trustvc/trustvc';
+import { afterEach, beforeEach, describe, expect, it, MockedFunction, vi } from 'vitest';
 import { promptForInputs, sign } from '../../../src/commands/w3c/sign';
 import { SignInput } from '../../../src/types';
 
@@ -196,6 +199,52 @@ describe('w3c-sign', () => {
 
       await expect(promptForInputs()).rejects.toThrow('Output path is not valid');
     });
+
+    it('does not prompt for a template and omits inlineTemplate when declined', async () => {
+      (prompts.input as any)
+        .mockResolvedValueOnce('./credential.json')
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('.');
+      (prompts.confirm as any).mockResolvedValueOnce(false);
+      (prompts.select as any).mockResolvedValueOnce('ecdsa-sd-2023');
+
+      const utils = await import('../../../src/utils');
+      (utils.readJsonFile as MockedFunction<any>)
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
+
+      const result = await promptForInputs();
+
+      expect(result).not.toHaveProperty('inlineTemplate');
+      expect(prompts.input).toHaveBeenCalledTimes(3);
+    });
+
+    it('prompts for html/css/templateName and returns inlineTemplate when accepted', async () => {
+      (prompts.input as any)
+        .mockResolvedValueOnce('./credential.json')
+        .mockResolvedValueOnce(' template.html ')
+        .mockResolvedValueOnce(' template.css ')
+        .mockResolvedValueOnce(' BILL_OF_LADING ')
+        .mockResolvedValueOnce('./did-keypair.json')
+        .mockResolvedValueOnce('.');
+      (prompts.confirm as any).mockResolvedValueOnce(true);
+      (prompts.select as any).mockResolvedValueOnce('ecdsa-sd-2023');
+
+      const utils = await import('../../../src/utils');
+      (utils.readJsonFile as MockedFunction<any>)
+        .mockReturnValueOnce({ id: 'urn:uuid:123' })
+        .mockReturnValueOnce({ domain: 'https://example.com' });
+      (utils.isDirectoryValid as MockedFunction<any>).mockReturnValue(true);
+
+      const result = await promptForInputs();
+
+      expect(result.inlineTemplate).toEqual({
+        pathToHtml: 'template.html',
+        pathToCss: 'template.css',
+        templateName: 'BILL_OF_LADING',
+      });
+    });
   });
 
   describe('sign', () => {
@@ -278,6 +327,71 @@ describe('w3c-sign', () => {
 
       await expect(sign(input)).rejects.toThrow('Unexpected error while writing');
       expect(signaleSuccessMock).toHaveBeenCalledWith('Verifiable Credential signed successfully');
+    });
+
+    describe('with an inline HTML template', () => {
+      let tmpDir: tmp.DirResult;
+
+      beforeEach(() => {
+        tmpDir = tmp.dirSync({ unsafeCleanup: true });
+        fs.writeFileSync(path.join(tmpDir.name, 'template.html'), '<div data-field="name"></div>');
+        fs.writeFileSync(path.join(tmpDir.name, 'template.css'), '.card{color:red}');
+      });
+
+      afterEach(() => {
+        tmpDir.removeCallback();
+      });
+
+      it('attaches a compressed INLINE_HTML_TEMPLATE renderMethod before signing', async () => {
+        signW3CMock.mockResolvedValue({ signed: { proof: 'ok' } });
+
+        await sign({
+          ...input,
+          inlineTemplate: {
+            pathToHtml: path.join(tmpDir.name, 'template.html'),
+            pathToCss: path.join(tmpDir.name, 'template.css'),
+            templateName: 'DEMO_CARD',
+          },
+        });
+
+        expect(signW3CMock).toHaveBeenCalledTimes(1);
+        const [signedCredential] = signW3CMock.mock.calls[0];
+
+        expect(signedCredential.id).toBe('urn:uuid:123');
+        expect(signedCredential['@context']).toContain(context.RENDER_CONTEXT_V2_URL);
+        expect(signedCredential.renderMethod).toEqual([
+          { type: 'INLINE_HTML_TEMPLATE', template: expect.stringMatching(/^H4sI/) },
+        ]);
+
+        const decompressed = await decompressInlineHtmlTemplate({
+          renderMethod: signedCredential.renderMethod,
+        } as never);
+        const [decompressedMethod] = (decompressed as { renderMethod: { template: unknown }[] })
+          .renderMethod;
+
+        expect(decompressedMethod.template).toEqual({
+          templateName: 'DEMO_CARD',
+          html: '<div data-field="name"></div>',
+          css: '.card{color:red}',
+        });
+      });
+
+      it('leaves the original credential object untouched', async () => {
+        signW3CMock.mockResolvedValue({ signed: { proof: 'ok' } });
+        const credential = { id: 'urn:uuid:123' };
+
+        await sign({
+          ...input,
+          credential,
+          inlineTemplate: {
+            pathToHtml: path.join(tmpDir.name, 'template.html'),
+            pathToCss: path.join(tmpDir.name, 'template.css'),
+            templateName: 'DEMO_CARD',
+          },
+        });
+
+        expect(credential).toEqual({ id: 'urn:uuid:123' });
+      });
     });
   });
 });

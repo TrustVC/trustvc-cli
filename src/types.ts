@@ -7,6 +7,7 @@ import {
   SignedVerifiableCredential,
 } from '@trustvc/trustvc';
 import {
+  InlineTemplateFiles,
   PrivateKeyOption,
   GasPriceScale,
   NetworkAndWalletSignerOption,
@@ -20,6 +21,8 @@ export type SignInput = {
   keyPairData: typeof issuer.IssuedDIDOption;
   encryptionAlgorithm: typeof credentialStatus.cryptoSuiteName;
   pathToSignedVC: string;
+  /** Set when the user chose to attach an INLINE_HTML_TEMPLATE renderMethod before signing. */
+  inlineTemplate?: InlineTemplateFiles;
 };
 
 // @trustvc/trustvc does not (yet) re-export the presentation types, so they are derived
@@ -183,3 +186,15 @@ export type DocumentStoreIssueCommand = NetworkAndWalletSignerOption &
     documentStoreAddress: string;
     documentHash: string;
   };
+
+export type InlineTemplateBuildInput = InlineTemplateFiles & {
+  outputPath: string;
+};
+
+export type InlineTemplatePreviewInput = {
+  pathToHtml: string;
+  pathToCss: string;
+  /** Path to a sample credentialSubject JSON file, or '' to preview with no data. */
+  pathToSampleData: string;
+  outputPath: string;
+};

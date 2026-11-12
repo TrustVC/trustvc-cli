@@ -10,6 +10,7 @@ A comprehensive command-line interface for managing W3C Verifiable Credentials, 
 - ✅ **W3C Verifiable Credentials**: Sign, verify and manage W3C verifiable credentials
 - ✅ **W3C Verifiable Presentations**: Present credentials as a holder and verify presentations
 - ✅ **OpenAttestation**: Sign, verify, wrap/unwrap, and encrypt/decrypt OpenAttestation v2/v3 documents
+- ✅ **Inline HTML Templates**: Compress a raw HTML + CSS template for `DocumentBuilder.inlineHtmlTemplate()` and preview it against sample data before issuing
 - ✅ **Token Registry**: Mint tokens to blockchain-based token registries
 - ✅ **Document Store**: Deploy and manage document store contracts
 - ✅ **Title Escrow**: Complete transferable records management (holder/beneficiary transfers)
@@ -118,6 +119,16 @@ trustvc oa-encrypt
 
 # Decrypt an encrypted Open Attestation document
 trustvc oa-decrypt
+```
+
+### Inline HTML Templates
+
+```sh
+# Preview a raw HTML + CSS template against sample data before compressing it
+trustvc inline-template-preview
+
+# Compress a raw HTML + CSS template for DocumentBuilder.inlineHtmlTemplate()
+trustvc inline-template-build
 ```
 
 ### Wallet Management
@@ -320,6 +331,8 @@ See the [Gasless Transactions user guide](#gasless-transactions-user-guide) for 
 |                      | [`oa-unwrap`](#oa-unwrap)                                                                 | Unwrap OpenAttestation documents                                                                             |
 |                      | [`oa-encrypt`](#oa-encrypt)                                                               | Encrypt an OA document for safe sharing and storage                                                          |
 |                      | [`oa-decrypt`](#oa-decrypt)                                                               | Decrypt an OA document encrypted with oa-encrypt                                                             |
+| **Inline HTML Template** | [`inline-template-preview`](#inline-template-preview)                                 | Preview a raw HTML + CSS template against sample data                                                        |
+|                      | [`inline-template-build`](#inline-template-build)                                         | Compress a raw HTML + CSS template for DocumentBuilder.inlineHtmlTemplate()                                  |
 | **Token Registry**   | [`mint`](#mint)                                                                           | Mint tokens to blockchain registries                                                                         |
 |                      | [`token-registry deploy`](#token-registry-deploy)                                         | Deploy token registry contracts                                                                              |
 |                      | `token-registry mint`                                                                     | Alternative: `mint`                                                                                          |
@@ -519,11 +532,23 @@ trustvc w3c-sign
 
 - Path to did:web key-pair JSON file
 - Path to unsigned verifiable credential JSON file
+- Whether to attach an inline HTML template as the rendering method (optional — see below)
 - Select cryptosuite (ECDSA-SD-2023 or BBS-2023)
 - Output directory
 
 **Output:**
 Creates `signed_vc.json` with cryptographic proof.
+
+**Attaching an inline HTML template:**
+
+Answering yes to the rendering-method prompt asks for a template HTML file, a template CSS
+file, and a template name, compresses them the same way as
+[`inline-template-build`](#inline-template-build), and attaches the result as an
+`INLINE_HTML_TEMPLATE` renderMethod entry (via `DocumentBuilder.inlineHtmlTemplate()`) before
+signing — so the proof covers the template. Run [`inline-template-preview`](#inline-template-preview)
+first to confirm the template renders correctly. This step requires a VC Data Model v2.0
+credential (no `@context` entry for `https://www.w3.org/2018/credentials/v1`) — that is a
+`DocumentBuilder` constraint, not specific to templates.
 
 #### verify
 
@@ -749,6 +774,54 @@ trustvc oa-decrypt
 **Output:**
 
 Writes the decrypted Open Attestation document (raw OA v2/v3 or wrapped OA v2/v3) to the specified path. Fails if the key is wrong or the file is not a valid encrypted OA document.
+
+#### inline-template-preview
+
+Renders a raw HTML + CSS template against sample data into a standalone HTML file, so you can check `data-field` / `data-field-src` / `data-repeat` bindings in a browser before compressing or issuing the template. Run this before `inline-template-build`.
+
+**Usage:**
+
+```sh
+trustvc inline-template-preview
+```
+
+**Interactive Prompts:**
+
+- Path to the template HTML file
+- Path to the template CSS file
+- Path to a sample `credentialSubject` JSON file (optional — leave blank to preview with blank fields)
+- Path to save the preview HTML file (default: `./inline-template-preview.html`)
+
+**Output:**
+
+Writes a standalone HTML file (same CSP and markup a verified document's sandboxed iframe would render) with the template filled against the sample data. Open it directly in a browser.
+
+**Binding reference:**
+
+- `[data-field="x"]` — set from `credentialSubject.x` via `.textContent`
+- `[data-field-src="x"]` — set from `credentialSubject.x` via `.src` (e.g. an `<img>` logo)
+- `<template data-repeat="x">...</template>` — cloned once per item in `credentialSubject.x` (an array)
+
+#### inline-template-build
+
+Compresses a raw HTML + CSS template into the string `DocumentBuilder.inlineHtmlTemplate()` expects. Run `inline-template-preview` first to confirm the bindings render correctly.
+
+**Usage:**
+
+```sh
+trustvc inline-template-build
+```
+
+**Interactive Prompts:**
+
+- Path to the template HTML file
+- Path to the template CSS file
+- Template name (e.g. `BILL_OF_LADING`)
+- Path (or directory) to save the compressed template
+
+**Output:**
+
+Writes a JSON file `{ templateName, template }`, where `template` is the compressed string to pass to `DocumentBuilder.inlineHtmlTemplate(template)` before signing. The compressed string is also printed to the console.
 
 #### mint
 

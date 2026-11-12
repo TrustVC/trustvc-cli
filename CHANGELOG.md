@@ -1,3 +1,10 @@
+# [1.3.0-beta.7](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.6...v1.3.0-beta.7) (2026-11-12)
+
+
+### Features
+
+* inline HTML template commands and w3c-sign integration ([#40](https://github.com/TrustVC/trustvc-cli/issues/40)) ([dcc7795](https://github.com/TrustVC/trustvc-cli/commit/dcc7795568d0be3973ceeebf9d7a8b0c59f2ff27))
+
 # [1.3.0-beta.6](https://github.com/TrustVC/trustvc-cli/compare/v1.3.0-beta.5...v1.3.0-beta.6) (2026-09-17)
 
 

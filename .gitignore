@@ -62,3 +62,5 @@ coverage/
 # local yalc configuration for help build and test local environment
 .yalc/
 yalc.lock
+# Vitest coverage output (vitest.config.ts reportsDirectory)
+.coverage/

@@ -33,7 +33,42 @@ jobs:
         run: npm run format:check
       
       - name: Run tests
-        run: npm test
-      
+        run: npm test -- --coverage
+
+      - name: Upload coverage for Sonar
+        if: ${{ !cancelled() && matrix.node-version == '22.x' }} # one leg is enough
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: .coverage/lcov.info
+          include-hidden-files: true # .coverage is a dot-directory
+          retention-days: 1
+          if-no-files-found: warn
+
       - name: Build
         run: npm run build
+
+  sonar:
+    name: SonarCloud Scan
+    needs: test
+    # PRs, plus main/beta for the new-code baseline; skip pushes to feature branches
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || github.ref_name == 'main' || github.ref_name == 'beta') }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history, needed for Sonar's new-code analysis
+
+      - name: Download coverage
+        uses: actions/download-artifact@v4
+        continue-on-error: true # scan without coverage rather than not at all
+        with:
+          name: coverage
+          path: .coverage
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@689fb39b34b9aa95ebc5f8f119343ddd51542402 # v4.2.2
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
